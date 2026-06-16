@@ -21,7 +21,6 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); }
-        tbody tr:hover { background-color: #f8fafc; }
         
         .rank-cell { font-size: 1.2rem; font-weight: 700; width: 80px; text-align: center; }
         .user-cell { display: flex; align-items: center; gap: 15px; font-weight: 500; font-size: 1.1rem; }
@@ -44,6 +43,7 @@
         
         <div class="card">
             <h2>📊 ตารางคะแนนรวมแก๊งสุดแม่น</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: -20px; margin-bottom: 25px;">💡 สามารถคลิกที่ชื่อผู้เล่นเพื่อดูรายละเอียดโพยการทายผลได้</p>
             <table>
                 <thead>
                     <tr>
@@ -57,7 +57,7 @@
                         <tr><td colspan="3" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr>
                     <% } %>
                     <% leaderboard.forEach((row, index) => { %>
-                        <tr>
+                        <tr style="cursor: pointer; transition: background 0.2s;" onclick="window.location.href='/user/<%= row.id %>/predictions'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='transparent'">
                             <td class="rank-cell">
                                 <% if(index === 0) { %> 🥇 
                                 <% } else if(index === 1) { %> 🥈 
@@ -67,7 +67,7 @@
                             <td>
                                 <div class="user-cell">
                                     <img src="<%= row.avatar %>" alt="avatar">
-                                    <%= row.username %>
+                                    <span style="color: var(--primary); font-weight: 600;"><%= row.username %></span>
                                 </div>
                             </td>
                             <td class="score-cell"><%= row.total_score || 0 %> แต้ม</td>

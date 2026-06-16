@@ -16,9 +16,10 @@
         .user-info p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
         .nav-links a { color: white; text-decoration: none; font-weight: 500; margin-left: 20px; transition: color 0.2s; }
         .nav-links a:hover { color: #38bdf8; } .nav-links a.admin-link { color: #86efac; } .nav-links a.logout-link { color: #fca5a5; }
-        .card { background: var(--surface); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border); }
-        .card-title { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+        
+        .card-title { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border);}
         .card-title h2 { margin: 0; color: var(--text); font-size: 1.5rem; }
+        
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); }
@@ -31,6 +32,13 @@
         .btn:hover { background-color: var(--primary-hover); }
         .btn-view { background-color: #10b981; } .btn-view:hover { background-color: #059669; }
         .locked-badge { color: #94a3b8; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+
+        .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .date-header { padding: 16px 20px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.1rem; color: var(--primary); transition: background 0.2s; }
+        .date-header:hover { background: #f1f5f9; }
+        .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
+        .date-content table { margin-bottom: 0; border-style: hidden; }
+        .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
     </style>
 </head>
 <body>
@@ -47,41 +55,69 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-title"><h2>🏆 ตารางแข่งขันและการทายผล</h2><small>⏱️ ล็อกผลอัตโนมัติ 5 นาทีก่อนแข่ง</small></div>
-            <table>
-                <thead><tr><th width="15%">รอบ</th><th width="30%">คู่แข่งขัน</th><th width="15%">ผลจริง</th><th width="25%">การทายผลของคุณ</th><th width="15%">ดูของเพื่อน</th></tr></thead>
-                <tbody>
-                    <% if(matches.length === 0) { %><tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">ยังไม่มีตารางการแข่งขัน</td></tr><% } %>
-                    <% matches.forEach(match => { %>
-                        <tr>
-                            <td><span style="color: var(--text-muted);"><%= match.stage_name %></span><br><small><%= match.kickoff_time %></small></td>
-                            <td><span class="team-name"><%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%= match.away_team %></span></td>
-                            <td>
-                                <% if(match.status === 'FINISHED') { %> <span style="color: #16a34a; font-weight: 700; font-size: 1.1rem;"><%= match.home_score %> - <%= match.away_score %></span>
-                                <% } else { %> <span style="color: var(--text-muted);">-</span> <% } %>
-                            </td>
-                            <td>
-                                <form action="/predict" method="POST" style="margin:0; display:flex; gap:10px; align-items:center;">
-                                    <input type="hidden" name="match_id" value="<%= match.id %>">
-                                    <input type="number" name="home_predict" value="<%= match.home_predict %>" <% if(match.is_locked) { %>disabled<% } %>> :
-                                    <input type="number" name="away_predict" value="<%= match.away_predict %>" <% if(match.is_locked) { %>disabled<% } %>>
-                                    <% if(!match.is_locked) { %> <button type="submit" class="btn">บันทึก</button>
-                                    <% } else { %> <div class="locked-badge">🔒 ล็อกแล้ว</div> <% } %>
-                                </form>
-                            </td>
-                            <td>
-                                <% if(match.is_published) { %>
-                                    <a href="/match/<%= match.id %>/predictions" class="btn btn-view">👁️ ดูคำทายเพื่อน</a>
-                                <% } else { %>
-                                    <small style="color: var(--text-muted);">🔒 รอยืนยัน</small>
-                                <% } %>
-                            </td>
-                        </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+        <div class="card-title">
+            <h2 style="margin: 0;">🏆 ตารางแข่งขันและการทายผล</h2>
+            <small>⏱️ ล็อกผลอัตโนมัติ 5 นาทีก่อนแข่ง</small>
         </div>
+
+        <% 
+            const groupedMatches = {};
+            matches.forEach(m => {
+                const dateStr = m.kickoff_time.substring(0, 10);
+                if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
+                groupedMatches[dateStr].push(m);
+            });
+            const dates = Object.keys(groupedMatches).sort();
+        %>
+
+        <% if(dates.length === 0) { %>
+            <div style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--surface); border-radius: 12px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันเปิดให้ทายผลในขณะนี้</div>
+        <% } else { %>
+            <% dates.forEach(date => { %>
+                <details class="date-group" open>
+                    <summary class="date-header">📅 แมตช์วันที่ <%= date %></summary>
+                    <div class="date-content">
+                        <table>
+                            <thead><tr><th width="15%">รอบ/เวลา</th><th width="30%">คู่แข่งขัน</th><th width="15%">ผลจริง</th><th width="25%">การทายผลของคุณ</th><th width="15%">ดูของเพื่อน</th></tr></thead>
+                            <tbody>
+                                <% groupedMatches[date].forEach(match => { %>
+                                    <tr>
+                                        <td><span style="color: var(--text-muted);"><%= match.stage_name %></span><br><small><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
+                                        <td><span class="team-name"><%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%= match.away_team %></span></td>
+                                        <td>
+                                            <% if(match.status === 'FINISHED') { %> <span style="color: #16a34a; font-weight: 700; font-size: 1.1rem;"><%= match.home_score %> - <%= match.away_score %></span>
+                                            <% } else { %> <span style="color: var(--text-muted);">-</span> <% } %>
+                                        </td>
+                                        <td>
+                                            <form action="/predict" method="POST" style="margin:0; display:flex; gap:10px; align-items:center;">
+                                                <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                <input type="number" name="home_predict" value="<%= match.home_predict %>" <% if(match.is_locked) { %>disabled<% } %>> :
+                                                <input type="number" name="away_predict" value="<%= match.away_predict %>" <% if(match.is_locked) { %>disabled<% } %>>
+                                                <% if(!match.is_locked) { %> <button type="submit" class="btn">บันทึก</button>
+                                                <% } else { %> <div class="locked-badge">🔒 ล็อกแล้ว</div> <% } %>
+                                            </form>
+                                            
+                                            <% if(match.status === 'FINISHED') { %>
+                                                <div style="margin-top: 8px; font-size: 0.95rem; font-weight: 600; color: <%= match.score_earned > 0 ? '#10b981' : '#ef4444' %>;">
+                                                    <%= match.score_earned > 0 ? `+${match.score_earned} แต้ม 🎉` : '0 แต้ม 😢' %>
+                                                </div>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if(match.is_published) { %>
+                                                <a href="/match/<%= match.id %>/predictions" class="btn btn-view">👁️ ดูคำทายเพื่อน</a>
+                                            <% } else { %>
+                                                <small style="color: var(--text-muted);">🔒 รอยืนยัน</small>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            <% }) %>
+        <% } %>
     </div>
 </body>
 </html>
