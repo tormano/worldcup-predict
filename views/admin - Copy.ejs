@@ -9,17 +9,8 @@
         :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #4f46e5; --primary-hover: #4338ca; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --info: #0ea5e9; }
         body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
+        .nav-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-weight: 500; }
         
-        /* แถบเมนูส่วนบนสุดของแอดมิน */
-        .admin-header-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 16px; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-        .admin-info { display: flex; align-items: center; gap: 15px; }
-        .admin-info img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid #818cf8; background: #fff; }
-        .admin-info h3 { margin: 0; font-size: 1.2rem; }
-        .admin-info p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
-        .admin-nav-links a { color: white; text-decoration: none; font-weight: 600; margin-left: 20px; transition: color 0.2s; }
-        .admin-nav-links a:hover { color: #818cf8; }
-        .admin-nav-links a.logout-link { color: #fca5a5; }
-
         .tabs-nav { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border); overflow-x: auto; }
         .tab-btn { background: none; border: none; padding: 12px 24px; font-family: inherit; font-size: 1.05rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s ease; white-space: nowrap; margin-bottom: -2px; }
         .tab-btn:hover { color: var(--primary); background-color: #f1f5f9; border-radius: 8px 8px 0 0; }
@@ -56,6 +47,7 @@
         .import-box h4 { margin-top: 0; color: var(--text); }
         .import-box code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
 
+        /* สไตล์สำหรับระบบ Group รายวัน (Collapse) */
         .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
         .date-header { padding: 16px 20px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.1rem; color: var(--primary); transition: background 0.2s; }
         .date-header:hover { background: #f1f5f9; }
@@ -66,19 +58,9 @@
 </head>
 <body>
     <div class="container">
-        
-        <div class="admin-header-card">
-            <div class="admin-info">
-                <img src="<%= user.avatar %>" alt="Admin Avatar">
-                <div>
-                    <p>สิทธิ์ผู้เข้าใช้งาน</p>
-                    <h3>👑 ผู้ดูแลระบบ (Admin)</h3>
-                </div>
-            </div>
-            <div class="admin-nav-links">
-                <a href="/leaderboard">📊 ตารางคะแนนรวม</a>
-                <a href="/logout" class="logout-link">🚪 ออกจากระบบ</a>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin-top: 0; margin-bottom: 24px;">⚙️ แผงควบคุมผู้ดูแลระบบ</h2>
+            <a href="/" class="nav-link" style="margin: 0;">⬅️ กลับหน้าหลักทายผล</a>
         </div>
 
         <div class="tabs-nav">
@@ -87,6 +69,7 @@
             <button class="tab-btn" onclick="openTab('tab-settings')" id="btn-tab-settings">⚙️ ตั้งค่า & นำเข้าข้อมูล</button>
         </div>
 
+        <!-- ================= TAB 1: จัดการผู้เล่น ================= -->
         <div id="tab-users" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">📊</span><h3>สถานะการทายผลของผู้เล่น (ทายแล้ว / ทั้งหมด <%= totalMatches %> คู่)</h3></div>
@@ -136,6 +119,7 @@
             </div>
         </div>
 
+        <!-- ================= TAB 2: ตารางแข่งขัน & จัดการสกอร์ (จัดกลุ่มตามวัน) ================= -->
         <div id="tab-matches" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">➕</span><h3>เพิ่มแมตช์การแข่งขันใหม่ (ทีละคู่)</h3></div>
@@ -152,9 +136,10 @@
                 <div class="card-header" style="background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border);"><span style="font-size: 1.5rem;">📋</span><h3 style="margin:0;">ตารางแข่งขัน, กรอกสกอร์ และเปิดให้ดูคำทาย</h3></div>
                 
                 <% 
+                    // โลจิกจัดกลุ่มข้อมูลแมตช์ตามวันที่
                     const groupedMatches = {};
                     matches.forEach(m => {
-                        const dateStr = m.kickoff_time.substring(0, 10);
+                        const dateStr = m.kickoff_time.substring(0, 10); // ตัดเอาแค่ YYYY-MM-DD
                         if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
                         groupedMatches[dateStr].push(m);
                     });
@@ -165,6 +150,7 @@
                     <div style="text-align: center; color: var(--text-muted); padding: 40px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border);">ยังไม่มีข้อมูลการแข่งขัน</div>
                 <% } else { %>
                     <% dates.forEach(date => { %>
+                        <!-- ใช้ details และ summary ทำระบบ Collapse -->
                         <details class="date-group" open>
                             <summary class="date-header">📅 แมตช์วันที่ <%= date %> <span style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500; margin-left: 10px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
@@ -214,6 +200,7 @@
             </div>
         </div>
 
+        <!-- ================= TAB 3: ตั้งค่า & นำเข้าข้อมูล ================= -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">🎯</span><h3>ตั้งค่าคะแนนการทายผล</h3></div>

@@ -62,7 +62,6 @@ function checkAuth(req, res, next) {
 // 2. ROUTING & PAGES
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
-    // [ปรับปรุง] บังคับให้บัญชี Admin เด้งไปที่หน้า /admin ทันทีเมื่อเข้า URL หลักของเว็บ
     if (req.session.user.is_admin === 1) {
         return res.redirect('/admin');
     }
@@ -92,7 +91,7 @@ app.post('/login', async (req, res) => {
         if (rows[0].must_change_password) {
             res.redirect('/change-password'); 
         } else if (rows[0].is_admin === 1) {
-            res.redirect('/admin'); // [ปรับปรุง] เมื่อล็อกอินเสร็จ ให้ Admin วิ่งเข้าหน้าแผงควบคุมหลังบ้านทันที
+            res.redirect('/admin'); 
         } else {
             res.redirect('/'); 
         }
@@ -110,7 +109,6 @@ app.post('/change-password', checkAuth, async (req, res) => {
 });
 
 app.post('/predict', checkAuth, async (req, res) => {
-    // [ปรับปรุง] ป้องกันไม่ให้สิทธิ์บัญชี Admin ส่งผลคำนวณหรือบันทึกข้อมูลการทายผลบอล
     if (req.session.user.is_admin === 1) {
         return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
     }
@@ -122,7 +120,6 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // [ปรับปรุง] ใส่เงื่อนไข WHERE u.is_admin = 0 เพื่อคัดกรองไม่เอาบัญชีผู้ดูแลระบบมาจัดอันดับบนตารางคะแนนรวม
     const { rows: leaderboard } = await pool.query(`SELECT u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
     res.render('leaderboard', { user: req.session.user, leaderboard });
 });
@@ -145,7 +142,9 @@ app.get('/admin', checkAuth, async (req, res) => {
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
     const { rows: userStats } = await pool.query(`SELECT u.id, u.username, u.avatar, COUNT(p.match_id) as predicted_count FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar`);
     const { rows: allUsers } = await pool.query('SELECT id, username, avatar FROM users WHERE is_admin = 0 ORDER BY username ASC');
-    res.render('admin', { matches, rules, userStats, totalMatches: matches.length, allUsers });
+    
+    // [แก้ไขเพิ่มเติม] ส่งข้อมูล user: req.session.user เข้าไปด้วยเพื่อนำข้อมูลโปรไฟล์และปุ่มเมนูแอดมินไปแสดงผลบนหน้าจอ
+    res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers });
 });
 
 app.post('/admin/delete-user', checkAuth, async (req, res) => {
