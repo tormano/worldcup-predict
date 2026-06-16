@@ -62,11 +62,10 @@ function checkAuth(req, res, next) {
 // 2. ROUTING & PAGES
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
-    if (req.session.user.is_admin === 1) {
-        return res.redirect('/admin');
-    }
+    if (req.session.user.is_admin === 1) return res.redirect('/admin');
 
-    const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
+    // เพิ่ม p.score_earned เข้าไปใน Query
+    const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     const currentTime = new Date();
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
@@ -88,13 +87,9 @@ app.post('/login', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [req.body.username]);
     if (rows.length > 0 && bcrypt.compareSync(req.body.password, rows[0].password)) { 
         req.session.user = rows[0]; 
-        if (rows[0].must_change_password) {
-            res.redirect('/change-password'); 
-        } else if (rows[0].is_admin === 1) {
-            res.redirect('/admin'); 
-        } else {
-            res.redirect('/'); 
-        }
+        if (rows[0].must_change_password) res.redirect('/change-password'); 
+        else if (rows[0].is_admin === 1) res.redirect('/admin'); 
+        else res.redirect('/'); 
     } else { res.render('login', { msg: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!' }); }
 });
 
@@ -109,10 +104,7 @@ app.post('/change-password', checkAuth, async (req, res) => {
 });
 
 app.post('/predict', checkAuth, async (req, res) => {
-    if (req.session.user.is_admin === 1) {
-        return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
-    }
-
+    if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
     const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
     if (new Date() >= new Date(new Date(match[0].kickoff_time).getTime() - 5 * 60 * 1000) || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้ว');
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
@@ -120,8 +112,33 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    const { rows: leaderboard } = await pool.query(`SELECT u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
+    // ดึง u.id ออกมาด้วยเพื่อใช้ทำลิงก์
+    const { rows: leaderboard } = await pool.query(`SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
     res.render('leaderboard', { user: req.session.user, leaderboard });
+});
+
+// ฟีเจอร์ใหม่: ดูหน้าทายผลของเพื่อนแต่ละคน
+app.get('/user/:id/predictions', checkAuth, async (req, res) => {
+    const { rows: targetUser } = await pool.query('SELECT id, username, avatar FROM users WHERE id = $1 AND is_admin = 0', [req.params.id]);
+    if (targetUser.length === 0) return res.status(404).send('ไม่พบผู้ใช้งานนี้');
+
+    const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.params.id]);
+    const currentTime = new Date();
+    
+    matches.forEach(m => {
+        const kickOff = new Date(m.kickoff_time);
+        m.is_locked = currentTime >= new Date(kickOff.getTime() - 5 * 60 * 1000) || m.status !== 'OPEN';
+        m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
+        
+        // ซ่อนคำทายของเพื่อนหากแมตช์ยังไม่ถูกล็อค (ป้องกันการลอกข้อสอบ)
+        if (!m.is_locked && !m.is_published) {
+            m.home_predict = null;
+            m.away_predict = null;
+            m.is_hidden = true;
+        }
+    });
+
+    res.render('user-predictions', { user: req.session.user, targetUser: targetUser[0], matches });
 });
 
 app.get('/match/:id/predictions', checkAuth, async (req, res) => {
