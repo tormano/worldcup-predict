@@ -189,22 +189,58 @@ app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
 
 app.post('/admin/settle', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query("UPDATE matches SET home_score = $1, away_score = $2, status = 'FINISHED' WHERE id = $3", [req.body.home_score, req.body.away_score, req.body.match_id]);
+
+    // 1. แปลงค่าคะแนนให้เป็นตัวเลขเสมอ
+    const matchId = parseInt(req.body.match_id);
+    const actualHome = parseInt(req.body.home_score);
+    const actualAway = parseInt(req.body.away_score);
+
+    // 2. อัปเดตผลสกอร์จริงลงตารางการแข่งขัน
+    await pool.query("UPDATE matches SET home_score = $1, away_score = $2, status = 'FINISHED' WHERE id = $3", [actualHome, actualAway, matchId]);
+
+    // 3. ดึงข้อมูลแมตช์ และหากฎคะแนนแบบยืดหยุ่น (ค้นหาจากทั้ง id และ name)
+    const { rows: match } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
+    const stageRaw = match[0].stage ? match[0].stage.trim() : '';
     
-    const { rows: match } = await pool.query('SELECT * FROM matches WHERE id = $1', [req.body.match_id]);
-    const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE stage_id = $1', [match[0].stage]);
-    const { rows: predictions } = await pool.query('SELECT * FROM predictions WHERE match_id = $1', [req.body.match_id]);
+    const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE stage_id = $1 OR stage_name = $1', [stageRaw]);
+
+    // กันเหนียว! ถ้าระบบหากฎคะแนนไม่เจอจริงๆ ให้ใช้ค่า Default: ทายถูก=1, สกอร์เป๊ะ=2
+    const baseScore = rule.length > 0 ? parseInt(rule[0].base_score) : 1;
+    const bonusScore = rule.length > 0 ? parseInt(rule[0].bonus_score) : 2;
+
+    console.log(`\n👉 [DEBUG] แมตช์ #${matchId} | รอบ: ${stageRaw} | แจกแต้มพื้นฐาน: ${baseScore} | โบนัส: ${bonusScore}`);
+
+    // 4. เริ่มคำนวณหาว่าใครชนะ
+    const actualResult = actualHome > actualAway ? 'HOME' : (actualHome < actualAway ? 'AWAY' : 'DRAW');
     
-    const actualResult = match[0].home_score > match[0].away_score ? 'HOME' : (match[0].home_score < match[0].away_score ? 'AWAY' : 'DRAW');
+    // 5. ดึงคำทายของทุกคนมาตรวจ
+    const { rows: predictions } = await pool.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
+
     for (let p of predictions) {
         let earned = 0;
-        const predictResult = p.home_predict > p.away_predict ? 'HOME' : (p.home_predict < p.away_predict ? 'AWAY' : 'DRAW');
-        if (predictResult === actualResult) {
-            earned += (rule.length > 0 ? rule[0].base_score : 0);
-            if (p.home_predict == match[0].home_score && p.away_predict == match[0].away_score) earned += (rule.length > 0 ? rule[0].bonus_score : 0);
+        
+        // เช็คว่าผู้เล่นกรอกตัวเลขทายผลมาครบถ้วน
+        if (p.home_predict !== null && p.away_predict !== null) {
+            const predHome = parseInt(p.home_predict);
+            const predAway = parseInt(p.away_predict);
+            const predictResult = predHome > predAway ? 'HOME' : (predHome < predAway ? 'AWAY' : 'DRAW');
+
+            // เงื่อนไขที่ 1: ทายทิศทาง (ชนะ/แพ้/เสมอ) ถูกต้อง
+            if (predictResult === actualResult) {
+                earned += baseScore; 
+                
+                // เงื่อนไขที่ 2: ทายสกอร์เป๊ะเวอร์!
+                if (predHome === actualHome && predAway === actualAway) {
+                    earned += bonusScore; 
+                }
+            }
+            console.log(`- ผู้เล่น ID: ${p.user_id} | ทาย: ${predHome}:${predAway} | ควรได้แต้ม: ${earned}`);
         }
-        await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, req.body.match_id]);
+        
+        // 6. อัปเดตคะแนนที่ได้ลงฐานข้อมูล
+        await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, matchId]);
     }
+
     res.redirect('/admin');
 });
 
