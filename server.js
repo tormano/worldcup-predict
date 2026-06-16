@@ -7,7 +7,6 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
 const app = express();
-// ดึง Connection String จาก Render.com (ถ้าไม่มีให้ใช้ค่าว่างไปก่อนตอนรันเทส)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
@@ -63,11 +62,16 @@ function checkAuth(req, res, next) {
 // 2. ROUTING & PAGES
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
+    // [ปรับปรุง] บังคับให้บัญชี Admin เด้งไปที่หน้า /admin ทันทีเมื่อเข้า URL หลักของเว็บ
+    if (req.session.user.is_admin === 1) {
+        return res.redirect('/admin');
+    }
+
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     const currentTime = new Date();
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); // Format Date
+        m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
         m.is_locked = currentTime >= new Date(kickOff.getTime() - 5 * 60 * 1000) || m.status !== 'OPEN';
     });
     res.render('index', { user: req.session.user, matches });
@@ -85,7 +89,13 @@ app.post('/login', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [req.body.username]);
     if (rows.length > 0 && bcrypt.compareSync(req.body.password, rows[0].password)) { 
         req.session.user = rows[0]; 
-        res.redirect(rows[0].must_change_password ? '/change-password' : '/'); 
+        if (rows[0].must_change_password) {
+            res.redirect('/change-password'); 
+        } else if (rows[0].is_admin === 1) {
+            res.redirect('/admin'); // [ปรับปรุง] เมื่อล็อกอินเสร็จ ให้ Admin วิ่งเข้าหน้าแผงควบคุมหลังบ้านทันที
+        } else {
+            res.redirect('/'); 
+        }
     } else { res.render('login', { msg: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!' }); }
 });
 
@@ -100,6 +110,11 @@ app.post('/change-password', checkAuth, async (req, res) => {
 });
 
 app.post('/predict', checkAuth, async (req, res) => {
+    // [ปรับปรุง] ป้องกันไม่ให้สิทธิ์บัญชี Admin ส่งผลคำนวณหรือบันทึกข้อมูลการทายผลบอล
+    if (req.session.user.is_admin === 1) {
+        return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
+    }
+
     const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
     if (new Date() >= new Date(new Date(match[0].kickoff_time).getTime() - 5 * 60 * 1000) || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้ว');
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
@@ -107,7 +122,8 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    const { rows: leaderboard } = await pool.query(`SELECT u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
+    // [ปรับปรุง] ใส่เงื่อนไข WHERE u.is_admin = 0 เพื่อคัดกรองไม่เอาบัญชีผู้ดูแลระบบมาจัดอันดับบนตารางคะแนนรวม
+    const { rows: leaderboard } = await pool.query(`SELECT u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
     res.render('leaderboard', { user: req.session.user, leaderboard });
 });
 
