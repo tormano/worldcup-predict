@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทายผลบอลโลก World Cup 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1d4ed8; --primary-hover: #1e40af; --secondary: #0f172a; --bg: #f1f5f9; --surface: #ffffff; --text: #1e293b; --text-muted: #64748b; --border: #cbd5e1; }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        * { box-sizing: border-box; }
+        .main-container { max-width: 900px; width: 100%; }
+        
+        .banner-container { margin-bottom: 30px; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); background: var(--surface); }
+        .banner-img { width: 100%; display: block; object-fit: cover; max-height: 280px; }
+        
+        .forms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { background-color: var(--surface); padding: 40px 30px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        .card h2 { margin-top: 0; margin-bottom: 25px; font-size: 1.5rem; text-align: center; color: var(--secondary); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
+        
+        input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 1rem; background-color: #f8fafc; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.15); background-color: #fff; }
+        
+        button { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 500; font-family: inherit; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+        button:hover { background-color: var(--primary-hover); }
+        .btn-register { background-color: var(--secondary); }
+        .btn-register:hover { background-color: #334155; }
+        
+        .alert { background-color: #fee2e2; color: #ef4444; padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 25px; font-weight: 500; border: 1px solid #fecaca; }
+        .alert.success { background-color: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        
+        @media (max-width: 768px) { .forms-grid { grid-template-columns: 1fr; } .card { padding: 30px 20px; } }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="banner-container">
+            <img src="/uploads/banner.jpg" alt="2026 Football World Cup Banner" class="banner-img">
+        </div>
+        <% if(msg) { %> <div class="alert <%= msg.includes('สำเร็จ') ? 'success' : '' %>"><%= msg %></div> <% } %>
+        <div class="forms-grid">
+            <div class="card">
+                <h2>👋 เข้าสู่ระบบ</h2>
+                <form action="/login" method="POST">
+                    <div class="form-group"><label>ชื่อผู้ใช้งาน (Username)</label><input type="text" name="username" placeholder="กรอกชื่อผู้ใช้ของคุณ" required></div>
+                    <div class="form-group"><label>รหัสผ่าน (Password)</label><input type="password" name="password" placeholder="กรอกรหัสผ่าน" required></div>
+                    <button type="submit">เข้าสู่ระบบ</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>✨ สมัครสมาชิกใหม่</h2>
+                <form action="/register" method="POST" enctype="multipart/form-data">
+                    <div class="form-group"><label>ชื่อผู้ใช้งาน (Username)</label><input type="text" name="username" placeholder="ตั้งชื่อผู้ใช้งาน" required></div>
+                    <div class="form-group"><label>ตั้งรหัสผ่าน (Password)</label><input type="password" name="password" placeholder="รหัสผ่านสำหรับเข้าสู่ระบบ" required></div>
+                    <div class="form-group"><label>รูปภาพแทนตัว (Avatar)</label><input type="file" name="avatar" accept="image/*" style="padding: 10px 16px;"></div>
+                    <button type="submit" class="btn-register">สมัครสมาชิก</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำทายของเพื่อนๆ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --border: #e2e8f0; --primary: #2563eb; }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .nav-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-weight: 500; }
+        
+        .match-header { background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: 16px; padding: 30px; text-align: center; color: white; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .match-header h4 { margin: 0 0 10px 0; color: #94a3b8; font-weight: 400; }
+        .match-teams { font-size: 2rem; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 20px; }
+        .vs-badge { background: #38bdf8; color: #0f172a; padding: 4px 12px; border-radius: 20px; font-size: 1rem; font-weight: 700; }
+        
+        .card { background: var(--surface); border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); }
+        .user-cell { display: flex; align-items: center; gap: 15px; font-weight: 500; font-size: 1.05rem; }
+        .user-cell img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+        .prediction-score { font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; text-align: center; }
+        .earned-points { color: #10b981; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">⬅️ กลับหน้าหลักทายผล</a>
+        
+        <div class="match-header">
+            <h4><%= match.stage_name %></h4>
+            <div class="match-teams">
+                <span><%= match.home_team %></span>
+                <span class="vs-badge">VS</span>
+                <span><%= match.away_team %></span>
+            </div>
+            <% if(match.status === 'FINISHED') { %>
+                <p style="margin-top: 15px; font-size: 1.2rem; color: #10b981; font-weight: bold;">ผลแข่งจริง: <%= match.home_score %> - <%= match.away_score %></p>
+            <% } %>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0;">👁️ ผลการทายของทุกคนในแมตช์นี้</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="40%">ผู้เล่น</th>
+                        <th width="30%" style="text-align: center;">ทายสกอร์ไว้ว่า</th>
+                        <th width="30%">คะแนนที่ได้จากคู่นี้</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(predictions.length === 0) { %>
+                        <tr><td colspan="3" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีผู้เล่นคนไหนทายผลคู่นี้เลย</td></tr>
+                    <% } %>
+                    <% predictions.forEach(p => { %>
+                        <tr>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="<%= p.avatar %>" alt="avatar">
+                                    <%= p.username %>
+                                </div>
+                            </td>
+                            <td class="prediction-score">
+                                <%= p.home_predict %> - <%= p.away_predict %>
+                            </td>
+                            <td>
+                                <% if(match.status === 'FINISHED') { %>
+                                    <span class="earned-points">+<%= p.score_earned || 0 %> แต้ม</span>
+                                <% } else { %>
+                                    <span style="color: var(--text-muted);">รอแข่งจบ</span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
