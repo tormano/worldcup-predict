@@ -86,6 +86,7 @@
             <button class="tab-btn" onclick="openTab('tab-users')" id="btn-tab-users">👥 จัดการผู้เล่น</button>
             <button class="tab-btn" onclick="openTab('tab-matches')" id="btn-tab-matches">⚽ ตารางแข่งขัน & ผลสกอร์</button>
             <button class="tab-btn" onclick="openTab('tab-settings')" id="btn-tab-settings">⚙️ ตั้งค่า & นำเข้าข้อมูล</button>
+            <button class="tab-btn" onclick="openTab('tab-rewards')" id="btn-tab-rewards">🎁 จัดการของรางวัล</button>
         </div>
 
         <!-- ================= TAB 1: จัดการผู้เล่น ================= -->
@@ -269,6 +270,54 @@
                 </div>
             </div>
         </div>
+
+        <!-- ================= TAB 4: จัดการของรางวัล ================= -->
+        <div id="tab-rewards" class="tab-content">
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.5rem;">🎁</span><h3>ตั้งค่าของรางวัลตามอันดับ</h3></div>
+                
+                <form action="/admin/add-reward" method="POST" class="form-row" style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
+                    <div class="form-group" style="flex: 0.5;">
+                        <label>อันดับ</label>
+                        <input type="number" name="rank" placeholder="เช่น 1" min="1" required>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label>คำอธิบายรางวัล</label>
+                        <input type="text" name="description" placeholder="เช่น เสื้อฟุตบอลแท้ 100%" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>ไอคอน</label>
+                        <input type="text" name="icon" placeholder="เช่น 🏆 หรือ 👕" required>
+                    </div>
+                    <div class="form-group" style="flex: 0;">
+                        <button type="submit" class="btn btn-info" style="width: 100%;">บันทึก</button>
+                    </div>
+                </form>
+
+                <table>
+                    <thead><tr><th width="15%">อันดับ</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="15%">จัดการ</th></tr></thead>
+                    <tbody>
+                        <% if(!rewards || rewards.length === 0) { %>
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr>
+                        <% } %>
+                        <% if(rewards) { rewards.forEach(r => { %>
+                            <tr>
+                                <td><strong>อันดับที่ <%= r.rank %></strong></td>
+                                <td style="text-align: center; font-size: 1.5rem;"><%= r.icon %></td>
+                                <td><%= r.description %></td>
+                                <td>
+                                    <form action="/admin/delete-reward" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบรางวัลนี้?');">
+                                        <input type="hidden" name="reward_id" value="<%= r.id %>">
+                                        <button type="submit" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem;">ลบ</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <script>
