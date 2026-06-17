@@ -33,21 +33,15 @@
         
         .tooltip-header { cursor: help; border-bottom: 1px dotted var(--text-muted); padding-bottom: 2px; }
         
-        /* สไตล์ใหม่สำหรับคอลัมน์รางวัล */
         .reward-item { display: inline-flex; align-items: center; gap: 10px; background: #fffbeb; padding: 6px 16px 6px 8px; border-radius: 50px; border: 1px solid #fde68a; font-weight: 500; color: #b45309; white-space: nowrap; }
         .reward-icon { font-size: 1.4rem; background: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
     <div class="container">
-        
         <div class="top-nav-bar">
-            <% if (user.is_admin === 1) { %>
-                <a href="/admin" class="nav-link">⚙️ กลับแผงควบคุม Admin</a>
-            <% } else { %>
-                <a href="/" class="nav-link">⬅️ กลับหน้าหลักทายผล</a>
-            <% } %>
-            
+            <% if (user.is_admin === 1) { %><a href="/admin" class="nav-link">⚙️ กลับแผงควบคุม Admin</a>
+            <% } else { %><a href="/" class="nav-link">⬅️ กลับหน้าหลักทายผล</a><% } %>
             <a href="/logout" class="nav-link logout-link">🚪 ออกจากระบบ</a>
         </div>
         
@@ -56,20 +50,16 @@
             <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: -20px; margin-bottom: 25px;">💡 สามารถคลิกที่ชื่อผู้เล่นเพื่อดูรายละเอียดโพยการทายผลได้</p>
             
             <% 
-                // สร้าง Object จับคู่ของรางวัลให้ใช้งานง่ายขึ้น
                 const rewardMap = {};
                 if(typeof rewards !== 'undefined' && rewards.length > 0) {
-                    rewards.forEach(r => {
-                        rewardMap[r.rank] = r;
-                    });
+                    rewards.forEach(r => { rewardMap[r.rank] = r; });
                 }
             %>
 
             <table>
                 <thead>
                     <tr>
-                        <th>อันดับ</th>
-                        <th>ผู้เล่น</th>
+                        <th>อันดับ</th><th>ผู้เล่น</th>
                         <th><span class="tooltip-header" title="จำนวนนัดที่ยืนยันผลแล้ว (Match Played)">MP ℹ️</span></th>
                         <th title="จำนวนนัดที่ทายแพ้-ชนะ-เสมอถูก">ทายผลถูก</th>
                         <th title="คะแนนที่ได้จากการทายทิศทางถูก">คะแนนทายผลถูก</th>
@@ -80,9 +70,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <% if(leaderboard.length === 0) { %>
-                        <tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr>
-                    <% } %>
+                    <% if(leaderboard.length === 0) { %><tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr><% } %>
                     <% leaderboard.forEach((row, index) => { %>
                         <% const currentRank = index + 1; %>
                         <tr style="cursor: pointer; transition: background 0.2s;" onclick="window.location.href='/user/<%= row.id %>/predictions'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='transparent'">
@@ -92,12 +80,7 @@
                                 <% } else if(currentRank === 3) { %> 🥉 
                                 <% } else { %> <%= currentRank %> <% } %>
                             </td>
-                            <td>
-                                <div class="user-cell">
-                                    <img src="<%= row.avatar %>" alt="avatar">
-                                    <span style="color: var(--primary); font-weight: 600;"><%= row.username %></span>
-                                </div>
-                            </td>
+                            <td><div class="user-cell"><img src="<%= row.avatar %>" alt="avatar"><span style="color: var(--primary); font-weight: 600;"><%= row.username %></span></div></td>
                             <td class="stat-number"><%= row.mp %></td>
                             <td class="stat-number"><%= row.correct_result_count %></td>
                             <td class="stat-score">+<%= row.correct_result_score %></td>
@@ -106,13 +89,8 @@
                             <td class="score-cell" style="text-align: right;"><%= row.total_score || 0 %> แต้ม</td>
                             <td style="text-align: center;">
                                 <% if(rewardMap[currentRank]) { %>
-                                    <div class="reward-item">
-                                        <span class="reward-icon"><%= rewardMap[currentRank].icon %></span>
-                                        <span><%= rewardMap[currentRank].description %></span>
-                                    </div>
-                                <% } else { %>
-                                    <span style="color: var(--border);">-</span>
-                                <% } %>
+                                    <div class="reward-item"><span class="reward-icon"><%= rewardMap[currentRank].icon %></span><span><%= rewardMap[currentRank].description %></span></div>
+                                <% } else { %><span style="color: var(--border);">-</span><% } %>
                             </td>
                         </tr>
                     <% }) %>

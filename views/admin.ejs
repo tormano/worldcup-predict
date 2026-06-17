@@ -9,16 +9,13 @@
         :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #4f46e5; --primary-hover: #4338ca; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --info: #0ea5e9; }
         body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
-        
-        /* แถบเมนูส่วนบนสุดของแอดมิน */
         .admin-header-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 16px; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
         .admin-info { display: flex; align-items: center; gap: 15px; }
         .admin-info img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid #818cf8; background: #fff; }
         .admin-info h3 { margin: 0; font-size: 1.2rem; }
         .admin-info p { margin: 0; color: #94a3b8; font-size: 0.9rem; }
         .admin-nav-links a { color: white; text-decoration: none; font-weight: 600; margin-left: 20px; transition: color 0.2s; }
-        .admin-nav-links a:hover { color: #818cf8; }
-        .admin-nav-links a.logout-link { color: #fca5a5; }
+        .admin-nav-links a:hover { color: #818cf8; } .admin-nav-links a.logout-link { color: #fca5a5; }
 
         .tabs-nav { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border); overflow-x: auto; }
         .tab-btn { background: none; border: none; padding: 12px 24px; font-family: inherit; font-size: 1.05rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s ease; white-space: nowrap; margin-bottom: -2px; }
@@ -67,14 +64,10 @@
 <body>
     <div class="container">
         
-        <!-- แถบเมนูด้านบนเวอร์ชัน Admin -->
         <div class="admin-header-card">
             <div class="admin-info">
                 <img src="<%= user.avatar %>" alt="Admin Avatar">
-                <div>
-                    <p>สิทธิ์ผู้เข้าใช้งาน</p>
-                    <h3>👑 ผู้ดูแลระบบ (Admin)</h3>
-                </div>
+                <div><p>สิทธิ์ผู้เข้าใช้งาน</p><h3>👑 ผู้ดูแลระบบ (Admin)</h3></div>
             </div>
             <div class="admin-nav-links">
                 <a href="/leaderboard">📊 ตารางคะแนนรวม</a>
@@ -89,10 +82,9 @@
             <button class="tab-btn" onclick="openTab('tab-rewards')" id="btn-tab-rewards">🎁 จัดการของรางวัล</button>
         </div>
 
-        <!-- ================= TAB 1: จัดการผู้เล่น ================= -->
         <div id="tab-users" class="tab-content">
             <div class="card">
-                <div class="card-header"><span style="font-size: 1.5rem;">📊</span><h3>สถานะการทายผลของผู้เล่น (ทายแล้ว / ทั้งหมด <%= totalMatches %> คู่)</h3></div>
+                <div class="card-header"><span style="font-size: 1.5rem;">📊</span><h3>สถานะการทายผลของผู้เล่น</h3></div>
                 <table>
                     <thead><tr><th>ผู้เล่น</th><th>จำนวนคู่ที่ทายผลแล้ว</th><th>สถานะ</th></tr></thead>
                     <tbody>
@@ -101,10 +93,7 @@
                             <tr>
                                 <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
                                 <td><strong><%= u.predicted_count %></strong> / <%= totalMatches %> คู่</td>
-                                <td>
-                                    <% if(u.predicted_count >= totalMatches && totalMatches > 0) { %> <span class="badge" style="background: #10b981; color: white;">✅ Completed</span>
-                                    <% } else { %> <span class="badge badge-warning">⏳ Pending</span> <% } %>
-                                </td>
+                                <td><% if(u.predicted_count >= totalMatches && totalMatches > 0) { %> <span class="badge" style="background: #10b981; color: white;">✅ Completed</span> <% } else { %> <span class="badge badge-warning">⏳ Pending</span> <% } %></td>
                             </tr>
                         <% }) %>
                     </tbody>
@@ -119,9 +108,24 @@
                         <% if(allUsers.length === 0) { %><tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 20px;">ไม่มีผู้ใช้งานในระบบ</td></tr><% } %>
                         <% allUsers.forEach(u => { %>
                             <tr>
-                                <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
                                 <td>
-                                    <div style="display: flex; gap: 10px;">
+                                    <div class="user-cell">
+                                        <img src="<%= u.avatar %>">
+                                        <span style="<%= u.is_hidden ? 'text-decoration: line-through; color: var(--text-muted);' : '' %>">
+                                            <%= u.username %>
+                                            <% if(u.is_hidden) { %><span class="badge badge-warning" style="margin-left: 5px; font-size: 0.7rem;">ซ่อนจากบอร์ด</span><% } %>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                        <form action="/admin/toggle-visibility" method="POST" style="margin:0;">
+                                            <input type="hidden" name="user_id" value="<%= u.id %>">
+                                            <input type="hidden" name="is_hidden" value="<%= u.is_hidden ? 0 : 1 %>">
+                                            <button type="submit" class="btn" style="padding: 4px 10px; font-size: 0.85rem; background-color: <%= u.is_hidden ? 'var(--success)' : '#64748b' %>;">
+                                                <%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อนจากบอร์ด' %>
+                                            </button>
+                                        </form>
                                         <form action="/admin/reset-password" method="POST" style="margin:0;" onsubmit="return confirm('รีเซ็ตรหัสผ่านของ <%= u.username %> เป็น 123456 ใช่หรือไม่?');">
                                             <input type="hidden" name="user_id" value="<%= u.id %>">
                                             <button type="submit" class="btn btn-info" style="padding: 4px 10px; font-size: 0.85rem;">🔄 รีเซ็ตรหัสผ่าน</button>
@@ -139,7 +143,6 @@
             </div>
         </div>
 
-        <!-- ================= TAB 2: ตารางแข่งขัน & จัดการสกอร์ ================= -->
         <div id="tab-matches" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">➕</span><h3>เพิ่มแมตช์การแข่งขันใหม่ (ทีละคู่)</h3></div>
@@ -154,10 +157,8 @@
 
             <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
                 <div class="card-header" style="background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 1.5rem;">📋</span><h3 style="margin:0;">ตารางแข่งขัน, กรอกสกอร์ และเปิดให้ดูคำทาย</h3>
-                    </div>
-                    <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมดสำหรับแมตช์ที่แข่งจบแล้ว ยืนยันหรือไม่? (อาจใช้เวลาสักครู่)');">
+                    <div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">📋</span><h3 style="margin:0;">ตารางแข่งขัน, กรอกสกอร์ และเปิดให้ดูคำทาย</h3></div>
+                    <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมดสำหรับแมตช์ที่แข่งจบแล้ว ยืนยันหรือไม่?');">
                         <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่ทั้งหมด</button>
                     </form>
                 </div>
@@ -169,17 +170,12 @@
                         if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
                         groupedMatches[dateStr].push(m);
                     });
-                    
-                    // ปรับให้จัดเรียงวันที่จาก ล่าสุด -> เก่าสุด (ใช้ .reverse())
                     const dates = Object.keys(groupedMatches).sort().reverse();
                 %>
-
-                <% if(dates.length === 0) { %>
-                    <div style="text-align: center; color: var(--text-muted); padding: 40px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border);">ยังไม่มีข้อมูลการแข่งขัน</div>
-                <% } else { %>
+                <% if(dates.length === 0) { %><div style="text-align: center; padding: 40px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
                     <% dates.forEach(date => { %>
                         <details class="date-group" open>
-                            <summary class="date-header">📅 แมตช์วันที่ <%= date %> <span style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500; margin-left: 10px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
+                            <summary class="date-header">📅 แมตช์วันที่ <%= date %> <span style="font-size: 0.9rem; margin-left: 10px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
                                     <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ / เปิดไพ่เพื่อน</th><th>จัดการสกอร์ / ลบ</th></tr></thead>
@@ -227,7 +223,6 @@
             </div>
         </div>
 
-        <!-- ================= TAB 3: ตั้งค่า & นำเข้าข้อมูล ================= -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">🎯</span><h3>ตั้งค่าคะแนนการทายผล</h3></div>
@@ -253,7 +248,6 @@
                 <div class="import-grid">
                     <div class="import-box">
                         <h4>⚽ อัปโหลดตารางแข่งขัน</h4>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;"><strong>หัวคอลัมน์แถวแรก:</strong> <br><code>stage, home_team, away_team, kickoff_time</code></p>
                         <form action="/admin/import-matches" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px;">
                             <input type="file" name="csv_file" accept=".csv" required style="padding: 6px;">
                             <button type="submit" class="btn btn-info">อัปโหลด</button>
@@ -261,7 +255,6 @@
                     </div>
                     <div class="import-box">
                         <h4>🎯 อัปโหลดผลการทายของผู้เล่น</h4>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;"><strong>หัวคอลัมน์แถวแรก:</strong> <br><code>username, match_id, home_predict, away_predict</code></p>
                         <form action="/admin/import-predictions" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px;">
                             <input type="file" name="csv_file" accept=".csv" required style="padding: 6px;">
                             <button type="submit" class="btn btn-info">อัปโหลด</button>
@@ -271,24 +264,19 @@
             </div>
         </div>
 
-        <!-- ================= TAB 4: จัดการของรางวัล ================= -->
         <div id="tab-rewards" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">🎁</span><h3>ตั้งค่าของรางวัลตามอันดับ</h3></div>
-                
                 <form id="rewardForm" action="/admin/add-reward" method="POST" class="form-row" style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
                     <input type="hidden" name="reward_id" id="reward_id">
                     <div class="form-group" style="flex: 0.5;">
-                        <label>อันดับ</label>
-                        <input type="number" id="reward_rank" name="rank" placeholder="เช่น 1" min="1" required>
+                        <label>อันดับ</label><input type="number" id="reward_rank" name="rank" placeholder="เช่น 1" min="1" required>
                     </div>
                     <div class="form-group" style="flex: 2;">
-                        <label>คำอธิบายรางวัล</label>
-                        <input type="text" id="reward_desc" name="description" placeholder="เช่น เสื้อฟุตบอลแท้ 100%" required>
+                        <label>คำอธิบายรางวัล</label><input type="text" id="reward_desc" name="description" placeholder="เช่น เสื้อฟุตบอลแท้ 100%" required>
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>ไอคอน</label>
-                        <input type="text" id="reward_icon" name="icon" placeholder="เช่น 🏆 หรือ 👕" required>
+                        <label>ไอคอน</label><input type="text" id="reward_icon" name="icon" placeholder="เช่น 🏆 หรือ 👕" required>
                     </div>
                     <div class="form-group" style="flex: 0; display: flex; flex-direction: column; gap: 5px;">
                         <button type="submit" id="reward_submit_btn" class="btn btn-info" style="width: 100%; white-space: nowrap;">เพิ่มรางวัล</button>
@@ -299,9 +287,7 @@
                 <table>
                     <thead><tr><th width="15%">อันดับ</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="20%">จัดการ</th></tr></thead>
                     <tbody>
-                        <% if(!rewards || rewards.length === 0) { %>
-                            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr>
-                        <% } %>
+                        <% if(!rewards || rewards.length === 0) { %><tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
                         <% if(rewards) { rewards.forEach(r => { %>
                             <tr>
                                 <td><strong>อันดับที่ <%= r.rank %></strong></td>
@@ -338,23 +324,15 @@
             openTab(activeTab);
         });
 
-        // ฟังก์ชันสลับฟอร์มเพิ่ม/แก้ไขรางวัล
         function editReward(id, rank, desc, icon) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;
             document.getElementById('reward_rank').value = rank;
             document.getElementById('reward_desc').value = desc;
             document.getElementById('reward_icon').value = icon;
-            
-            // เปลี่ยนปุ่มเป็นโหมดแก้ไข
             const submitBtn = document.getElementById('reward_submit_btn');
-            submitBtn.innerText = 'อัปเดตข้อมูล';
-            submitBtn.style.backgroundColor = '#f59e0b';
-            
-            // โชว์ปุ่มยกเลิก
+            submitBtn.innerText = 'อัปเดตข้อมูล'; submitBtn.style.backgroundColor = '#f59e0b';
             document.getElementById('reward_cancel_btn').style.display = 'block';
-            
-            // เลื่อนจอขึ้นไปที่ฟอร์ม
             window.scrollTo({ top: document.getElementById('rewardForm').offsetTop - 50, behavior: 'smooth' });
         }
 
@@ -364,13 +342,8 @@
             document.getElementById('reward_rank').value = '';
             document.getElementById('reward_desc').value = '';
             document.getElementById('reward_icon').value = '';
-            
-            // รีเซ็ตปุ่มกลับเป็นโหมดเพิ่ม
             const submitBtn = document.getElementById('reward_submit_btn');
-            submitBtn.innerText = 'เพิ่มรางวัล';
-            submitBtn.style.backgroundColor = 'var(--info)';
-            
-            // ซ่อนปุ่มยกเลิก
+            submitBtn.innerText = 'เพิ่มรางวัล'; submitBtn.style.backgroundColor = 'var(--info)';
             document.getElementById('reward_cancel_btn').style.display = 'none';
         }
     </script>
