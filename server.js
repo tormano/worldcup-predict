@@ -129,7 +129,7 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // เพิ่มการคำนวณ MP, จำนวนที่ทายผลถูก, สกอร์ถูก และคะแนนแยกตามส่วน
+    // คำนวณ MP, จำนวนที่ทายผลถูก, สกอร์ถูก และคะแนนแยกตามส่วน
     const query = `
         SELECT 
             u.id, 
@@ -285,6 +285,51 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     }
 
     res.redirect('/admin');
+});
+
+// ฟังก์ชันใหม่: คำนวณคะแนนใหม่ทั้งหมด (Recalculate All)
+app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
+    if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
+
+    try {
+        const { rows: finishedMatches } = await pool.query("SELECT * FROM matches WHERE status = 'FINISHED'");
+        const { rows: rules } = await pool.query("SELECT * FROM scoring_rules");
+        
+        for (let match of finishedMatches) {
+            const stageRaw = match.stage ? match.stage.trim().toLowerCase() : '';
+            const rule = rules.find(r => r.stage_id.toLowerCase() === stageRaw || r.stage_name.toLowerCase() === stageRaw);
+            
+            const baseScore = rule ? parseInt(rule.base_score) : 1;
+            const bonusScore = rule ? parseInt(rule.bonus_score) : 2;
+            
+            const actualHome = parseInt(match.home_score);
+            const actualAway = parseInt(match.away_score);
+            const actualResult = actualHome > actualAway ? 'HOME' : (actualHome < actualAway ? 'AWAY' : 'DRAW');
+
+            const { rows: predictions } = await pool.query('SELECT * FROM predictions WHERE match_id = $1', [match.id]);
+            
+            for (let p of predictions) {
+                let earned = 0;
+                if (p.home_predict !== null && p.away_predict !== null) {
+                    const predHome = parseInt(p.home_predict);
+                    const predAway = parseInt(p.away_predict);
+                    const predictResult = predHome > predAway ? 'HOME' : (predHome < predAway ? 'AWAY' : 'DRAW');
+
+                    if (predictResult === actualResult) {
+                        earned += baseScore; 
+                        if (predHome === actualHome && predAway === actualAway) {
+                            earned += bonusScore; 
+                        }
+                    }
+                }
+                await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, match.id]);
+            }
+        }
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Error recalculating scores:', err);
+        res.status(500).send('เกิดข้อผิดพลาดในการคำนวณคะแนนใหม่');
+    }
 });
 
 app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (req, res) => {
