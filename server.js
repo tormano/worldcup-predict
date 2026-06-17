@@ -26,7 +26,7 @@ app.use('/uploads', express.static('uploads'));
 app.use(session({ secret: 'worldcup-secret-key', resave: false, saveUninitialized: true }));
 
 // ==========================================
-// 1. สร้างตารางฐานข้อมูล PostgreSQL (รันอัตโนมัติ)
+// 1. สร้างตารางฐานข้อมูล PostgreSQL
 // ==========================================
 const initDB = async () => {
     try {
@@ -58,19 +58,30 @@ function checkAuth(req, res, next) {
     next();
 }
 
+// ฟังก์ชันแปลงเวลาเป็นเวลาประเทศไทย (UTC+7) เพื่อให้ระบบ Lock ทำงานเป๊ะๆ
+const getThaiTime = () => {
+    const date = new Date();
+    // บังคับให้ดึงเวลาปัจจุบันในโซนเวลาของกรุงเทพฯ
+    const thaiTimeStr = date.toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
+    return new Date(thaiTimeStr);
+};
+
 // ==========================================
 // 2. ROUTING & PAGES
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
 
-    // เพิ่ม p.score_earned เข้าไปใน Query
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
-    const currentTime = new Date();
+    
+    const currentTime = getThaiTime(); // ใช้เวลาปัจจุบันแบบชดเชยเวลาไทย
+    
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
+        
+        // ล็อกผลเมื่อเวลาปัจจุบัน ถึงหรือเลยเวลาเตะแล้ว (0 นาที)
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
-        m.is_locked = currentTime >= new Date(kickOff.getTime() - 5 * 60 * 1000) || m.status !== 'OPEN';
     });
     res.render('index', { user: req.session.user, matches });
 });
@@ -105,14 +116,20 @@ app.post('/change-password', checkAuth, async (req, res) => {
 
 app.post('/predict', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
+    
     const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
-    if (new Date() >= new Date(new Date(match[0].kickoff_time).getTime() - 5 * 60 * 1000) || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้ว');
+    const kickOff = new Date(match[0].kickoff_time);
+    const currentTime = getThaiTime(); // ใช้เวลาไทยตอนรับ Request
+    
+    // ป้องกันการยิง Post Request มาหลังบอลเตะ (0 นาที)
+    if (currentTime >= kickOff || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้วเนื่องจากการแข่งขันเริ่มขึ้นแล้ว');
+    
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
     res.redirect('/');
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // ปรับปรุง Query ให้คำนวณสถิติ MP, จำนวนครั้งที่ทายถูก และคะแนนที่ได้รับแยกตามประเภท
+    // เพิ่มการคำนวณ MP, จำนวนที่ทายผลถูก, สกอร์ถูก และคะแนนแยกตามส่วน
     const query = `
         SELECT 
             u.id, 
@@ -144,20 +161,20 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     res.render('leaderboard', { user: req.session.user, leaderboard });
 });
 
-// ฟีเจอร์ใหม่: ดูหน้าทายผลของเพื่อนแต่ละคน
 app.get('/user/:id/predictions', checkAuth, async (req, res) => {
     const { rows: targetUser } = await pool.query('SELECT id, username, avatar FROM users WHERE id = $1 AND is_admin = 0', [req.params.id]);
     if (targetUser.length === 0) return res.status(404).send('ไม่พบผู้ใช้งานนี้');
 
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.params.id]);
-    const currentTime = new Date();
+    const currentTime = getThaiTime(); // ใช้เวลาไทย
     
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.is_locked = currentTime >= new Date(kickOff.getTime() - 5 * 60 * 1000) || m.status !== 'OPEN';
+        
+        // ล็อกการแสดงผลเมื่อเริ่มแข่ง
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
         
-        // ซ่อนคำทายของเพื่อนหากแมตช์ยังไม่ถูกล็อค (ป้องกันการลอกข้อสอบ)
         if (!m.is_locked && !m.is_published) {
             m.home_predict = null;
             m.away_predict = null;
@@ -186,8 +203,6 @@ app.get('/admin', checkAuth, async (req, res) => {
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
     const { rows: userStats } = await pool.query(`SELECT u.id, u.username, u.avatar, COUNT(p.match_id) as predicted_count FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar`);
     const { rows: allUsers } = await pool.query('SELECT id, username, avatar FROM users WHERE is_admin = 0 ORDER BY username ASC');
-    
-    // [แก้ไขเพิ่มเติม] ส่งข้อมูล user: req.session.user เข้าไปด้วยเพื่อนำข้อมูลโปรไฟล์และปุ่มเมนูแอดมินไปแสดงผลบนหน้าจอ
     res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers });
 });
 
@@ -234,54 +249,38 @@ app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
 app.post('/admin/settle', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
 
-    // 1. แปลงค่าคะแนนให้เป็นตัวเลขเสมอ
     const matchId = parseInt(req.body.match_id);
     const actualHome = parseInt(req.body.home_score);
     const actualAway = parseInt(req.body.away_score);
 
-    // 2. อัปเดตผลสกอร์จริงลงตารางการแข่งขัน
     await pool.query("UPDATE matches SET home_score = $1, away_score = $2, status = 'FINISHED' WHERE id = $3", [actualHome, actualAway, matchId]);
 
-    // 3. ดึงข้อมูลแมตช์ และหากฎคะแนนแบบยืดหยุ่น (ค้นหาจากทั้ง id และ name)
     const { rows: match } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
     const stageRaw = match[0].stage ? match[0].stage.trim() : '';
     
-    const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE stage_id = $1 OR stage_name = $1', [stageRaw]);
+    const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE LOWER(TRIM(stage_id)) = LOWER($1) OR LOWER(TRIM(stage_name)) = LOWER($1)', [stageRaw]);
 
-    // กันเหนียว! ถ้าระบบหากฎคะแนนไม่เจอจริงๆ ให้ใช้ค่า Default: ทายถูก=1, สกอร์เป๊ะ=2
     const baseScore = rule.length > 0 ? parseInt(rule[0].base_score) : 1;
     const bonusScore = rule.length > 0 ? parseInt(rule[0].bonus_score) : 2;
 
-    console.log(`\n👉 [DEBUG] แมตช์ #${matchId} | รอบ: ${stageRaw} | แจกแต้มพื้นฐาน: ${baseScore} | โบนัส: ${bonusScore}`);
-
-    // 4. เริ่มคำนวณหาว่าใครชนะ
     const actualResult = actualHome > actualAway ? 'HOME' : (actualHome < actualAway ? 'AWAY' : 'DRAW');
     
-    // 5. ดึงคำทายของทุกคนมาตรวจ
     const { rows: predictions } = await pool.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
 
     for (let p of predictions) {
         let earned = 0;
-        
-        // เช็คว่าผู้เล่นกรอกตัวเลขทายผลมาครบถ้วน
         if (p.home_predict !== null && p.away_predict !== null) {
             const predHome = parseInt(p.home_predict);
             const predAway = parseInt(p.away_predict);
             const predictResult = predHome > predAway ? 'HOME' : (predHome < predAway ? 'AWAY' : 'DRAW');
 
-            // เงื่อนไขที่ 1: ทายทิศทาง (ชนะ/แพ้/เสมอ) ถูกต้อง
             if (predictResult === actualResult) {
                 earned += baseScore; 
-                
-                // เงื่อนไขที่ 2: ทายสกอร์เป๊ะเวอร์!
                 if (predHome === actualHome && predAway === actualAway) {
                     earned += bonusScore; 
                 }
             }
-            console.log(`- ผู้เล่น ID: ${p.user_id} | ทาย: ${predHome}:${predAway} | ควรได้แต้ม: ${earned}`);
         }
-        
-        // 6. อัปเดตคะแนนที่ได้ลงฐานข้อมูล
         await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, matchId]);
     }
 
