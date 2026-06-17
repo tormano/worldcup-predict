@@ -35,6 +35,7 @@ const initDB = async () => {
             CREATE TABLE IF NOT EXISTS matches (id SERIAL PRIMARY KEY, stage VARCHAR(50), home_team VARCHAR(100), away_team VARCHAR(100), kickoff_time TIMESTAMP, home_score INTEGER, away_score INTEGER, status VARCHAR(20) DEFAULT 'OPEN', is_published INTEGER DEFAULT 0);
             CREATE TABLE IF NOT EXISTS predictions (user_id INTEGER, match_id INTEGER, home_predict INTEGER, away_predict INTEGER, score_earned INTEGER DEFAULT 0, PRIMARY KEY (user_id, match_id));
             CREATE TABLE IF NOT EXISTS scoring_rules (stage_id VARCHAR(50) PRIMARY KEY, stage_name VARCHAR(100), base_score INTEGER DEFAULT 0, bonus_score INTEGER DEFAULT 0, display_order INTEGER);
+            CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT);
         `);
 
         const adminCheck = await pool.query('SELECT COUNT(*) as count FROM users WHERE username = $1', ['admin']);
@@ -58,10 +59,8 @@ function checkAuth(req, res, next) {
     next();
 }
 
-// ฟังก์ชันแปลงเวลาเป็นเวลาประเทศไทย (UTC+7) เพื่อให้ระบบ Lock ทำงานเป๊ะๆ
 const getThaiTime = () => {
     const date = new Date();
-    // บังคับให้ดึงเวลาปัจจุบันในโซนเวลาของกรุงเทพฯ
     const thaiTimeStr = date.toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
     return new Date(thaiTimeStr);
 };
@@ -74,12 +73,10 @@ app.get('/', checkAuth, async (req, res) => {
 
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     
-    const currentTime = getThaiTime(); // ใช้เวลาปัจจุบันแบบชดเชยเวลาไทย
+    const currentTime = getThaiTime(); 
     
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        
-        // ล็อกผลเมื่อเวลาปัจจุบัน ถึงหรือเลยเวลาเตะแล้ว (0 นาที)
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
@@ -119,9 +116,8 @@ app.post('/predict', checkAuth, async (req, res) => {
     
     const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
     const kickOff = new Date(match[0].kickoff_time);
-    const currentTime = getThaiTime(); // ใช้เวลาไทยตอนรับ Request
+    const currentTime = getThaiTime(); 
     
-    // ป้องกันการยิง Post Request มาหลังบอลเตะ (0 นาที)
     if (currentTime >= kickOff || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้วเนื่องจากการแข่งขันเริ่มขึ้นแล้ว');
     
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
@@ -129,7 +125,6 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // คำนวณ MP, จำนวนที่ทายผลถูก, สกอร์ถูก และคะแนนแยกตามส่วน
     const query = `
         SELECT 
             u.id, 
@@ -158,7 +153,9 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
         ORDER BY total_score DESC, exact_score_count DESC, correct_result_count DESC
     `;
     const { rows: leaderboard } = await pool.query(query);
-    res.render('leaderboard', { user: req.session.user, leaderboard });
+    const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
+    
+    res.render('leaderboard', { user: req.session.user, leaderboard, rewards });
 });
 
 app.get('/user/:id/predictions', checkAuth, async (req, res) => {
@@ -166,12 +163,10 @@ app.get('/user/:id/predictions', checkAuth, async (req, res) => {
     if (targetUser.length === 0) return res.status(404).send('ไม่พบผู้ใช้งานนี้');
 
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.params.id]);
-    const currentTime = getThaiTime(); // ใช้เวลาไทย
+    const currentTime = getThaiTime(); 
     
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        
-        // ล็อกการแสดงผลเมื่อเริ่มแข่ง
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
         
@@ -203,7 +198,9 @@ app.get('/admin', checkAuth, async (req, res) => {
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
     const { rows: userStats } = await pool.query(`SELECT u.id, u.username, u.avatar, COUNT(p.match_id) as predicted_count FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar`);
     const { rows: allUsers } = await pool.query('SELECT id, username, avatar FROM users WHERE is_admin = 0 ORDER BY username ASC');
-    res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers });
+    const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
+
+    res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers, rewards });
 });
 
 app.post('/admin/delete-user', checkAuth, async (req, res) => {
@@ -287,7 +284,6 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
-// ฟังก์ชันใหม่: คำนวณคะแนนใหม่ทั้งหมด (Recalculate All)
 app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
 
@@ -330,6 +326,20 @@ app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
         console.error('Error recalculating scores:', err);
         res.status(500).send('เกิดข้อผิดพลาดในการคำนวณคะแนนใหม่');
     }
+});
+
+// ฟังก์ชันสำหรับเพิ่มและลบของรางวัล
+app.post('/admin/add-reward', checkAuth, async (req, res) => {
+    if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
+    const { rank, description, icon } = req.body;
+    await pool.query('INSERT INTO rewards (rank, description, icon) VALUES ($1, $2, $3)', [parseInt(rank), description, icon]);
+    res.redirect('/admin');
+});
+
+app.post('/admin/delete-reward', checkAuth, async (req, res) => {
+    if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
+    await pool.query('DELETE FROM rewards WHERE id = $1', [req.body.reward_id]);
+    res.redirect('/admin');
 });
 
 app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (req, res) => {
