@@ -12,7 +12,7 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// เปลี่ยนเป็นการเก็บใน Memory เพื่อแปลงเป็น Base64 (แก้ปัญหารูปหายในโฮสฟรี)
+// เก็บไฟล์ใน Memory เพื่อแปลงเป็น Base64
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(session({ secret: 'worldcup-secret-key', resave: false, saveUninitialized: true }));
 
 // ==========================================
-// 1. สร้างและอัปเดตตารางฐานข้อมูล
+// 1. สร้างตารางฐานข้อมูล PostgreSQL
 // ==========================================
 const initDB = async () => {
     try {
@@ -37,8 +37,7 @@ const initDB = async () => {
             CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT);
         `);
 
-        // พยายามเพิ่มคอลัมน์ is_hidden ในกรณีที่เคยสร้างตารางไปแล้ว (เพื่อป้องกัน Error)
-        try { await pool.query('ALTER TABLE users ADD COLUMN is_hidden INTEGER DEFAULT 0;'); } catch (e) { /* คอลัมน์มีอยู่แล้ว */ }
+        try { await pool.query('ALTER TABLE users ADD COLUMN is_hidden INTEGER DEFAULT 0;'); } catch (e) {}
 
         const adminCheck = await pool.query('SELECT COUNT(*) as count FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows[0].count == 0) {
@@ -69,14 +68,12 @@ const getThaiTime = () => {
 };
 
 // ==========================================
-// 2. ROUTING & PAGES (USER)
+// 2. ROUTING & PAGES
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
-
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     const currentTime = getThaiTime(); 
-    
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
@@ -112,7 +109,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// ฟังก์ชันอัปเดตรูปโปรไฟล์ด้วย Base64 (ผู้เล่นแก้เอง)
+// ฟังก์ชันอัปเดตรูปโปรไฟล์ (ผู้ใช้เปลี่ยนเอง)
 app.post('/update-avatar', checkAuth, upload.single('avatar'), async (req, res) => {
     if (req.file) {
         const base64Image = req.file.buffer.toString('base64');
@@ -143,7 +140,6 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // โชว์เฉพาะคนที่ is_hidden = 0 (ไม่ได้โดนแอดมินซ่อน)
     const query = `
         SELECT u.id, u.username, u.avatar,
             COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
@@ -163,6 +159,43 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     const { rows: leaderboard } = await pool.query(query);
     const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
     res.render('leaderboard', { user: req.session.user, leaderboard, rewards });
+});
+
+app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
+    const userQuery = `
+        SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score
+        FROM users u 
+        LEFT JOIN predictions p ON u.id = p.user_id 
+        LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+        WHERE u.is_admin = 0 AND u.is_hidden = 0
+        GROUP BY u.id, u.username, u.avatar
+        ORDER BY total_score DESC, u.username ASC
+    `;
+    const { rows: users } = await pool.query(userQuery);
+
+    const matchQuery = `
+        SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name
+        FROM matches m
+        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+        WHERE m.status = 'FINISHED'
+        ORDER BY m.kickoff_time DESC
+    `;
+    const { rows: matches } = await pool.query(matchQuery);
+
+    const { rows: predictions } = await pool.query(`
+        SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned
+        FROM predictions p
+        JOIN matches m ON p.match_id = m.id
+        WHERE m.status = 'FINISHED'
+    `);
+
+    const predMap = {};
+    predictions.forEach(p => {
+        if (!predMap[p.match_id]) predMap[p.match_id] = {};
+        predMap[p.match_id][p.user_id] = p;
+    });
+
+    res.render('leaderboard-detailed', { user: req.session.user, users, matches, predMap });
 });
 
 app.get('/user/:id/predictions', checkAuth, async (req, res) => {
@@ -196,10 +229,8 @@ app.get('/admin', checkAuth, async (req, res) => {
     const { rows: matches } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC');
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
     const { rows: userStats } = await pool.query(`SELECT u.id, u.username, u.avatar, COUNT(p.match_id) as predicted_count FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar`);
-    // ดึงค่า is_hidden มาด้วยเพื่อใช้ปุ่มซ่อน/แสดง
     const { rows: allUsers } = await pool.query('SELECT id, username, avatar, is_hidden FROM users WHERE is_admin = 0 ORDER BY username ASC');
     const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
-
     res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers, rewards });
 });
 
@@ -255,14 +286,16 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     const actualHome = parseInt(req.body.home_score);
     const actualAway = parseInt(req.body.away_score);
     await pool.query("UPDATE matches SET home_score = $1, away_score = $2, status = 'FINISHED' WHERE id = $3", [actualHome, actualAway, matchId]);
+    
     const { rows: match } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
     const stageRaw = match[0].stage ? match[0].stage.trim() : '';
     const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE LOWER(TRIM(stage_id)) = LOWER($1) OR LOWER(TRIM(stage_name)) = LOWER($1)', [stageRaw]);
+    
     const baseScore = rule.length > 0 ? parseInt(rule[0].base_score) : 1;
     const bonusScore = rule.length > 0 ? parseInt(rule[0].bonus_score) : 2;
     const actualResult = actualHome > actualAway ? 'HOME' : (actualHome < actualAway ? 'AWAY' : 'DRAW');
+    
     const { rows: predictions } = await pool.query('SELECT * FROM predictions WHERE match_id = $1', [matchId]);
-
     for (let p of predictions) {
         let earned = 0;
         if (p.home_predict !== null && p.away_predict !== null) {
@@ -311,29 +344,29 @@ app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
     } catch (err) { res.status(500).send('เกิดข้อผิดพลาดในการคำนวณคะแนนใหม่'); }
 });
 
-// รางวัล
 app.post('/admin/add-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     await pool.query('INSERT INTO rewards (rank, description, icon) VALUES ($1, $2, $3)', [parseInt(req.body.rank), req.body.description, req.body.icon]);
     res.redirect('/admin');
 });
+
 app.post('/admin/edit-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     await pool.query('UPDATE rewards SET rank = $1, description = $2, icon = $3 WHERE id = $4', [parseInt(req.body.rank), req.body.description, req.body.icon, req.body.reward_id]);
     res.redirect('/admin');
 });
+
 app.post('/admin/delete-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     await pool.query('DELETE FROM rewards WHERE id = $1', [req.body.reward_id]);
     res.redirect('/admin');
 });
 
-// นำเข้าข้อมูล
 app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     if (!req.file) return res.redirect('/admin');
     try {
-        const fileContent = req.file.buffer.toString('utf8'); // แก้เป็น buffer
+        const fileContent = req.file.buffer.toString('utf8');
         const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',');
@@ -342,11 +375,12 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
         res.redirect('/admin');
     } catch (err) { res.status(500).send('เกิดข้อผิดพลาดในการนำเข้า'); }
 });
+
 app.post('/admin/import-predictions', checkAuth, upload.single('csv_file'), async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     if (!req.file) return res.redirect('/admin');
     try {
-        const fileContent = req.file.buffer.toString('utf8'); // แก้เป็น buffer
+        const fileContent = req.file.buffer.toString('utf8');
         const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',');
