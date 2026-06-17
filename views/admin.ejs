@@ -67,6 +67,7 @@
 <body>
     <div class="container">
         
+        <!-- แถบเมนูด้านบนเวอร์ชัน Admin -->
         <div class="admin-header-card">
             <div class="admin-info">
                 <img src="<%= user.avatar %>" alt="Admin Avatar">
@@ -87,6 +88,7 @@
             <button class="tab-btn" onclick="openTab('tab-settings')" id="btn-tab-settings">⚙️ ตั้งค่า & นำเข้าข้อมูล</button>
         </div>
 
+        <!-- ================= TAB 1: จัดการผู้เล่น ================= -->
         <div id="tab-users" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">📊</span><h3>สถานะการทายผลของผู้เล่น (ทายแล้ว / ทั้งหมด <%= totalMatches %> คู่)</h3></div>
@@ -136,6 +138,7 @@
             </div>
         </div>
 
+        <!-- ================= TAB 2: ตารางแข่งขัน & จัดการสกอร์ ================= -->
         <div id="tab-matches" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">➕</span><h3>เพิ่มแมตช์การแข่งขันใหม่ (ทีละคู่)</h3></div>
@@ -158,7 +161,9 @@
                         if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
                         groupedMatches[dateStr].push(m);
                     });
-                    const dates = Object.keys(groupedMatches).sort();
+                    
+                    // ปรับให้จัดเรียงวันที่จาก ล่าสุด -> เก่าสุด (ใช้ .reverse())
+                    const dates = Object.keys(groupedMatches).sort().reverse();
                 %>
 
                 <% if(dates.length === 0) { %>
@@ -214,6 +219,7 @@
             </div>
         </div>
 
+        <!-- ================= TAB 3: ตั้งค่า & นำเข้าข้อมูล ================= -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.5rem;">🎯</span><h3>ตั้งค่าคะแนนการทายผล</h3></div>
