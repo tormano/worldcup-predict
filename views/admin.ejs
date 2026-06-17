@@ -152,7 +152,14 @@
             </div>
 
             <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
-                <div class="card-header" style="background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border);"><span style="font-size: 1.5rem;">📋</span><h3 style="margin:0;">ตารางแข่งขัน, กรอกสกอร์ และเปิดให้ดูคำทาย</h3></div>
+                <div class="card-header" style="background: var(--surface); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">📋</span><h3 style="margin:0;">ตารางแข่งขัน, กรอกสกอร์ และเปิดให้ดูคำทาย</h3>
+                    </div>
+                    <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมดสำหรับแมตช์ที่แข่งจบแล้ว ยืนยันหรือไม่? (อาจใช้เวลาสักครู่)');">
+                        <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่ทั้งหมด</button>
+                    </form>
+                </div>
                 
                 <% 
                     const groupedMatches = {};
