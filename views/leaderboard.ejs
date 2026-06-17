@@ -35,6 +35,7 @@
         
         .reward-item { display: inline-flex; align-items: center; gap: 10px; background: #fffbeb; padding: 6px 16px 6px 8px; border-radius: 50px; border: 1px solid #fde68a; font-weight: 500; color: #b45309; white-space: nowrap; }
         .reward-icon { font-size: 1.4rem; background: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn { padding: 8px 16px; border-radius: 8px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; color: white; border: none; }
     </style>
 </head>
 <body>
@@ -47,7 +48,12 @@
         
         <div class="card">
             <h2>📊 ตารางคะแนนรวมแก๊งสุดแม่น</h2>
-            <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: -20px; margin-bottom: 25px;">💡 สามารถคลิกที่ชื่อผู้เล่นเพื่อดูรายละเอียดโพยการทายผลได้</p>
+            <div style="text-align: center; margin-top: -20px; margin-bottom: 25px;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">💡 สามารถคลิกที่ชื่อผู้เล่นเพื่อดูรายละเอียดโพยการทายผลได้</p>
+                <a href="/leaderboard/detailed" class="btn" style="background-color: #8b5cf6; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+                    <span>🔍</span> ดูตารางคะแนนแบบละเอียด (เทียบรายคน)
+                </a>
+            </div>
             
             <% 
                 const rewardMap = {};

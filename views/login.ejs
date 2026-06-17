@@ -8,52 +8,37 @@
     <style>
         :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --primary: #2563eb; --primary-hover: #1d4ed8; --border: #e2e8f0; }
         body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
-        
-        /* สไตล์สำหรับกล่องแบนเนอร์ */
         .banner-container { width: 100%; max-width: 900px; text-align: center; margin-bottom: 30px; }
         .banner-container img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        
         .auth-container { display: flex; gap: 30px; max-width: 900px; width: 100%; flex-wrap: wrap; }
         .auth-card { background: var(--surface); padding: 40px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex: 1; min-width: 300px; border: 1px solid var(--border); }
         .auth-card h2 { text-align: center; margin-top: 0; margin-bottom: 30px; font-size: 1.5rem; }
-        
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #475569; }
         .form-group input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; box-sizing: border-box; background-color: #f8fafc; transition: 0.2s;}
         .form-group input:focus { outline: none; border-color: var(--primary); background-color: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);}
-        
         .btn { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-family: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .btn:hover { background-color: var(--primary-hover); }
         .btn-dark { background-color: #0f172a; } .btn-dark:hover { background-color: #1e293b; }
-        
         .alert { background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px; font-weight: 500; border: 1px solid #f87171;}
         .alert-success { background: #dcfce7; color: #15803d; border-color: #86efac; }
     </style>
 </head>
 <body>
-
     <div class="banner-container">
         <img src="https://c7.alamy.com/comp/3DATF7E/2026-soccer-world-cup-blue-modern-banner-3DATF7E.jpg" alt="2026 Football World Cup Banner">
     </div>
 
     <% if (msg) { %>
-        <div class="alert <%= msg.includes('สำเร็จ') ? 'alert-success' : '' %>" style="max-width: 900px; width: 100%; box-sizing: border-box;">
-            <%= msg %>
-        </div>
+        <div class="alert <%= msg.includes('สำเร็จ') ? 'alert-success' : '' %>" style="max-width: 900px; width: 100%; box-sizing: border-box;"><%= msg %></div>
     <% } %>
 
     <div class="auth-container">
         <div class="auth-card">
             <h2>👋 เข้าสู่ระบบ</h2>
             <form action="/login" method="POST">
-                <div class="form-group">
-                    <label>ชื่อผู้ใช้งาน (Username)</label>
-                    <input type="text" name="username" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label>รหัสผ่าน (Password)</label>
-                    <input type="password" name="password" required>
-                </div>
+                <div class="form-group"><label>ชื่อผู้ใช้งาน (Username)</label><input type="text" name="username" required autocomplete="off"></div>
+                <div class="form-group"><label>รหัสผ่าน (Password)</label><input type="password" name="password" required></div>
                 <button type="submit" class="btn">เข้าสู่ระบบ</button>
             </form>
         </div>
@@ -61,22 +46,12 @@
         <div class="auth-card">
             <h2>✨ สมัครสมาชิกใหม่</h2>
             <form action="/register" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>ชื่อผู้ใช้งาน (Username)</label>
-                    <input type="text" name="username" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label>ตั้งรหัสผ่าน (Password)</label>
-                    <input type="password" name="password" required minlength="6">
-                </div>
-                <div class="form-group">
-                    <label>รูปภาพแทนตัว (Avatar)</label>
-                    <input type="file" name="avatar" accept="image/*" style="background-color: #fff; padding: 8px;">
-                </div>
+                <div class="form-group"><label>ชื่อผู้ใช้งาน (Username)</label><input type="text" name="username" required autocomplete="off"></div>
+                <div class="form-group"><label>ตั้งรหัสผ่าน (Password)</label><input type="password" name="password" required minlength="6"></div>
+                <div class="form-group"><label>รูปภาพแทนตัว (Avatar)</label><input type="file" name="avatar" accept="image/*" style="background-color: #fff; padding: 8px;"></div>
                 <button type="submit" class="btn btn-dark">สมัครสมาชิก</button>
             </form>
         </div>
     </div>
-
 </body>
 </html>
