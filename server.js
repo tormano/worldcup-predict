@@ -112,8 +112,35 @@ app.post('/predict', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard', checkAuth, async (req, res) => {
-    // ดึง u.id ออกมาด้วยเพื่อใช้ทำลิงก์
-    const { rows: leaderboard } = await pool.query(`SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC`);
+    // ปรับปรุง Query ให้คำนวณสถิติ MP, จำนวนครั้งที่ทายถูก และคะแนนที่ได้รับแยกตามประเภท
+    const query = `
+        SELECT 
+            u.id, 
+            u.username, 
+            u.avatar,
+            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
+            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND (
+                (p.home_predict > p.away_predict AND m.home_score > m.away_score) OR
+                (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR
+                (p.home_predict = p.away_predict AND m.home_score = m.away_score)
+            ) THEN 1 ELSE 0 END), 0) as correct_result_count,
+            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND (
+                (p.home_predict > p.away_predict AND m.home_score > m.away_score) OR
+                (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR
+                (p.home_predict = p.away_predict AND m.home_score = m.away_score)
+            ) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score,
+            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN 1 ELSE 0 END), 0) as exact_score_count,
+            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+            COALESCE(SUM(p.score_earned), 0) as total_score
+        FROM users u 
+        LEFT JOIN predictions p ON u.id = p.user_id 
+        LEFT JOIN matches m ON p.match_id = m.id
+        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+        WHERE u.is_admin = 0 
+        GROUP BY u.id, u.username, u.avatar 
+        ORDER BY total_score DESC, exact_score_count DESC, correct_result_count DESC
+    `;
+    const { rows: leaderboard } = await pool.query(query);
     res.render('leaderboard', { user: req.session.user, leaderboard });
 });
 
