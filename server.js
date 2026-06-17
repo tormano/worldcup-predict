@@ -12,17 +12,16 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => cb(null, 'file-' + Date.now() + path.extname(file.originalname))
+// เปลี่ยนการเก็บไฟล์จากโฟลเดอร์ เป็นการเก็บใน Memory เพื่อแปลงเป็น Base64
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // จำกัดขนาดรูปไม่เกิน 5MB ป้องกัน DB เต็ม
 });
-const upload = multer({ storage: storage });
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 app.use(session({ secret: 'worldcup-secret-key', resave: false, saveUninitialized: true }));
 
 // ==========================================
@@ -40,7 +39,9 @@ const initDB = async () => {
 
         const adminCheck = await pool.query('SELECT COUNT(*) as count FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows[0].count == 0) {
-            await pool.query('INSERT INTO users (username, password, avatar, is_admin) VALUES ($1, $2, $3, $4)', ['admin', bcrypt.hashSync('password123', 10), '/uploads/default.png', 1]);
+            // ใช้ URL รูปโปรไฟล์อัตโนมัติสำหรับ Admin แทนไฟล์ Local
+            const defaultAdminAvatar = 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff&size=150';
+            await pool.query('INSERT INTO users (username, password, avatar, is_admin) VALUES ($1, $2, $3, $4)', ['admin', bcrypt.hashSync('password123', 10), defaultAdminAvatar, 1]);
         }
 
         const ruleCheck = await pool.query('SELECT COUNT(*) as count FROM scoring_rules');
@@ -84,11 +85,24 @@ app.get('/', checkAuth, async (req, res) => {
 });
 
 app.get('/login', (req, res) => res.render('login', { msg: null }));
+
+// อัปเดตระบบสมัครสมาชิก: แปลงรูปเป็น Base64 หรือใช้รูป Auto-generate
 app.post('/register', upload.single('avatar'), async (req, res) => {
     try {
-        await pool.query('INSERT INTO users (username, password, avatar) VALUES ($1, $2, $3)', [req.body.username, bcrypt.hashSync(req.body.password, 10), req.file ? '/uploads/' + req.file.filename : '/uploads/default.png']);
+        let avatarData = `https://ui-avatars.com/api/?name=${encodeURIComponent(req.body.username)}&background=random&size=150`; // รูปเริ่มต้นถ้าไม่ได้อัปโหลด
+        
+        if (req.file) {
+            // แปลงไฟล์รูปภาพเป็น Base64 String เพื่อเก็บลง Database โดยตรง
+            const base64Image = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype;
+            avatarData = `data:${mimeType};base64,${base64Image}`;
+        }
+
+        await pool.query('INSERT INTO users (username, password, avatar) VALUES ($1, $2, $3)', [req.body.username, bcrypt.hashSync(req.body.password, 10), avatarData]);
         res.render('login', { msg: 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ' });
-    } catch (err) { res.render('login', { msg: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว หรือเกิดข้อผิดพลาด' }); }
+    } catch (err) { 
+        res.render('login', { msg: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว หรือเกิดข้อผิดพลาด' }); 
+    }
 });
 
 app.post('/login', async (req, res) => {
@@ -328,11 +342,18 @@ app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
     }
 });
 
-// ฟังก์ชันสำหรับเพิ่มและลบของรางวัล
+// ฟังก์ชันสำหรับเพิ่ม ลบ และ แก้ไขของรางวัล
 app.post('/admin/add-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     const { rank, description, icon } = req.body;
     await pool.query('INSERT INTO rewards (rank, description, icon) VALUES ($1, $2, $3)', [parseInt(rank), description, icon]);
+    res.redirect('/admin');
+});
+
+app.post('/admin/edit-reward', checkAuth, async (req, res) => {
+    if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
+    const { reward_id, rank, description, icon } = req.body;
+    await pool.query('UPDATE rewards SET rank = $1, description = $2, icon = $3 WHERE id = $4', [parseInt(rank), description, icon, reward_id]);
     res.redirect('/admin');
 });
 
@@ -352,7 +373,7 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
             const cols = lines[i].split(',');
             if (cols.length >= 4) await pool.query('INSERT INTO matches (stage, home_team, away_team, kickoff_time) VALUES ($1, $2, $3, $4)', [cols[0].trim(), cols[1].trim(), cols[2].trim(), cols[3].trim()]);
         }
-        fs.unlinkSync(req.file.path); res.redirect('/admin');
+        res.redirect('/admin');
     } catch (err) { res.status(500).send('เกิดข้อผิดพลาดในการนำเข้า'); }
 });
 
@@ -371,7 +392,7 @@ app.post('/admin/import-predictions', checkAuth, upload.single('csv_file'), asyn
                 }
             }
         }
-        fs.unlinkSync(req.file.path); res.redirect('/admin');
+        res.redirect('/admin');
     } catch (err) { res.status(500).send('เกิดข้อผิดพลาดในการนำเข้า'); }
 });
 
