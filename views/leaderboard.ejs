@@ -8,24 +8,34 @@
     <style>
         :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --border: #e2e8f0; --primary: #2563eb; }
         body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        /* ขยายความกว้างกล่องให้กว้างขึ้นเพื่อรองรับคอลัมน์เยอะๆ */
+        .container { max-width: 1100px; margin: 0 auto; } 
         
         .top-nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .nav-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 1.05rem; }
         .nav-link:hover { text-decoration: underline; }
         .logout-link { color: #ef4444; }
         
-        .card { background: var(--surface); border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border); }
+        .card { background: var(--surface); border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border); overflow-x: auto; }
         .card h2 { margin-top: 0; text-align: center; color: var(--text); margin-bottom: 30px; font-size: 1.8rem; }
         
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 16px 12px; text-align: center; border-bottom: 1px solid var(--border); }
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); }
+        /* ให้ชื่อผู้เล่นชิดซ้าย ส่วนตัวเลขจัดกึ่งกลาง */
+        td:nth-child(2), th:nth-child(2) { text-align: left; } 
         
-        .rank-cell { font-size: 1.2rem; font-weight: 700; width: 80px; text-align: center; }
+        .rank-cell { font-size: 1.2rem; font-weight: 700; width: 60px; }
         .user-cell { display: flex; align-items: center; gap: 15px; font-weight: 500; font-size: 1.1rem; }
         .user-cell img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
-        .score-cell { font-size: 1.2rem; font-weight: 700; color: var(--primary); text-align: right; padding-right: 30px; }
+        
+        /* ตกแต่งสีสันให้ตัวเลขคอลัมน์สถิติ */
+        .stat-number { font-weight: 600; color: #334155; }
+        .stat-score { font-weight: 600; color: #10b981; }
+        .score-cell { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        
+        /* Tooltip แบบพื้นฐานด้วย Title Attribute */
+        .tooltip-header { cursor: help; border-bottom: 1px dotted var(--text-muted); padding-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -47,14 +57,19 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="text-align: center;">อันดับ</th>
+                        <th>อันดับ</th>
                         <th>ผู้เล่น</th>
+                        <th><span class="tooltip-header" title="จำนวนนัดที่ยืนยันผลแล้ว (Match Played)">MP ℹ️</span></th>
+                        <th title="จำนวนนัดที่ทายแพ้-ชนะ-เสมอถูก">ทายผลถูก</th>
+                        <th title="คะแนนที่ได้จากการทายทิศทางถูก">คะแนนทายผลถูก</th>
+                        <th title="จำนวนนัดที่ทายสกอร์เป๊ะ">ทายสกอร์ถูก</th>
+                        <th title="คะแนนที่ได้จากโบนัสสกอร์เป๊ะ">คะแนนทายสกอร์ถูก</th>
                         <th style="text-align: right; padding-right: 30px;">คะแนนรวมทั้งหมด</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if(leaderboard.length === 0) { %>
-                        <tr><td colspan="3" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr>
+                        <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr>
                     <% } %>
                     <% leaderboard.forEach((row, index) => { %>
                         <tr style="cursor: pointer; transition: background 0.2s;" onclick="window.location.href='/user/<%= row.id %>/predictions'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='transparent'">
@@ -70,7 +85,12 @@
                                     <span style="color: var(--primary); font-weight: 600;"><%= row.username %></span>
                                 </div>
                             </td>
-                            <td class="score-cell"><%= row.total_score || 0 %> แต้ม</td>
+                            <td class="stat-number"><%= row.mp %></td>
+                            <td class="stat-number"><%= row.correct_result_count %></td>
+                            <td class="stat-score">+<%= row.correct_result_score %></td>
+                            <td class="stat-number"><%= row.exact_score_count %></td>
+                            <td class="stat-score">+<%= row.exact_score_score %></td>
+                            <td class="score-cell" style="text-align: right; padding-right: 30px;"><%= row.total_score || 0 %> แต้ม</td>
                         </tr>
                     <% }) %>
                 </tbody>
