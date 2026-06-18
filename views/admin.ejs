@@ -86,16 +86,27 @@
         <!-- TAB 1: จัดการผู้เล่น -->
         <div id="tab-users" class="tab-content">
             <div class="card">
-                <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น</h3></div>
+                <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น (ประจำวัน)</h3></div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">
+                    รอบการแข่งขัน: <strong style="color: var(--primary);"><%= matchDayText %></strong>
+                </p>
                 <table>
-                    <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว</th><th>สถานะ</th></tr></thead>
+                    <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว (ของวันนี้)</th><th>สถานะ</th></tr></thead>
                     <tbody>
                         <% if(userStats.length === 0) { %><tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 15px;">ยังไม่มีผู้เล่น</td></tr><% } %>
                         <% userStats.forEach(u => { %>
                             <tr>
                                 <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
-                                <td><strong><%= u.predicted_count %></strong> / <%= totalMatches %> คู่</td>
-                                <td><% if(u.predicted_count >= totalMatches && totalMatches > 0) { %> <span class="badge" style="background: #10b981; color: white;">✅ Completed</span> <% } else { %> <span class="badge badge-warning">⏳ Pending</span> <% } %></td>
+                                <td><strong><%= u.predicted_count %></strong> / <%= activeTotalMatches %> คู่</td>
+                                <td>
+                                    <% if(u.predicted_count >= activeTotalMatches && activeTotalMatches > 0) { %> 
+                                        <span class="badge" style="background: #10b981; color: white;">✅ ครบแล้ว</span> 
+                                    <% } else if (activeTotalMatches > 0) { %> 
+                                        <span class="badge badge-warning">⏳ รอทายผล</span> 
+                                    <% } else { %>
+                                        <span class="badge" style="background: #e2e8f0; color: #64748b;">- ไม่มีเตะ -</span>
+                                    <% } %>
+                                </td>
                             </tr>
                         <% }) %>
                     </tbody>
