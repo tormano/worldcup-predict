@@ -169,25 +169,48 @@
 
             <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
                 <div class="card-header" style="background: var(--surface); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่</h3></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่ (แยกตาม Match Day)</h3></div>
                     <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมด ยืนยันหรือไม่?');">
                         <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่</button>
                     </form>
                 </div>
                 
                 <% 
+                    // ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
+                    const getMatchDayInfo = (kickoffStr) => {
+                        const [datePart, timePart] = kickoffStr.split(' ');
+                        const [year, month, day] = datePart.split('-').map(Number);
+                        const [hour] = timePart.split(':').map(Number);
+                        
+                        let startDay = new Date(year, month - 1, day, 12, 0, 0);
+                        if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+                        
+                        let endDay = new Date(startDay);
+                        endDay.setDate(endDay.getDate() + 1);
+                        
+                        const pad = n => n.toString().padStart(2, '0');
+                        return {
+                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
+                            displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
+                        };
+                    };
+
                     const groupedMatches = {};
+                    const groupLabels = {};
                     matches.forEach(m => {
-                        const dateStr = m.kickoff_time.substring(0, 10);
-                        if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
-                        groupedMatches[dateStr].push(m);
+                        const info = getMatchDayInfo(m.kickoff_time);
+                        if(!groupedMatches[info.sortKey]) {
+                            groupedMatches[info.sortKey] = [];
+                            groupLabels[info.sortKey] = info.displayLabel;
+                        }
+                        groupedMatches[info.sortKey].push(m);
                     });
                     const dates = Object.keys(groupedMatches).sort().reverse();
                 %>
                 <% if(dates.length === 0) { %><div style="text-align: center; padding: 30px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
                     <% dates.forEach(date => { %>
                         <details class="date-group" open>
-                            <summary class="date-header">📅 วันที่ <%= date %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
+                            <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
                                     <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
