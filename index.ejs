@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทายผลบอลโลก World Cup 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #2563eb; --primary-hover: #1d4ed8; --border: #e2e8f0; }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; font-size: 0.9rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; background: #fff; transition: transform 0.2s; }
+        .user-info img:hover { transform: scale(1.05); }
+        .user-info h3 { margin: 0; font-size: 1.1rem; }
+        .user-info p { margin: 0; color: #94a3b8; font-size: 0.85rem; }
+        .nav-links a { color: white; text-decoration: none; font-weight: 500; margin-left: 15px; transition: color 0.2s; font-size: 0.9rem; }
+        .nav-links a:hover { color: #38bdf8; } .nav-links a.admin-link { color: #86efac; } .nav-links a.logout-link { color: #fca5a5; }
+        
+        .card-title { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; background: var(--surface); padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border);}
+        .card-title h2 { margin: 0; color: var(--text); font-size: 1.3rem; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
+        .team-name { font-weight: 600; font-size: 0.95rem; }
+        .vs { color: var(--text-muted); margin: 0 6px; font-size: 0.85rem; }
+        input[type="number"] { width: 50px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-family: inherit; font-size: 0.95rem; transition: 0.2s; }
+        input[type="number"]:focus { outline: none; border-color: var(--primary); }
+        input[readonly] { background-color: #f1f5f9; color: #334155; font-weight: 600; border-color: transparent; cursor: default; }
+        input[readonly]:focus { outline: none; border-color: transparent; }
+        input:disabled { background-color: #e2e8f0; color: #94a3b8; cursor: not-allowed; border-color: transparent; }
+        
+        .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.9rem;}
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-view { background-color: #10b981; } .btn-view:hover { background-color: #059669; }
+        .btn-edit { background-color: #f59e0b; } .btn-edit:hover { background-color: #d97706; }
+        
+        .locked-badge { color: #94a3b8; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+
+        .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05); }
+        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.05rem; color: var(--primary); transition: background 0.2s; }
+        .date-header:hover { background: #f1f5f9; }
+        .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
+        .date-content table { margin-bottom: 0; border-style: hidden; }
+        .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-box { background: var(--surface); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- แบนเนอร์ -->
+        <div style="width: 100%; text-align: center; margin-bottom: 20px;">
+            <img src="https://c7.alamy.com/comp/3DATF7E/2026-soccer-world-cup-blue-modern-banner-3DATF7E.jpg" alt="Banner" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+        </div>
+
+        <div class="header-card">
+            <div class="user-info">
+                <img src="<%= user.avatar %>" alt="Avatar" onclick="document.getElementById('avatarUpload').click()" style="cursor: pointer; position: relative;" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+                <form id="avatarForm" action="/update-avatar" method="POST" enctype="multipart/form-data" style="display: none;">
+                    <input type="file" id="avatarUpload" name="avatar" accept="image/*" onchange="document.getElementById('avatarForm').submit()">
+                </form>
+                <div>
+                    <p>ยินดีต้อนรับ</p>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3><%= user.username %></h3>
+                        <span style="font-size: 0.75rem; background: var(--border); padding: 2px 6px; border-radius: 8px; color: var(--text-muted); cursor: pointer;" onclick="document.getElementById('avatarUpload').click()">✏️ เปลี่ยนรูป</span>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="/leaderboard">📊 ตารางคะแนนรวม</a>
+                <% if(user.is_admin) { %> <a href="/admin" class="admin-link">⚙️ แผงควบคุม</a> <% } %>
+                <a href="/logout" class="logout-link">ออกจากระบบ</a>
+            </div>
+        </div>
+
+        <div class="card-title">
+            <h2 style="margin: 0;">🏆 ตารางแข่งขันและการทายผล</h2>
+            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง</small>
+        </div>
+
+        <% 
+            const getThaiDateString = (offsetDays = 0) => {
+                const d = new Date(new Date().getTime() + (7 * 60 * 60 * 1000) + (offsetDays * 24 * 60 * 60 * 1000));
+                return d.toISOString().substring(0, 10);
+            };
+            const maxDateStr = getThaiDateString(1); 
+            const groupedMatches = {};
+            matches.forEach(m => {
+                const dateStr = m.kickoff_time.substring(0, 10);
+                if (dateStr <= maxDateStr) {
+                    if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
+                    groupedMatches[dateStr].push(m);
+                }
+            });
+            const dates = Object.keys(groupedMatches).sort().reverse();
+        %>
+
+        <% if(dates.length === 0) { %>
+            <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขัน</div>
+        <% } else { %>
+            <% dates.forEach(date => { %>
+                <details class="date-group" open>
+                    <summary class="date-header">📅 แมตช์วันที่ <%= date %></summary>
+                    <div class="date-content">
+                        <table>
+                            <thead><tr><th width="15%">รอบ/เวลา</th><th width="35%">คู่แข่งขัน</th><th width="10%">ผลจริง</th><th width="25%">การทายผล</th><th width="15%">ดูคำทายเพื่อน</th></tr></thead>
+                            <tbody>
+                                <% groupedMatches[date].forEach(match => { %>
+                                    <% const hasPredicted = match.home_predict !== null && match.home_predict !== undefined; %>
+                                    <tr>
+                                        <td><span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span><br><small><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
+                                        <td><span class="team-name"><%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%= match.away_team %></span></td>
+                                        <td>
+                                            <% if(match.status === 'FINISHED') { %> <span style="color: #16a34a; font-weight: 700;"><%= match.home_score %> - <%= match.away_score %></span>
+                                            <% } else { %> <span style="color: var(--text-muted);">-</span> <% } %>
+                                        </td>
+                                        <td>
+                                            <form action="/predict" method="POST" style="margin:0; display:flex; gap:8px; align-items:center;" onsubmit="submitPrediction(event, this)">
+                                                <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required> :
+                                                <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required>
+                                                
+                                                <% if(!match.is_locked) { %> 
+                                                    <% if(hasPredicted) { %>
+                                                        <button type="button" class="btn btn-edit" id="btn-edit-<%= match.id %>" onclick="enableEdit(<%= match.id %>)">แก้ไข</button>
+                                                        <button type="submit" class="btn" id="btn-save-<%= match.id %>" style="display:none;">บันทึก</button>
+                                                    <% } else { %>
+                                                        <button type="submit" class="btn" id="btn-save-<%= match.id %>">บันทึก</button>
+                                                    <% } %>
+                                                <% } else { %> 
+                                                    <div class="locked-badge">🔒 ล็อกแล้ว</div> 
+                                                <% } %>
+                                            </form>
+                                            <% if(match.status === 'FINISHED') { %>
+                                                <div style="margin-top: 5px; font-size: 0.85rem; font-weight: 600; color: <%= match.score_earned > 0 ? '#10b981' : '#ef4444' %>;">
+                                                    <%= match.score_earned > 0 ? `+${match.score_earned} แต้ม` : '0 แต้ม' %>
+                                                </div>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if(match.is_published) { %>
+                                                <a href="/match/<%= match.id %>/predictions" class="btn btn-view" style="font-size: 0.8rem; padding: 4px 8px;">👁️ ดูของเพื่อน</a>
+                                            <% } else { %>
+                                                <small style="color: var(--text-muted);">🔒 รอยืนยัน</small>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            <% }) %>
+        <% } %>
+    </div>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="modal-icon">⏳</span>
+            <h3 style="margin-top:0; color: var(--text); font-size: 1.2rem;">แจ้งเตือน</h3>
+            <p id="modalMessage" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;"></p>
+            <button class="btn" style="width: 100%; padding: 8px;" onclick="closeModal()">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        function enableEdit(matchId) {
+            const homeInput = document.getElementById('home-' + matchId);
+            const awayInput = document.getElementById('away-' + matchId);
+            document.getElementById('btn-edit-' + matchId).style.display = 'none';
+            document.getElementById('btn-save-' + matchId).style.display = 'inline-block';
+            homeInput.removeAttribute('readonly'); awayInput.removeAttribute('readonly');
+            homeInput.focus(); homeInput.select(); 
+        }
+
+        async function submitPrediction(event, form) {
+            event.preventDefault(); 
+            const data = new URLSearchParams(new FormData(form));
+            try {
+                const response = await fetch(form.action, { method: 'POST', body: data, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+                if (response.redirected) window.location.href = response.url;
+                else if (!response.ok) showModal(await response.text());
+                else window.location.reload();
+            } catch (err) { showModal('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
+        }
+
+        function showModal(msg) { document.getElementById('modalMessage').innerText = msg; document.getElementById('customModal').classList.add('active'); }
+        function closeModal() { document.getElementById('customModal').classList.remove('active'); window.location.reload(); }
+    </script>
+</body>
+</html>

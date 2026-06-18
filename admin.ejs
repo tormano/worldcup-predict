@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบหลังบ้าน Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #4f46e5; --primary-hover: #4338ca; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; --info: #0ea5e9; }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; font-size: 0.9rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .admin-header-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .admin-info { display: flex; align-items: center; gap: 12px; }
+        .admin-info img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #818cf8; background: #fff; }
+        .admin-info h3 { margin: 0; font-size: 1.1rem; }
+        .admin-info p { margin: 0; color: #94a3b8; font-size: 0.85rem; }
+        .admin-nav-links a { color: white; text-decoration: none; font-weight: 600; margin-left: 15px; transition: color 0.2s; font-size: 0.9rem; }
+        .admin-nav-links a:hover { color: #818cf8; } .admin-nav-links a.logout-link { color: #fca5a5; }
+
+        .tabs-nav { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid var(--border); overflow-x: auto; }
+        .tab-btn { background: none; border: none; padding: 10px 16px; font-family: inherit; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s ease; white-space: nowrap; margin-bottom: -2px; }
+        .tab-btn:hover { color: var(--primary); background-color: #f1f5f9; border-radius: 8px 8px 0 0; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+
+        .card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05); border: 1px solid var(--border); }
+        .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid var(--bg); padding-bottom: 8px; }
+        .card-header h3 { margin: 0; font-size: 1.15rem; color: var(--text); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
+        input, select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; width: 100%; box-sizing: border-box; font-size: 0.9rem; }
+        
+        .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 0.85rem; }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-outline { background: none; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; }
+        .btn-success { background-color: var(--success); }
+        .btn-info { background-color: var(--info); }
+        
+        .badge { background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-block;}
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-publish { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        
+        .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 140px; }
+        .form-group label { display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+        .user-cell { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .user-cell img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+        
+        .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1rem; color: var(--primary); transition: background 0.2s; }
+        .date-header:hover { background: #f1f5f9; }
+        .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
+        .date-content table { margin-bottom: 0; border-style: hidden; }
+        .date-content th { background: #ffffff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="admin-header-card">
+            <div class="admin-info">
+                <img src="<%= user.avatar %>" alt="Admin Avatar">
+                <div><p>สิทธิ์ผู้เข้าใช้งาน</p><h3>👑 ผู้ดูแลระบบ (Admin)</h3></div>
+            </div>
+            <div class="admin-nav-links">
+                <a href="/leaderboard">📊 ตารางคะแนนรวม</a>
+                <a href="/logout" class="logout-link">🚪 ออกจากระบบ</a>
+            </div>
+        </div>
+
+        <div class="tabs-nav">
+            <button class="tab-btn" onclick="openTab('tab-users')" id="btn-tab-users">👥 จัดการผู้เล่น</button>
+            <button class="tab-btn" onclick="openTab('tab-matches')" id="btn-tab-matches">⚽ ตารางแข่งขัน</button>
+            <button class="tab-btn" onclick="openTab('tab-settings')" id="btn-tab-settings">⚙️ ตั้งค่า & นำเข้า</button>
+            <button class="tab-btn" onclick="openTab('tab-rewards')" id="btn-tab-rewards">🎁 ของรางวัล</button>
+        </div>
+
+        <!-- TAB 1: จัดการผู้เล่น -->
+        <div id="tab-users" class="tab-content">
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น</h3></div>
+                <table>
+                    <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว</th><th>สถานะ</th></tr></thead>
+                    <tbody>
+                        <% if(userStats.length === 0) { %><tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 15px;">ยังไม่มีผู้เล่น</td></tr><% } %>
+                        <% userStats.forEach(u => { %>
+                            <tr>
+                                <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
+                                <td><strong><%= u.predicted_count %></strong> / <%= totalMatches %> คู่</td>
+                                <td><% if(u.predicted_count >= totalMatches && totalMatches > 0) { %> <span class="badge" style="background: #10b981; color: white;">✅ Completed</span> <% } else { %> <span class="badge badge-warning">⏳ Pending</span> <% } %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">🧑‍💻</span><h3>จัดการผู้ใช้งานระบบ</h3></div>
+                <table>
+                    <thead><tr><th>ผู้เล่น</th><th style="width: 250px;">จัดการ</th></tr></thead>
+                    <tbody>
+                        <% if(allUsers.length === 0) { %><tr><td colspan="2" style="text-align: center; color: var(--text-muted); padding: 15px;">ไม่มีผู้ใช้งาน</td></tr><% } %>
+                        <% allUsers.forEach(u => { %>
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <img src="<%= u.avatar %>">
+                                        <span style="<%= u.is_hidden ? 'text-decoration: line-through; color: var(--text-muted);' : '' %>">
+                                            <%= u.username %>
+                                            <% if(u.is_hidden) { %><span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <form action="/admin/toggle-visibility" method="POST" style="margin:0;">
+                                            <input type="hidden" name="user_id" value="<%= u.id %>">
+                                            <input type="hidden" name="is_hidden" value="<%= u.is_hidden ? 0 : 1 %>">
+                                            <button type="submit" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background-color: <%= u.is_hidden ? 'var(--success)' : '#64748b' %>;"><%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อนจากบอร์ด' %></button>
+                                        </form>
+                                        <form action="/admin/reset-password" method="POST" style="margin:0;" onsubmit="return confirm('รีเซ็ตรหัสผ่านของ <%= u.username %> เป็น 123456 ใช่หรือไม่?');">
+                                            <input type="hidden" name="user_id" value="<%= u.id %>">
+                                            <button type="submit" class="btn btn-info" style="padding: 4px 8px; font-size: 0.8rem;">🔄 รีเซ็ตรหัส</button>
+                                        </form>
+                                        <form action="/admin/delete-user" method="POST" style="margin:0;" onsubmit="return confirm('ลบผู้ใช้ <%= u.username %> ยืนยันใช่หรือไม่?');">
+                                            <input type="hidden" name="user_id" value="<%= u.id %>">
+                                            <button type="submit" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">ลบทิ้ง</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: ตารางแข่งขัน & จัดการสกอร์ -->
+        <div id="tab-matches" class="tab-content">
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">➕</span><h3>เพิ่มแมตช์ใหม่</h3></div>
+                <form action="/admin/add-match" method="POST" class="form-row">
+                    <div class="form-group"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
+                    <div class="form-group"><label>ทีมเหย้า</label><input type="text" name="home_team" required></div>
+                    <div class="form-group"><label>ทีมเยือน</label><input type="text" name="away_team" required></div>
+                    <div class="form-group" style="flex: 1.5;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" required></div>
+                    <div class="form-group" style="flex: 0;"><button type="submit" class="btn">เพิ่ม</button></div>
+                </form>
+            </div>
+
+            <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
+                <div class="card-header" style="background: var(--surface); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่</h3></div>
+                    <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมด ยืนยันหรือไม่?');">
+                        <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่</button>
+                    </form>
+                </div>
+                
+                <% 
+                    const groupedMatches = {};
+                    matches.forEach(m => {
+                        const dateStr = m.kickoff_time.substring(0, 10);
+                        if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
+                        groupedMatches[dateStr].push(m);
+                    });
+                    const dates = Object.keys(groupedMatches).sort().reverse();
+                %>
+                <% if(dates.length === 0) { %><div style="text-align: center; padding: 30px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
+                    <% dates.forEach(date => { %>
+                        <details class="date-group" open>
+                            <summary class="date-header">📅 วันที่ <%= date %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
+                            <div class="date-content">
+                                <table>
+                                    <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
+                                    <tbody>
+                                        <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(match => { %>
+                                            <tr>
+                                                <td><strong style="color: var(--primary);">#<%= match.id %></strong></td>
+                                                <td><%= match.stage_name %><br><small style="color: var(--text-muted);"><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
+                                                <td><strong><%= match.home_team %></strong> vs <strong><%= match.away_team %></strong></td>
+                                                <td>
+                                                    <% if(match.status === 'FINISHED') { %> <span class="badge" style="display:block; margin-bottom:6px;">จบ (<%= match.home_score %>-<%= match.away_score %>)</span> <% } else { %> <span class="badge badge-warning" style="display:block; margin-bottom:6px;">รอแข่ง</span> <% } %>
+                                                    <form action="/admin/toggle-publish" method="POST" style="margin:0;">
+                                                        <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                        <% if(match.is_published) { %>
+                                                            <input type="hidden" name="is_published" value="0">
+                                                            <button type="submit" class="btn badge-publish" style="padding: 2px 6px; font-size: 0.75rem; cursor: pointer;">👁️ เปิด</button>
+                                                        <% } else { %>
+                                                            <input type="hidden" name="is_published" value="1">
+                                                            <button type="submit" class="btn" style="background: var(--bg); color: var(--text-muted); padding: 2px 6px; font-size: 0.75rem; border: 1px solid var(--border);">🔒 ซ่อน</button>
+                                                        <% } %>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                                        <form action="/admin/settle" method="POST" style="margin:0; display:flex; gap:4px; align-items:center;">
+                                                            <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                            <input type="number" name="home_score" required style="width:40px; padding: 4px;" value="<%= match.home_score !== null ? match.home_score : '' %>"> :
+                                                            <input type="number" name="away_score" required style="width:40px; padding: 4px;" value="<%= match.away_score !== null ? match.away_score : '' %>">
+                                                            <button type="submit" class="btn btn-success" style="padding: 4px 8px; font-size: 0.8rem;">ยืนยัน</button>
+                                                        </form>
+                                                        <form action="/admin/delete-match" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบแมตช์นี้?');">
+                                                            <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                            <button type="submit" class="btn btn-outline" style="font-size: 0.8rem; padding: 4px 8px;">ลบ</button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    <% }) %>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- TAB 3: ตั้งค่า & นำเข้าข้อมูล -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">🎯</span><h3>ตั้งค่าคะแนนการทายผล</h3></div>
+                <form action="/admin/update-rules" method="POST">
+                    <table style="margin-bottom: 15px;">
+                        <thead><tr><th>รอบการแข่งขัน</th><th>คะแนนทายผลถูก (แพ้/ชนะ/เสมอ)</th><th>คะแนนโบนัสสกอร์เป๊ะ</th></tr></thead>
+                        <tbody>
+                            <% rules.forEach(r => { %>
+                                <tr>
+                                    <td><strong><%= r.stage_name %></strong></td>
+                                    <td><input type="number" name="rules[<%= r.stage_id %>][base_score]" value="<%= r.base_score %>" required></td>
+                                    <td><input type="number" name="rules[<%= r.stage_id %>][bonus_score]" value="<%= r.bonus_score %>" required></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn">💾 บันทึกการตั้งค่าคะแนน</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">📥</span><h3>นำเข้าข้อมูล (CSV)</h3></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                        <h4 style="margin-top:0; font-size:0.95rem;">⚽ อัปโหลดตารางแข่งขัน</h4>
+                        <form action="/admin/import-matches" method="POST" enctype="multipart/form-data" style="display: flex; gap: 8px;">
+                            <input type="file" name="csv_file" accept=".csv" required style="padding: 4px; font-size: 0.8rem;">
+                            <button type="submit" class="btn btn-info" style="padding: 4px 10px;">อัปโหลด</button>
+                        </form>
+                    </div>
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                        <h4 style="margin-top:0; font-size:0.95rem;">🎯 อัปโหลดผลทายผู้เล่น</h4>
+                        <form action="/admin/import-predictions" method="POST" enctype="multipart/form-data" style="display: flex; gap: 8px;">
+                            <input type="file" name="csv_file" accept=".csv" required style="padding: 4px; font-size: 0.8rem;">
+                            <button type="submit" class="btn btn-info" style="padding: 4px 10px;">อัปโหลด</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: จัดการของรางวัล -->
+        <div id="tab-rewards" class="tab-content">
+            <div class="card">
+                <div class="card-header"><span style="font-size: 1.2rem;">🎁</span><h3>ตั้งค่าของรางวัลตามอันดับ</h3></div>
+                <form id="rewardForm" action="/admin/add-reward" method="POST" class="form-row" style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border);">
+                    <input type="hidden" name="reward_id" id="reward_id">
+                    <div class="form-group" style="flex: 0.5;"><label>อันดับ</label><input type="number" id="reward_rank" name="rank" placeholder="1" min="1" required></div>
+                    <div class="form-group" style="flex: 2;"><label>คำอธิบายรางวัล</label><input type="text" id="reward_desc" name="description" placeholder="เสื้อบอล" required></div>
+                    <div class="form-group" style="flex: 1;"><label>ไอคอน</label><input type="text" id="reward_icon" name="icon" placeholder="🏆" required></div>
+                    <div class="form-group" style="flex: 0; display: flex; flex-direction: column; gap: 4px;">
+                        <button type="submit" id="reward_submit_btn" class="btn btn-info" style="width: 100%; font-size:0.85rem;">เพิ่มรางวัล</button>
+                        <button type="button" id="reward_cancel_btn" class="btn btn-outline" style="width: 100%; display: none; font-size:0.85rem;" onclick="cancelEditReward()">ยกเลิก</button>
+                    </div>
+                </form>
+
+                <table>
+                    <thead><tr><th width="15%">อันดับ</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="20%">จัดการ</th></tr></thead>
+                    <tbody>
+                        <% if(!rewards || rewards.length === 0) { %><tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
+                        <% if(rewards) { rewards.forEach(r => { %>
+                            <tr>
+                                <td><strong>อันดับที่ <%= r.rank %></strong></td>
+                                <td style="text-align: center; font-size: 1.3rem;"><%= r.icon %></td>
+                                <td><%= r.description %></td>
+                                <td>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button type="button" class="btn" style="background-color: #f59e0b; color: white; padding: 4px 8px; font-size: 0.8rem;" onclick="editReward('<%= r.id %>', '<%= r.rank %>', '<%= r.description %>', '<%= r.icon %>')">แก้ไข</button>
+                                        <form action="/admin/delete-reward" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบรางวัลนี้?');">
+                                            <input type="hidden" name="reward_id" value="<%= r.id %>">
+                                            <button type="submit" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">ลบ</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+            localStorage.setItem('adminActiveTab', tabId);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
+            openTab(activeTab);
+        });
+
+        function editReward(id, rank, desc, icon) {
+            document.getElementById('rewardForm').action = '/admin/edit-reward';
+            document.getElementById('reward_id').value = id;
+            document.getElementById('reward_rank').value = rank;
+            document.getElementById('reward_desc').value = desc;
+            document.getElementById('reward_icon').value = icon;
+            const submitBtn = document.getElementById('reward_submit_btn');
+            submitBtn.innerText = 'อัปเดตข้อมูล'; submitBtn.style.backgroundColor = '#f59e0b';
+            document.getElementById('reward_cancel_btn').style.display = 'block';
+            window.scrollTo({ top: document.getElementById('rewardForm').offsetTop - 50, behavior: 'smooth' });
+        }
+
+        function cancelEditReward() {
+            document.getElementById('rewardForm').action = '/admin/add-reward';
+            document.getElementById('reward_id').value = '';
+            document.getElementById('reward_rank').value = '';
+            document.getElementById('reward_desc').value = '';
+            document.getElementById('reward_icon').value = '';
+            const submitBtn = document.getElementById('reward_submit_btn');
+            submitBtn.innerText = 'เพิ่มรางวัล'; submitBtn.style.backgroundColor = 'var(--info)';
+            document.getElementById('reward_cancel_btn').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
