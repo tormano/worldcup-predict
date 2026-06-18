@@ -205,7 +205,10 @@ app.get('/match/:id/predictions', checkAuth, async (req, res) => {
     const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
     if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
     if (!matchInfo[0].is_published && !req.session.user.is_admin) return res.status(403).send('Admin ยังไม่เปิดเผยผลการทาย');
-    const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 ORDER BY u.username ASC`, [req.params.id]);
+    
+    // อัปเดต SQL Query: เพิ่มเงื่อนไข AND u.is_admin = 0 AND u.is_hidden = 0
+    const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0 ORDER BY u.username ASC`, [req.params.id]);
+    
     res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
 });
 
