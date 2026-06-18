@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โพยทายผลของ <%= targetUser.username %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #2563eb; --primary-hover: #1d4ed8; --border: #e2e8f0; }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; font-size: 0.9rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .top-nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .nav-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+        .nav-link:hover { text-decoration: underline; }
+        
+        .card-title { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; background: var(--surface); padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border);}
+        .card-title img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+        .card-title h2 { margin: 0; color: var(--text); font-size: 1.3rem; }
+        .card-title p { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
+        td:nth-child(2) { text-align: left; }
+        .team-name { font-weight: 600; font-size: 0.95rem; }
+        .vs { color: var(--text-muted); margin: 0 6px; font-size: 0.85rem; }
+        
+        .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05); }
+        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.05rem; color: var(--primary); transition: background 0.2s; }
+        .date-header:hover { background: #f1f5f9; }
+        .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
+        .date-content table { margin-bottom: 0; border-style: hidden; }
+        .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
+
+        .pred-box { font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 4px 12px; border-radius: 6px; display: inline-block; letter-spacing: 1px; border: 1px solid var(--border); }
+        .score-badge { font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 4px; }
+        .score-success { background-color: #10b981; color: white; }
+        .score-zero { background-color: #ef4444; color: white; }
+        .hidden-badge { color: var(--text-muted); font-size: 0.85rem; background: #e2e8f0; padding: 4px 10px; border-radius: 6px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="top-nav-bar">
+            <a href="/leaderboard" class="nav-link">⬅️ กลับตารางคะแนนรวม</a>
+            <% if (user.is_admin === 1) { %>
+                <a href="/admin" class="nav-link" style="color: #4f46e5;">⚙️ กลับแผงควบคุม Admin</a>
+            <% } else { %>
+                <a href="/" class="nav-link">🏠 กลับหน้าทายผลของคุณ</a>
+            <% } %>
+        </div>
+
+        <div class="card-title">
+            <img src="<%= targetUser.avatar %>" alt="Avatar">
+            <div>
+                <p>โพยทายผลของ</p>
+                <h2><%= targetUser.username %></h2>
+            </div>
+        </div>
+
+        <% 
+            // ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
+            const getMatchDayInfo = (kickoffStr) => {
+                const [datePart, timePart] = kickoffStr.split(' ');
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour] = timePart.split(':').map(Number);
+                
+                let startDay = new Date(year, month - 1, day, 12, 0, 0);
+                if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+                
+                let endDay = new Date(startDay);
+                endDay.setDate(endDay.getDate() + 1);
+                
+                const pad = n => n.toString().padStart(2, '0');
+                return {
+                    sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
+                    displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
+                };
+            };
+
+            const groupedMatches = {};
+            const groupLabels = {};
+            
+            matches.forEach(m => {
+                const info = getMatchDayInfo(m.kickoff_time);
+                if(!groupedMatches[info.sortKey]) {
+                    groupedMatches[info.sortKey] = [];
+                    groupLabels[info.sortKey] = info.displayLabel;
+                }
+                groupedMatches[info.sortKey].push(m);
+            });
+            
+            // เรียงลำดับจากล่าสุดไปอดีต
+            const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
+        %>
+
+        <% if(datesToDisplay.length === 0) { %>
+            <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีข้อมูลการทายผล</div>
+        <% } else { %>
+            <% datesToDisplay.forEach((date, index) => { %>
+                <!-- เปิด (open) เฉพาะตารางรอบล่าสุด (index 0) ให้เห็นทันที ส่วนอดีตพับไว้ -->
+                <details class="date-group" <%= index === 0 ? 'open' : '' %>>
+                    <summary class="date-header">📅 รอบการแข่งขัน: <%= groupLabels[date] %></summary>
+                    <div class="date-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="15%">รอบ/เวลา</th>
+                                    <th width="35%">คู่แข่งขัน</th>
+                                    <th width="15%">ผลจริง</th>
+                                    <th width="35%">การทายผล & คะแนน</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% groupedMatches[date].forEach(match => { %>
+                                    <tr>
+                                        <td>
+                                            <span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span><br>
+                                            <small><%= match.kickoff_time.substring(11, 16) %> น.</small>
+                                        </td>
+                                        <td>
+                                            <span class="team-name"><%= match.home_team %></span> 
+                                            <span class="vs">vs</span> 
+                                            <span class="team-name"><%= match.away_team %></span>
+                                        </td>
+                                        <td>
+                                            <% if(match.status === 'FINISHED') { %> 
+                                                <span style="color: #16a34a; font-weight: 700;"><%= match.home_score %> - <%= match.away_score %></span>
+                                            <% } else { %> 
+                                                <span style="color: var(--text-muted);">-</span> 
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <% if(match.is_hidden) { %>
+                                                <span class="hidden-badge">🔒 รอเปิดไพ่</span>
+                                            <% } else if(match.home_predict !== null && match.away_predict !== null) { %>
+                                                <div class="pred-box"><%= match.home_predict %> - <%= match.away_predict %></div>
+                                                <% if(match.status === 'FINISHED') { %>
+                                                    <br>
+                                                    <% if(match.score_earned > 0) { %>
+                                                        <span class="score-badge score-success">+<%= match.score_earned %> แต้ม</span>
+                                                    <% } else { %>
+                                                        <span class="score-badge score-zero">0 แต้ม</span>
+                                                    <% } %>
+                                                <% } %>
+                                            <% } else { %>
+                                                <span style="color: var(--text-muted); font-size: 0.85rem;">- ไม่ได้ทายผล -</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            <% }) %>
+        <% } %>
+    </div>
+</body>
+</html>

@@ -32,11 +32,15 @@
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
         input, select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; width: 100%; box-sizing: border-box; font-size: 0.9rem; }
         
+        .score-input[readonly] { background-color: #f1f5f9; color: #334155; font-weight: 600; border-color: transparent; cursor: default; }
+        .score-input[readonly]:focus { outline: none; border-color: transparent; }
+
         .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 0.85rem; }
         .btn:hover { background-color: var(--primary-hover); }
         .btn-outline { background: none; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; }
         .btn-success { background-color: var(--success); }
         .btn-info { background-color: var(--info); }
+        .btn-edit { background-color: #f59e0b; color: white; }
         
         .badge { background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; display: inline-block;}
         .badge-warning { background: #fef9c3; color: #854d0e; }
@@ -54,6 +58,9 @@
         .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
         .date-content table { margin-bottom: 0; border-style: hidden; }
         .date-content th { background: #ffffff; }
+        
+        /* Transition ให้แถวกระพริบสีตอนบันทึกสำเร็จ */
+        tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
     </style>
 </head>
 <body>
@@ -79,16 +86,27 @@
         <!-- TAB 1: จัดการผู้เล่น -->
         <div id="tab-users" class="tab-content">
             <div class="card">
-                <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น</h3></div>
+                <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น (ประจำวัน)</h3></div>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">
+                    รอบการแข่งขัน: <strong style="color: var(--primary);"><%= matchDayText %></strong>
+                </p>
                 <table>
-                    <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว</th><th>สถานะ</th></tr></thead>
+                    <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว (ของวันนี้)</th><th>สถานะ</th></tr></thead>
                     <tbody>
                         <% if(userStats.length === 0) { %><tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 15px;">ยังไม่มีผู้เล่น</td></tr><% } %>
                         <% userStats.forEach(u => { %>
                             <tr>
                                 <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
-                                <td><strong><%= u.predicted_count %></strong> / <%= totalMatches %> คู่</td>
-                                <td><% if(u.predicted_count >= totalMatches && totalMatches > 0) { %> <span class="badge" style="background: #10b981; color: white;">✅ Completed</span> <% } else { %> <span class="badge badge-warning">⏳ Pending</span> <% } %></td>
+                                <td><strong><%= u.predicted_count %></strong> / <%= activeTotalMatches %> คู่</td>
+                                <td>
+                                    <% if(u.predicted_count >= activeTotalMatches && activeTotalMatches > 0) { %> 
+                                        <span class="badge" style="background: #10b981; color: white;">✅ ครบแล้ว</span> 
+                                    <% } else if (activeTotalMatches > 0) { %> 
+                                        <span class="badge badge-warning">⏳ รอทายผล</span> 
+                                    <% } else { %>
+                                        <span class="badge" style="background: #e2e8f0; color: #64748b;">- ไม่มีเตะ -</span>
+                                    <% } %>
+                                </td>
                             </tr>
                         <% }) %>
                     </tbody>
@@ -151,55 +169,89 @@
 
             <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
                 <div class="card-header" style="background: var(--surface); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่</h3></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่ (แยกตาม Match Day)</h3></div>
                     <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมด ยืนยันหรือไม่?');">
                         <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่</button>
                     </form>
                 </div>
                 
                 <% 
+                    // ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
+                    const getMatchDayInfo = (kickoffStr) => {
+                        const [datePart, timePart] = kickoffStr.split(' ');
+                        const [year, month, day] = datePart.split('-').map(Number);
+                        const [hour] = timePart.split(':').map(Number);
+                        
+                        let startDay = new Date(year, month - 1, day, 12, 0, 0);
+                        if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+                        
+                        let endDay = new Date(startDay);
+                        endDay.setDate(endDay.getDate() + 1);
+                        
+                        const pad = n => n.toString().padStart(2, '0');
+                        return {
+                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
+                            displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
+                        };
+                    };
+
                     const groupedMatches = {};
+                    const groupLabels = {};
                     matches.forEach(m => {
-                        const dateStr = m.kickoff_time.substring(0, 10);
-                        if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
-                        groupedMatches[dateStr].push(m);
+                        const info = getMatchDayInfo(m.kickoff_time);
+                        if(!groupedMatches[info.sortKey]) {
+                            groupedMatches[info.sortKey] = [];
+                            groupLabels[info.sortKey] = info.displayLabel;
+                        }
+                        groupedMatches[info.sortKey].push(m);
                     });
                     const dates = Object.keys(groupedMatches).sort().reverse();
                 %>
                 <% if(dates.length === 0) { %><div style="text-align: center; padding: 30px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
                     <% dates.forEach(date => { %>
                         <details class="date-group" open>
-                            <summary class="date-header">📅 วันที่ <%= date %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
+                            <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
                                     <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
                                     <tbody>
                                         <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(match => { %>
-                                            <tr>
+                                            <tr id="row-match-<%= match.id %>">
                                                 <td><strong style="color: var(--primary);">#<%= match.id %></strong></td>
                                                 <td><%= match.stage_name %><br><small style="color: var(--text-muted);"><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
                                                 <td><strong><%= match.home_team %></strong> vs <strong><%= match.away_team %></strong></td>
                                                 <td>
-                                                    <% if(match.status === 'FINISHED') { %> <span class="badge" style="display:block; margin-bottom:6px;">จบ (<%= match.home_score %>-<%= match.away_score %>)</span> <% } else { %> <span class="badge badge-warning" style="display:block; margin-bottom:6px;">รอแข่ง</span> <% } %>
-                                                    <form action="/admin/toggle-publish" method="POST" style="margin:0;">
+                                                    <span id="status-badge-<%= match.id %>" class="badge <%= match.status === 'FINISHED' ? '' : 'badge-warning' %>" style="display:block; margin-bottom:6px;">
+                                                        <%= match.status === 'FINISHED' ? `จบ (${match.home_score}-${match.away_score})` : 'รอแข่ง' %>
+                                                    </span>
+                                                    <!-- ส่งแบบ AJAX เพื่อให้หน้าไม่รีเฟรช -->
+                                                    <form action="/admin/toggle-publish" method="POST" style="margin:0;" onsubmit="togglePublish(event, this)">
                                                         <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                        <input type="hidden" name="is_published" value="<%= match.is_published ? '0' : '1' %>">
                                                         <% if(match.is_published) { %>
-                                                            <input type="hidden" name="is_published" value="0">
                                                             <button type="submit" class="btn badge-publish" style="padding: 2px 6px; font-size: 0.75rem; cursor: pointer;">👁️ เปิด</button>
                                                         <% } else { %>
-                                                            <input type="hidden" name="is_published" value="1">
                                                             <button type="submit" class="btn" style="background: var(--bg); color: var(--text-muted); padding: 2px 6px; font-size: 0.75rem; border: 1px solid var(--border);">🔒 ซ่อน</button>
                                                         <% } %>
                                                     </form>
                                                 </td>
                                                 <td>
                                                     <div style="display: flex; gap: 8px; align-items: center;">
-                                                        <form action="/admin/settle" method="POST" style="margin:0; display:flex; gap:4px; align-items:center;">
+                                                        <!-- ฟอร์มบันทึกคะแนน AJAX -->
+                                                        <form action="/admin/settle" method="POST" style="margin:0; display:flex; gap:4px; align-items:center;" onsubmit="submitSettle(event, this, <%= match.id %>)">
                                                             <input type="hidden" name="match_id" value="<%= match.id %>">
-                                                            <input type="number" name="home_score" required style="width:40px; padding: 4px;" value="<%= match.home_score !== null ? match.home_score : '' %>"> :
-                                                            <input type="number" name="away_score" required style="width:40px; padding: 4px;" value="<%= match.away_score !== null ? match.away_score : '' %>">
-                                                            <button type="submit" class="btn btn-success" style="padding: 4px 8px; font-size: 0.8rem;">ยืนยัน</button>
+                                                            <input type="number" id="home-score-<%= match.id %>" class="score-input" name="home_score" required style="width:40px; padding: 4px;" value="<%= match.home_score !== null ? match.home_score : '' %>" <%= match.status === 'FINISHED' ? 'readonly' : '' %>> :
+                                                            <input type="number" id="away-score-<%= match.id %>" class="score-input" name="away_score" required style="width:40px; padding: 4px;" value="<%= match.away_score !== null ? match.away_score : '' %>" <%= match.status === 'FINISHED' ? 'readonly' : '' %>>
+                                                            
+                                                            <% if (match.status === 'FINISHED') { %>
+                                                                <button type="button" id="btn-edit-<%= match.id %>" class="btn btn-edit" style="padding: 4px 8px; font-size: 0.8rem;" onclick="enableSettleEdit(<%= match.id %>)">แก้ไข</button>
+                                                                <button type="submit" id="btn-save-<%= match.id %>" class="btn btn-success" style="padding: 4px 8px; font-size: 0.8rem; display:none;">บันทึก</button>
+                                                            <% } else { %>
+                                                                <button type="button" id="btn-edit-<%= match.id %>" class="btn btn-edit" style="padding: 4px 8px; font-size: 0.8rem; display:none;" onclick="enableSettleEdit(<%= match.id %>)">แก้ไข</button>
+                                                                <button type="submit" id="btn-save-<%= match.id %>" class="btn btn-success" style="padding: 4px 8px; font-size: 0.8rem;">ยืนยัน</button>
+                                                            <% } %>
                                                         </form>
+                                                        
                                                         <form action="/admin/delete-match" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบแมตช์นี้?');">
                                                             <input type="hidden" name="match_id" value="<%= match.id %>">
                                                             <button type="submit" class="btn btn-outline" style="font-size: 0.8rem; padding: 4px 8px;">ลบ</button>
@@ -285,7 +337,7 @@
                                 <td><%= r.description %></td>
                                 <td>
                                     <div style="display: flex; gap: 5px;">
-                                        <button type="button" class="btn" style="background-color: #f59e0b; color: white; padding: 4px 8px; font-size: 0.8rem;" onclick="editReward('<%= r.id %>', '<%= r.rank %>', '<%= r.description %>', '<%= r.icon %>')">แก้ไข</button>
+                                        <button type="button" class="btn btn-edit" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editReward('<%= r.id %>', '<%= r.rank %>', '<%= r.description %>', '<%= r.icon %>')">แก้ไข</button>
                                         <form action="/admin/delete-reward" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบรางวัลนี้?');">
                                             <input type="hidden" name="reward_id" value="<%= r.id %>">
                                             <button type="submit" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">ลบ</button>
@@ -314,6 +366,103 @@
             openTab(activeTab);
         });
 
+        // ----------------------------------------------------
+        // ฟังก์ชัน AJAX สำหรับยืนยันสกอร์
+        // ----------------------------------------------------
+        function enableSettleEdit(matchId) {
+            const homeInput = document.getElementById('home-score-' + matchId);
+            const awayInput = document.getElementById('away-score-' + matchId);
+            homeInput.removeAttribute('readonly');
+            awayInput.removeAttribute('readonly');
+            document.getElementById('btn-edit-' + matchId).style.display = 'none';
+            document.getElementById('btn-save-' + matchId).style.display = 'inline-block';
+            homeInput.focus();
+            homeInput.select();
+        }
+
+        async function submitSettle(event, form, matchId) {
+            event.preventDefault();
+            const data = new URLSearchParams(new FormData(form));
+            const saveBtn = document.getElementById('btn-save-' + matchId);
+            const origText = saveBtn.innerText;
+            saveBtn.innerText = 'กำลังเซฟ...';
+            saveBtn.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', body: data,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        // ปรับ UI ของช่องกรอกเป็น Readonly
+                        document.getElementById('home-score-' + matchId).setAttribute('readonly', true);
+                        document.getElementById('away-score-' + matchId).setAttribute('readonly', true);
+                        
+                        // สลับปุ่มเป็น แก้ไข
+                        document.getElementById('btn-save-' + matchId).style.display = 'none';
+                        document.getElementById('btn-edit-' + matchId).style.display = 'inline-block';
+                        
+                        // เปลี่ยนป้ายเป็น 'จบ (x-y)'
+                        const badge = document.getElementById('status-badge-' + matchId);
+                        badge.className = 'badge';
+                        badge.innerText = `จบ (${result.home_score}-${result.away_score})`;
+                        
+                        // กระพริบสีเขียวที่แถวนั้น เพื่อบอกว่าบันทึกเสร็จแล้ว
+                        const row = document.getElementById('row-match-' + matchId);
+                        row.classList.add('flash-success');
+                        setTimeout(() => row.classList.remove('flash-success'), 1000);
+                    }
+                } else {
+                    alert('บันทึกผิดพลาด');
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดการเชื่อมต่อ');
+            } finally {
+                saveBtn.innerText = origText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        // ----------------------------------------------------
+        // ฟังก์ชัน AJAX สำหรับปุ่มเปิด/ซ่อนไพ่ทายผล
+        // ----------------------------------------------------
+        async function togglePublish(event, form) {
+            event.preventDefault();
+            const data = new URLSearchParams(new FormData(form));
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', body: data,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const btn = form.querySelector('button');
+                    const input = form.querySelector('input[name="is_published"]');
+                    
+                    if (result.is_published == 1) {
+                        input.value = "0"; // หากรอบหน้ากดคือการซ่อน
+                        btn.className = "btn badge-publish";
+                        btn.style = "padding: 2px 6px; font-size: 0.75rem; cursor: pointer;";
+                        btn.innerText = "👁️ เปิด";
+                    } else {
+                        input.value = "1"; // หากรอบหน้ากดคือการเปิด
+                        btn.className = "btn";
+                        btn.style = "background: var(--bg); color: var(--text-muted); padding: 2px 6px; font-size: 0.75rem; border: 1px solid var(--border);";
+                        btn.innerText = "🔒 ซ่อน";
+                    }
+                }
+            } catch (e) {
+                alert('เกิดข้อผิดพลาดในการปรับสถานะ');
+            }
+        }
+
+        // ----------------------------------------------------
+        // ฟังก์ชันสำหรับ รางวัล
+        // ----------------------------------------------------
         function editReward(id, rank, desc, icon) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;

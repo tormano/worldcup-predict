@@ -46,6 +46,9 @@
         .date-content table { margin-bottom: 0; border-style: hidden; }
         .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
 
+        /* อนิเมชั่นแถวกระพริบตอนบันทึกสำเร็จ */
+        tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
+
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-box { background: var(--surface); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
@@ -87,35 +90,72 @@
         </div>
 
         <% 
-            const getThaiDateString = (offsetDays = 0) => {
-                const d = new Date(new Date().getTime() + (7 * 60 * 60 * 1000) + (offsetDays * 24 * 60 * 60 * 1000));
-                return d.toISOString().substring(0, 10);
+            // 1. ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
+            const getMatchDayInfo = (kickoffStr) => {
+                const [datePart, timePart] = kickoffStr.split(' ');
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour] = timePart.split(':').map(Number);
+                
+                let startDay = new Date(year, month - 1, day, 12, 0, 0);
+                if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+                
+                let endDay = new Date(startDay);
+                endDay.setDate(endDay.getDate() + 1);
+                
+                const pad = n => n.toString().padStart(2, '0');
+                return {
+                    sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
+                    displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
+                };
             };
-            const maxDateStr = getThaiDateString(1); 
+
+            // 2. หา Match Day ปัจจุบัน และจำกัดให้ดูได้ล่วงหน้า 1 วัน
+            const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
+            const thaiTime = new Date(thaiTimeStr);
+            let currentMatchDayStart = new Date(thaiTime);
+            currentMatchDayStart.setHours(12, 0, 0, 0);
+            if (thaiTime.getHours() < 12) currentMatchDayStart.setDate(currentMatchDayStart.getDate() - 1);
+            
+            let maxMatchDayStart = new Date(currentMatchDayStart);
+            maxMatchDayStart.setDate(maxMatchDayStart.getDate() + 1); // เปิดให้เห็นล่วงหน้า 1 Match Day
+            
+            const padDate = n => n.toString().padStart(2, '0');
+            const maxSortKey = `${maxMatchDayStart.getFullYear()}-${padDate(maxMatchDayStart.getMonth()+1)}-${padDate(maxMatchDayStart.getDate())}`;
+
+            // 3. จัดกลุ่มแมตช์ตาม Match Day
             const groupedMatches = {};
+            const groupLabels = {};
+            
             matches.forEach(m => {
-                const dateStr = m.kickoff_time.substring(0, 10);
-                if (dateStr <= maxDateStr) {
-                    if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
-                    groupedMatches[dateStr].push(m);
+                const info = getMatchDayInfo(m.kickoff_time);
+                // เก็บตั้งแต่อดีต จนถึง Match Day ที่เปิดให้ทายผล
+                if (info.sortKey <= maxSortKey) {
+                    if(!groupedMatches[info.sortKey]) {
+                        groupedMatches[info.sortKey] = [];
+                        groupLabels[info.sortKey] = info.displayLabel;
+                    }
+                    groupedMatches[info.sortKey].push(m);
                 }
             });
-            const dates = Object.keys(groupedMatches).sort().reverse();
+            
+            // 4. เรียงลำดับจากล่าสุด (รอบที่จะทายผล) ลงไปอดีต
+            const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
         %>
 
-        <% if(dates.length === 0) { %>
-            <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขัน</div>
+        <% if(datesToDisplay.length === 0) { %>
+            <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันที่เปิดให้ทายผลในขณะนี้</div>
         <% } else { %>
-            <% dates.forEach(date => { %>
-                <details class="date-group" open>
-                    <summary class="date-header">📅 แมตช์วันที่ <%= date %></summary>
+            <% datesToDisplay.forEach((date, index) => { %>
+                <!-- เปิด (open) เฉพาะตารางที่เป็น Match Day ล่าสุด (index 0) ส่วนอดีตให้พับไว้ -->
+                <details class="date-group" <%= index === 0 ? 'open' : '' %>>
+                    <summary class="date-header">📅 รอบการแข่งขัน: <%= groupLabels[date] %></summary>
                     <div class="date-content">
                         <table>
                             <thead><tr><th width="15%">รอบ/เวลา</th><th width="35%">คู่แข่งขัน</th><th width="10%">ผลจริง</th><th width="25%">การทายผล</th><th width="15%">ดูคำทายเพื่อน</th></tr></thead>
                             <tbody>
                                 <% groupedMatches[date].forEach(match => { %>
                                     <% const hasPredicted = match.home_predict !== null && match.home_predict !== undefined; %>
-                                    <tr>
+                                    <tr id="row-match-<%= match.id %>">
                                         <td><span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span><br><small><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
                                         <td><span class="team-name"><%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%= match.away_team %></span></td>
                                         <td>
@@ -123,7 +163,7 @@
                                             <% } else { %> <span style="color: var(--text-muted);">-</span> <% } %>
                                         </td>
                                         <td>
-                                            <form action="/predict" method="POST" style="margin:0; display:flex; gap:8px; align-items:center;" onsubmit="submitPrediction(event, this)">
+                                            <form action="/predict" method="POST" style="margin:0; display:flex; gap:8px; align-items:center;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
                                                 <input type="hidden" name="match_id" value="<%= match.id %>">
                                                 <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required> :
                                                 <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required>
@@ -133,6 +173,7 @@
                                                         <button type="button" class="btn btn-edit" id="btn-edit-<%= match.id %>" onclick="enableEdit(<%= match.id %>)">แก้ไข</button>
                                                         <button type="submit" class="btn" id="btn-save-<%= match.id %>" style="display:none;">บันทึก</button>
                                                     <% } else { %>
+                                                        <button type="button" class="btn btn-edit" id="btn-edit-<%= match.id %>" onclick="enableEdit(<%= match.id %>)" style="display:none;">แก้ไข</button>
                                                         <button type="submit" class="btn" id="btn-save-<%= match.id %>">บันทึก</button>
                                                     <% } %>
                                                 <% } else { %> 
@@ -177,19 +218,59 @@
             const awayInput = document.getElementById('away-' + matchId);
             document.getElementById('btn-edit-' + matchId).style.display = 'none';
             document.getElementById('btn-save-' + matchId).style.display = 'inline-block';
-            homeInput.removeAttribute('readonly'); awayInput.removeAttribute('readonly');
-            homeInput.focus(); homeInput.select(); 
+            homeInput.removeAttribute('readonly'); 
+            awayInput.removeAttribute('readonly');
+            homeInput.focus(); 
+            homeInput.select(); 
         }
 
-        async function submitPrediction(event, form) {
+        async function submitPrediction(event, form, matchId) {
             event.preventDefault(); 
             const data = new URLSearchParams(new FormData(form));
+            const saveBtn = document.getElementById('btn-save-' + matchId);
+            const origText = saveBtn.innerText;
+            
+            saveBtn.innerText = 'กำลังเซฟ...';
+            saveBtn.disabled = true;
+
             try {
-                const response = await fetch(form.action, { method: 'POST', body: data, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-                if (response.redirected) window.location.href = response.url;
-                else if (!response.ok) showModal(await response.text());
-                else window.location.reload();
-            } catch (err) { showModal('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
+                const response = await fetch(form.action, { 
+                    method: 'POST', 
+                    body: data, 
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json' 
+                    } 
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        document.getElementById('home-' + matchId).setAttribute('readonly', true);
+                        document.getElementById('away-' + matchId).setAttribute('readonly', true);
+                        
+                        document.getElementById('btn-save-' + matchId).style.display = 'none';
+                        document.getElementById('btn-edit-' + matchId).style.display = 'inline-block';
+                        
+                        const row = document.getElementById('row-match-' + matchId);
+                        if (row) {
+                            row.classList.add('flash-success');
+                            setTimeout(() => row.classList.remove('flash-success'), 1000);
+                        }
+                    }
+                } else if (response.status === 400) {
+                    showModal(await response.text());
+                } else if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    showModal('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                }
+            } catch (err) { 
+                showModal('เกิดข้อผิดพลาดในการเชื่อมต่อ'); 
+            } finally {
+                saveBtn.innerText = origText;
+                saveBtn.disabled = false;
+            }
         }
 
         function showModal(msg) { document.getElementById('modalMessage').innerText = msg; document.getElementById('customModal').classList.add('active'); }
