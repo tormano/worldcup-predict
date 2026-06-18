@@ -12,7 +12,6 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-// เก็บไฟล์ใน Memory เพื่อแปลงเป็น Base64
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -24,9 +23,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({ secret: 'worldcup-secret-key', resave: false, saveUninitialized: true }));
 
-// ==========================================
-// 1. สร้างตารางฐานข้อมูล PostgreSQL
-// ==========================================
 const initDB = async () => {
     try {
         await pool.query(`
@@ -67,9 +63,6 @@ const getThaiTime = () => {
     return new Date(thaiTimeStr);
 };
 
-// ==========================================
-// 2. ROUTING & PAGES
-// ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
@@ -109,7 +102,6 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// ฟังก์ชันอัปเดตรูปโปรไฟล์ (ผู้ใช้เปลี่ยนเอง)
 app.post('/update-avatar', checkAuth, upload.single('avatar'), async (req, res) => {
     if (req.file) {
         const base64Image = req.file.buffer.toString('base64');
@@ -162,39 +154,13 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
-    const userQuery = `
-        SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score
-        FROM users u 
-        LEFT JOIN predictions p ON u.id = p.user_id 
-        LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
-        WHERE u.is_admin = 0 AND u.is_hidden = 0
-        GROUP BY u.id, u.username, u.avatar
-        ORDER BY total_score DESC, u.username ASC
-    `;
+    const userQuery = `SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED' WHERE u.is_admin = 0 AND u.is_hidden = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC, u.username ASC`;
     const { rows: users } = await pool.query(userQuery);
-
-    const matchQuery = `
-        SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name
-        FROM matches m
-        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
-        WHERE m.status = 'FINISHED'
-        ORDER BY m.kickoff_time DESC
-    `;
+    const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
     const { rows: matches } = await pool.query(matchQuery);
-
-    const { rows: predictions } = await pool.query(`
-        SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned
-        FROM predictions p
-        JOIN matches m ON p.match_id = m.id
-        WHERE m.status = 'FINISHED'
-    `);
-
+    const { rows: predictions } = await pool.query(`SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned FROM predictions p JOIN matches m ON p.match_id = m.id WHERE m.status = 'FINISHED'`);
     const predMap = {};
-    predictions.forEach(p => {
-        if (!predMap[p.match_id]) predMap[p.match_id] = {};
-        predMap[p.match_id][p.user_id] = p;
-    });
-
+    predictions.forEach(p => { if (!predMap[p.match_id]) predMap[p.match_id] = {}; predMap[p.match_id][p.user_id] = p; });
     res.render('leaderboard-detailed', { user: req.session.user, users, matches, predMap });
 });
 
@@ -274,12 +240,19 @@ app.post('/admin/delete-match', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
+// เปิดให้ส่งผ่าน AJAX (ส่งกลับ JSON แทนโหลดหน้าใหม่)
 app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     await pool.query('UPDATE matches SET is_published = $1 WHERE id = $2', [req.body.is_published, req.body.match_id]);
+    
+    // ตรวจสอบว่าเป็นการส่งแบบ AJAX ไหม
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({ success: true, is_published: req.body.is_published });
+    }
     res.redirect('/admin');
 });
 
+// บันทึกสกอร์ผ่าน AJAX
 app.post('/admin/settle', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     const matchId = parseInt(req.body.match_id);
@@ -308,6 +281,11 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
             }
         }
         await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, matchId]);
+    }
+    
+    // ตอบกลับเป็น JSON สำหรับ AJAX
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({ success: true, home_score: actualHome, away_score: actualAway });
     }
     res.redirect('/admin');
 });
