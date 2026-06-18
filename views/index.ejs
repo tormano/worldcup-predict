@@ -86,7 +86,7 @@
 
         <div class="card-title">
             <h2 style="margin: 0;">🏆 ตารางแข่งขันและการทายผล</h2>
-            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง</small>
+            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง หรือเมื่อแอดมินกดเปิดโพยแล้ว</small>
         </div>
 
         <% 
@@ -109,15 +109,18 @@
                 };
             };
 
-            // 2. หา Match Day ปัจจุบัน
+            // 2. หา Match Day ปัจจุบัน และจำกัดให้ดูได้ล่วงหน้า 1 วัน
             const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
             const thaiTime = new Date(thaiTimeStr);
             let currentMatchDayStart = new Date(thaiTime);
             currentMatchDayStart.setHours(12, 0, 0, 0);
             if (thaiTime.getHours() < 12) currentMatchDayStart.setDate(currentMatchDayStart.getDate() - 1);
             
+            let maxMatchDayStart = new Date(currentMatchDayStart);
+            maxMatchDayStart.setDate(maxMatchDayStart.getDate() + 1); // เปิดให้เห็นล่วงหน้า 1 Match Day
+            
             const padDate = n => n.toString().padStart(2, '0');
-            const currentSortKey = `${currentMatchDayStart.getFullYear()}-${padDate(currentMatchDayStart.getMonth()+1)}-${padDate(currentMatchDayStart.getDate())}`;
+            const maxSortKey = `${maxMatchDayStart.getFullYear()}-${padDate(maxMatchDayStart.getMonth()+1)}-${padDate(maxMatchDayStart.getDate())}`;
 
             // 3. จัดกลุ่มแมตช์ตาม Match Day
             const groupedMatches = {};
@@ -125,8 +128,8 @@
             
             matches.forEach(m => {
                 const info = getMatchDayInfo(m.kickoff_time);
-                // เก็บเฉพาะ Match Day ปัจจุบันเป็นต้นไป (ตัดอดีตทิ้ง)
-                if (info.sortKey >= currentSortKey) {
+                // ดึงข้อมูล "อดีตทั้งหมด" จนถึง "Match Day ที่เปิดให้ทายผล"
+                if (info.sortKey <= maxSortKey) {
                     if(!groupedMatches[info.sortKey]) {
                         groupedMatches[info.sortKey] = [];
                         groupLabels[info.sortKey] = info.displayLabel;
@@ -135,16 +138,16 @@
                 }
             });
             
-            // 4. เรียงลำดับคีย์จากใกล้ไปไกล และ **เลือกมาแค่ 1 รอบล่าสุดเท่านั้น** (index 0)
-            const upcomingDates = Object.keys(groupedMatches).sort();
-            const datesToDisplay = upcomingDates.length > 0 ? [upcomingDates[0]] : [];
+            // 4. เรียงลำดับจากล่าสุด (รอบที่จะทายผล) ลงไปหาอดีต
+            const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
         %>
 
         <% if(datesToDisplay.length === 0) { %>
             <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันที่เปิดให้ทายผลในขณะนี้</div>
         <% } else { %>
-            <% datesToDisplay.forEach(date => { %>
-                <details class="date-group" open>
+            <% datesToDisplay.forEach((date, index) => { %>
+                <!-- กางหน้าต่าง (open) เฉพาะตารางรอบล่าสุด (index 0) นอกนั้นพับไว้ -->
+                <details class="date-group" <%= index === 0 ? 'open' : '' %>>
                     <summary class="date-header">📅 รอบการแข่งขัน: <%= groupLabels[date] %></summary>
                     <div class="date-content">
                         <table>
@@ -174,7 +177,7 @@
                                                         <button type="submit" class="btn" id="btn-save-<%= match.id %>">บันทึก</button>
                                                     <% } %>
                                                 <% } else { %> 
-                                                    <div class="locked-badge">🔒 ล็อกแล้ว</div> 
+                                                    <div class="locked-badge">🔒 ล็อกผลแล้ว</div> 
                                                 <% } %>
                                             </form>
                                             <% if(match.status === 'FINISHED') { %>
