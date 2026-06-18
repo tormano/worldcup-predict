@@ -127,7 +127,14 @@ app.post('/predict', checkAuth, async (req, res) => {
     const kickOff = new Date(match[0].kickoff_time);
     const currentTime = getThaiTime(); 
     if (currentTime >= kickOff || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้วเนื่องจากการแข่งขันเริ่มขึ้นแล้ว');
+    
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
+    
+    // แจ้งระบบว่าถ้ายิงมาแบบ AJAX ให้ตอบกลับเป็น JSON ทันทีโดยไม่รีเฟรชหน้า
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({ success: true });
+    }
+
     res.redirect('/');
 });
 
