@@ -78,9 +78,14 @@
                 <tbody>
                     <% if(leaderboard.length === 0) { %><tr><td colspan="9" style="text-align: center; padding: 25px; color: var(--text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</td></tr><% } %>
                     <% leaderboard.forEach((row, index) => { %>
-                        <% const currentRank = index + 1; %>
-                        <tr style="cursor: pointer; transition: background 0.2s;" onclick="window.location.href='/user/<%= row.id %>/predictions'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='transparent'">
-                            <td class="rank-cell">
+                        <% 
+                            const currentRank = index + 1; 
+                            const rewardInfo = rewardMap[currentRank];
+                            const hasColor = rewardInfo && rewardInfo.color && rewardInfo.color !== '#ffffff';
+                            const rowBg = hasColor ? `background-color: ${rewardInfo.color}15; border-left: 4px solid ${rewardInfo.color};` : '';
+                        %>
+                        <tr style="cursor: pointer; transition: background 0.2s; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='<%= hasColor ? rewardInfo.color + '15' : 'transparent' %>'">
+                            <td class="rank-cell" style="<%= hasColor ? 'border-left: none;' : '' %>">
                                 <% if(currentRank === 1) { %> 🥇 
                                 <% } else if(currentRank === 2) { %> 🥈 
                                 <% } else if(currentRank === 3) { %> 🥉 
@@ -94,8 +99,8 @@
                             <td class="stat-score">+<%= row.exact_score_score %></td>
                             <td class="score-cell" style="text-align: right;"><%= row.total_score || 0 %> แต้ม</td>
                             <td style="text-align: center;">
-                                <% if(rewardMap[currentRank]) { %>
-                                    <div class="reward-item"><span class="reward-icon"><%= rewardMap[currentRank].icon %></span><span><%= rewardMap[currentRank].description %></span></div>
+                                <% if(rewardInfo) { %>
+                                    <div class="reward-item" style="border-color: <%= hasColor ? rewardInfo.color : '#fde68a' %>;"><span class="reward-icon"><%= rewardInfo.icon %></span><span><%= rewardInfo.description %></span></div>
                                 <% } else { %><span style="color: var(--border);">-</span><% } %>
                             </td>
                         </tr>

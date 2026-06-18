@@ -319,7 +319,8 @@
                     <input type="hidden" name="reward_id" id="reward_id">
                     <div class="form-group" style="flex: 0.5;"><label>อันดับ</label><input type="number" id="reward_rank" name="rank" placeholder="1" min="1" required></div>
                     <div class="form-group" style="flex: 2;"><label>คำอธิบายรางวัล</label><input type="text" id="reward_desc" name="description" placeholder="เสื้อบอล" required></div>
-                    <div class="form-group" style="flex: 1;"><label>ไอคอน</label><input type="text" id="reward_icon" name="icon" placeholder="🏆" required></div>
+                    <div class="form-group" style="flex: 0.8;"><label>ไอคอน</label><input type="text" id="reward_icon" name="icon" placeholder="🏆" required></div>
+                    <div class="form-group" style="flex: 0.5;"><label>สีแถว</label><input type="color" id="reward_color" name="color" value="#ffffff" style="padding: 2px; height: 38px; cursor: pointer;"></div>
                     <div class="form-group" style="flex: 0; display: flex; flex-direction: column; gap: 4px;">
                         <button type="submit" id="reward_submit_btn" class="btn btn-info" style="width: 100%; font-size:0.85rem;">เพิ่มรางวัล</button>
                         <button type="button" id="reward_cancel_btn" class="btn btn-outline" style="width: 100%; display: none; font-size:0.85rem;" onclick="cancelEditReward()">ยกเลิก</button>
@@ -327,17 +328,18 @@
                 </form>
 
                 <table>
-                    <thead><tr><th width="15%">อันดับ</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="20%">จัดการ</th></tr></thead>
+                    <thead><tr><th width="10%">อันดับ</th><th width="10%" style="text-align: center;">สี</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="20%">จัดการ</th></tr></thead>
                     <tbody>
-                        <% if(!rewards || rewards.length === 0) { %><tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
+                        <% if(!rewards || rewards.length === 0) { %><tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
                         <% if(rewards) { rewards.forEach(r => { %>
                             <tr>
                                 <td><strong>อันดับที่ <%= r.rank %></strong></td>
+                                <td style="text-align: center;"><div style="width: 24px; height: 24px; border-radius: 4px; background-color: <%= r.color || '#ffffff' %>; border: 1px solid var(--border); margin: 0 auto;"></div></td>
                                 <td style="text-align: center; font-size: 1.3rem;"><%= r.icon %></td>
                                 <td><%= r.description %></td>
                                 <td>
                                     <div style="display: flex; gap: 5px;">
-                                        <button type="button" class="btn btn-edit" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editReward('<%= r.id %>', '<%= r.rank %>', '<%= r.description %>', '<%= r.icon %>')">แก้ไข</button>
+                                        <button type="button" class="btn btn-edit" style="padding: 4px 8px; font-size: 0.8rem;" onclick="editReward('<%= r.id %>', '<%= r.rank %>', '<%= r.description %>', '<%= r.icon %>', '<%= r.color || '#ffffff' %>')">แก้ไข</button>
                                         <form action="/admin/delete-reward" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบรางวัลนี้?');">
                                             <input type="hidden" name="reward_id" value="<%= r.id %>">
                                             <button type="submit" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;">ลบ</button>
@@ -422,12 +424,13 @@
         // ----------------------------------------------------
         // ฟังก์ชันสำหรับ รางวัล
         // ----------------------------------------------------
-        function editReward(id, rank, desc, icon) {
+        function editReward(id, rank, desc, icon, color) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;
             document.getElementById('reward_rank').value = rank;
             document.getElementById('reward_desc').value = desc;
             document.getElementById('reward_icon').value = icon;
+            document.getElementById('reward_color').value = color;
             const submitBtn = document.getElementById('reward_submit_btn');
             submitBtn.innerText = 'อัปเดตข้อมูล'; submitBtn.style.backgroundColor = '#f59e0b';
             document.getElementById('reward_cancel_btn').style.display = 'block';
@@ -440,6 +443,7 @@
             document.getElementById('reward_rank').value = '';
             document.getElementById('reward_desc').value = '';
             document.getElementById('reward_icon').value = '';
+            document.getElementById('reward_color').value = '#ffffff';
             const submitBtn = document.getElementById('reward_submit_btn');
             submitBtn.innerText = 'เพิ่มรางวัล'; submitBtn.style.backgroundColor = 'var(--info)';
             document.getElementById('reward_cancel_btn').style.display = 'none';
