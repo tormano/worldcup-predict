@@ -201,10 +201,37 @@ app.get('/admin', checkAuth, async (req, res) => {
     const { rows: rules } = await pool.query('SELECT * FROM scoring_rules ORDER BY display_order ASC');
     const { rows: matches } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC');
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
-    const { rows: userStats } = await pool.query(`SELECT u.id, u.username, u.avatar, COUNT(p.match_id) as predicted_count FROM users u LEFT JOIN predictions p ON u.id = p.user_id WHERE u.is_admin = 0 GROUP BY u.id, u.username, u.avatar`);
+    
+    // คำนวณช่วงเวลา Match Day ล่าสุด (นับรอบ 12:00 น.)
+    const thaiTime = getThaiTime();
+    let startMatchDay = new Date(thaiTime);
+    startMatchDay.setHours(12, 0, 0, 0);
+    if (thaiTime.getHours() < 12) {
+        startMatchDay.setDate(startMatchDay.getDate() - 1); // ถ้ายังไม่เที่ยง ให้ถือเป็นรอบของเมื่อวาน
+    }
+    let endMatchDay = new Date(startMatchDay);
+    endMatchDay.setDate(endMatchDay.getDate() + 1); // จบรอบตอนเที่ยงพรุ่งนี้
+
+    const pad = n => n.toString().padStart(2, '0');
+    const startStr = `${startMatchDay.getFullYear()}-${pad(startMatchDay.getMonth()+1)}-${pad(startMatchDay.getDate())} 12:00:00`;
+    const endStr = `${endMatchDay.getFullYear()}-${pad(endMatchDay.getMonth()+1)}-${pad(endMatchDay.getDate())} 12:00:00`;
+    const matchDayText = `${pad(startMatchDay.getDate())}/${pad(startMatchDay.getMonth()+1)} เวลา 12:00 น. ถึง ${pad(endMatchDay.getDate())}/${pad(endMatchDay.getMonth()+1)} เวลา 12:00 น.`;
+
+    // นับจำนวนคู่ทั้งหมดที่เตะในรอบวันล่าสุดนี้
+    const { rows: activeMatchResult } = await pool.query('SELECT COUNT(*) as count FROM matches WHERE kickoff_time >= $1 AND kickoff_time < $2', [startStr, endStr]);
+    const activeTotalMatches = parseInt(activeMatchResult[0].count);
+
+    // ดึงสถานะการทายผลผู้เล่น เฉพาะแมตช์ในรอบ Match Day นี้เท่านั้น
+    const { rows: userStats } = await pool.query(`
+        SELECT u.id, u.username, u.avatar, 
+               (SELECT COUNT(*) FROM predictions p JOIN matches m ON p.match_id = m.id WHERE p.user_id = u.id AND m.kickoff_time >= $1 AND m.kickoff_time < $2) as predicted_count 
+        FROM users u WHERE u.is_admin = 0
+    `, [startStr, endStr]);
+
     const { rows: allUsers } = await pool.query('SELECT id, username, avatar, is_hidden FROM users WHERE is_admin = 0 ORDER BY username ASC');
     const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
-    res.render('admin', { user: req.session.user, matches, rules, userStats, totalMatches: matches.length, allUsers, rewards });
+    
+    res.render('admin', { user: req.session.user, matches, rules, userStats, activeTotalMatches, matchDayText, allUsers, rewards });
 });
 
 app.post('/admin/toggle-visibility', checkAuth, async (req, res) => {
