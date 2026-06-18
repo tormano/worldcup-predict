@@ -69,7 +69,8 @@ app.get('/', checkAuth, async (req, res) => {
     const currentTime = getThaiTime(); 
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
+        // เพิ่มเงื่อนไข: หาก is_published เป็น 1 จะถูกล็อกอัตโนมัติ
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
     res.render('index', { user: req.session.user, matches });
@@ -123,18 +124,21 @@ app.post('/change-password', checkAuth, async (req, res) => {
 
 app.post('/predict', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
-    const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
+    
+    // ตรวจสอบทั้งเวลา และ สถานะการตีพิมพ์ (เปิดโพย)
+    const { rows: match } = await pool.query('SELECT kickoff_time, status, is_published FROM matches WHERE id = $1', [req.body.match_id]);
     const kickOff = new Date(match[0].kickoff_time);
     const currentTime = getThaiTime(); 
-    if (currentTime >= kickOff || match[0].status !== 'OPEN') return res.status(400).send('ปิดรับการทายผลแล้วเนื่องจากการแข่งขันเริ่มขึ้นแล้ว');
+    
+    if (currentTime >= kickOff || match[0].status !== 'OPEN' || match[0].is_published === 1) {
+        return res.status(400).send('ระบบปิดรับการทายผลแล้ว (แอดมินเปิดโพย หรือแมตช์ถูกล็อกแล้ว)');
+    }
     
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
     
-    // แจ้งระบบว่าถ้ายิงมาแบบ AJAX ให้ตอบกลับเป็น JSON ทันทีโดยไม่รีเฟรชหน้า
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.json({ success: true });
     }
-
     res.redirect('/');
 });
 
@@ -178,7 +182,7 @@ app.get('/user/:id/predictions', checkAuth, async (req, res) => {
     const currentTime = getThaiTime(); 
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
         if (!m.is_locked && !m.is_published) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
     });
@@ -202,26 +206,21 @@ app.get('/admin', checkAuth, async (req, res) => {
     const { rows: matches } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC');
     matches.forEach(m => m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16));
     
-    // คำนวณช่วงเวลา Match Day ล่าสุด (นับรอบ 12:00 น.)
     const thaiTime = getThaiTime();
     let startMatchDay = new Date(thaiTime);
     startMatchDay.setHours(12, 0, 0, 0);
-    if (thaiTime.getHours() < 12) {
-        startMatchDay.setDate(startMatchDay.getDate() - 1); // ถ้ายังไม่เที่ยง ให้ถือเป็นรอบของเมื่อวาน
-    }
+    if (thaiTime.getHours() < 12) { startMatchDay.setDate(startMatchDay.getDate() - 1); }
     let endMatchDay = new Date(startMatchDay);
-    endMatchDay.setDate(endMatchDay.getDate() + 1); // จบรอบตอนเที่ยงพรุ่งนี้
+    endMatchDay.setDate(endMatchDay.getDate() + 1);
 
     const pad = n => n.toString().padStart(2, '0');
     const startStr = `${startMatchDay.getFullYear()}-${pad(startMatchDay.getMonth()+1)}-${pad(startMatchDay.getDate())} 12:00:00`;
     const endStr = `${endMatchDay.getFullYear()}-${pad(endMatchDay.getMonth()+1)}-${pad(endMatchDay.getDate())} 12:00:00`;
     const matchDayText = `${pad(startMatchDay.getDate())}/${pad(startMatchDay.getMonth()+1)} เวลา 12:00 น. ถึง ${pad(endMatchDay.getDate())}/${pad(endMatchDay.getMonth()+1)} เวลา 12:00 น.`;
 
-    // นับจำนวนคู่ทั้งหมดที่เตะในรอบวันล่าสุดนี้
     const { rows: activeMatchResult } = await pool.query('SELECT COUNT(*) as count FROM matches WHERE kickoff_time >= $1 AND kickoff_time < $2', [startStr, endStr]);
     const activeTotalMatches = parseInt(activeMatchResult[0].count);
 
-    // ดึงสถานะการทายผลผู้เล่น เฉพาะแมตช์ในรอบ Match Day นี้เท่านั้น
     const { rows: userStats } = await pool.query(`
         SELECT u.id, u.username, u.avatar, 
                (SELECT COUNT(*) FROM predictions p JOIN matches m ON p.match_id = m.id WHERE p.user_id = u.id AND m.kickoff_time >= $1 AND m.kickoff_time < $2) as predicted_count 
@@ -274,19 +273,42 @@ app.post('/admin/delete-match', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
-// เปิดให้ส่งผ่าน AJAX (ส่งกลับ JSON แทนโหลดหน้าใหม่)
+// เปิดให้ส่งผ่าน AJAX และทำการตรวจสอบว่าทายผลครบไหม
 app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query('UPDATE matches SET is_published = $1 WHERE id = $2', [req.body.is_published, req.body.match_id]);
     
-    // ตรวจสอบว่าเป็นการส่งแบบ AJAX ไหม
+    const matchId = parseInt(req.body.match_id);
+    const isPublished = parseInt(req.body.is_published);
+    const force = req.body.force;
+
+    // หากพยายามเปิดโพย และไม่ได้กดบังคับข้าม
+    if (isPublished === 1 && force !== 'true') {
+        const { rows: users } = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_admin = 0 AND is_hidden = 0');
+        const totalUsers = parseInt(users[0].count);
+
+        const { rows: preds } = await pool.query('SELECT COUNT(*) as count FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0', [matchId]);
+        const totalPreds = parseInt(preds[0].count);
+
+        // ตรวจพบคนทายไม่ครบ แจ้งเตือนกลับไปหา Admin
+        if (totalPreds < totalUsers) {
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                return res.json({ 
+                    warning: true, 
+                    message: `⚠️ ยังมีผู้เล่นทายผลไม่ครบ (${totalPreds}/${totalUsers} คน)\n\nหากเปิดโพย ระบบจะ "ล็อกผลการทาย" ของแมตช์นี้ทันที!\nยืนยันที่จะเปิดให้ดูโพยเลยหรือไม่?` 
+                });
+            }
+        }
+    }
+
+    // บันทึกสถานะการตีพิมพ์
+    await pool.query('UPDATE matches SET is_published = $1 WHERE id = $2', [isPublished, matchId]);
+    
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ success: true, is_published: req.body.is_published });
+        return res.json({ success: true, is_published: isPublished });
     }
     res.redirect('/admin');
 });
 
-// บันทึกสกอร์ผ่าน AJAX
 app.post('/admin/settle', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     const matchId = parseInt(req.body.match_id);
@@ -317,7 +339,6 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
         await pool.query('UPDATE predictions SET score_earned = $1 WHERE user_id = $2 AND match_id = $3', [earned, p.user_id, matchId]);
     }
     
-    // ตอบกลับเป็น JSON สำหรับ AJAX
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return res.json({ success: true, home_score: actualHome, away_score: actualAway });
     }
