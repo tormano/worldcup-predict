@@ -30,10 +30,11 @@ const initDB = async () => {
             CREATE TABLE IF NOT EXISTS matches (id SERIAL PRIMARY KEY, stage VARCHAR(50), home_team VARCHAR(100), away_team VARCHAR(100), kickoff_time TIMESTAMP, home_score INTEGER, away_score INTEGER, status VARCHAR(20) DEFAULT 'OPEN', is_published INTEGER DEFAULT 0);
             CREATE TABLE IF NOT EXISTS predictions (user_id INTEGER, match_id INTEGER, home_predict INTEGER, away_predict INTEGER, score_earned INTEGER DEFAULT 0, PRIMARY KEY (user_id, match_id));
             CREATE TABLE IF NOT EXISTS scoring_rules (stage_id VARCHAR(50) PRIMARY KEY, stage_name VARCHAR(100), base_score INTEGER DEFAULT 0, bonus_score INTEGER DEFAULT 0, display_order INTEGER);
-            CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT);
+            CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT, color VARCHAR(20) DEFAULT '#ffffff');
         `);
 
         try { await pool.query('ALTER TABLE users ADD COLUMN is_hidden INTEGER DEFAULT 0;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE rewards ADD COLUMN color VARCHAR(20) DEFAULT \'#ffffff\';'); } catch (e) {}
 
         const adminCheck = await pool.query('SELECT COUNT(*) as count FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows[0].count == 0) {
@@ -157,7 +158,7 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
         LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
         WHERE u.is_admin = 0 AND u.is_hidden = 0
         GROUP BY u.id, u.username, u.avatar 
-        ORDER BY total_score DESC, exact_score_count DESC, correct_result_count DESC
+        ORDER BY total_score DESC, exact_score_score DESC, u.username ASC
     `;
     const { rows: leaderboard } = await pool.query(query);
     const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
@@ -165,7 +166,18 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
 });
 
 app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
-    const userQuery = `SELECT u.id, u.username, u.avatar, COALESCE(SUM(p.score_earned), 0) as total_score FROM users u LEFT JOIN predictions p ON u.id = p.user_id LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED' WHERE u.is_admin = 0 AND u.is_hidden = 0 GROUP BY u.id, u.username, u.avatar ORDER BY total_score DESC, u.username ASC`;
+    const userQuery = `
+        SELECT u.id, u.username, u.avatar, 
+               COALESCE(SUM(p.score_earned), 0) as total_score,
+               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score
+        FROM users u 
+        LEFT JOIN predictions p ON u.id = p.user_id 
+        LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+        WHERE u.is_admin = 0 AND u.is_hidden = 0 
+        GROUP BY u.id, u.username, u.avatar 
+        ORDER BY total_score DESC, exact_score_score DESC, u.username ASC
+    `;
     const { rows: users } = await pool.query(userQuery);
     const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
     const { rows: matches } = await pool.query(matchQuery);
@@ -379,13 +391,13 @@ app.post('/admin/recalculate-all', checkAuth, async (req, res) => {
 
 app.post('/admin/add-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query('INSERT INTO rewards (rank, description, icon) VALUES ($1, $2, $3)', [parseInt(req.body.rank), req.body.description, req.body.icon]);
+    await pool.query('INSERT INTO rewards (rank, description, icon, color) VALUES ($1, $2, $3, $4)', [parseInt(req.body.rank), req.body.description, req.body.icon, req.body.color || '#ffffff']);
     res.redirect('/admin');
 });
 
 app.post('/admin/edit-reward', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query('UPDATE rewards SET rank = $1, description = $2, icon = $3 WHERE id = $4', [parseInt(req.body.rank), req.body.description, req.body.icon, req.body.reward_id]);
+    await pool.query('UPDATE rewards SET rank = $1, description = $2, icon = $3, color = $4 WHERE id = $5', [parseInt(req.body.rank), req.body.description, req.body.icon, req.body.color || '#ffffff', req.body.reward_id]);
     res.redirect('/admin');
 });
 
