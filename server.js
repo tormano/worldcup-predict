@@ -191,14 +191,12 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     let groupedLeaderboard = [];
     let currentGroup = [];
 
-    // ฟังก์ชันเช็คว่าคะแนนทุกอย่างเท่ากันเป๊ะหรือไม่
     const isTie = (u1, u2) => {
         return Number(u1.total_score) === Number(u2.total_score) &&
                Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
                Number(u1.correct_result_score) === Number(u2.correct_result_score);
     };
 
-    // 1. จัดกลุ่มคนคะแนนเท่ากัน
     for (let i = 0; i < leaderboardData.length; i++) {
         const user = leaderboardData[i];
         user.originalRank = i + 1;
@@ -216,12 +214,9 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     }
     if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
 
-    // 2. แจกจ่ายรางวัลและเตรียมค่า rowspan
     let finalLeaderboard = [];
     groupedLeaderboard.forEach(group => {
         let groupReward = null;
-        
-        // หาว่าในกลุ่มนี้ มีใครตกอยู่ในอันดับที่ได้ของรางวัลไหม (ถ้ามี เอามาแชร์กัน)
         for (let u of group) {
             const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
             if (r) {
@@ -231,11 +226,10 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
         }
 
         group.forEach((u, index) => {
-            u.displayRank = u.originalRank; // ใช้ลำดับเรียงปกติ 1, 2, 3, 4
+            u.displayRank = u.originalRank;
             u.isTied = group.length > 1;
             u.reward = groupReward;
 
-            // ตรวจจับคนแรกของกลุ่ม เพื่อเอาไว้ใส่ rowspan ใน EJS
             if (index === 0) {
                 u.rowspan = group.length;
                 u.isFirstInGroup = true;
@@ -498,10 +492,34 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
         const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',');
-            if (cols.length >= 4) await pool.query('INSERT INTO matches (stage, home_team, away_team, kickoff_time) VALUES ($1, $2, $3, $4)', [cols[0].trim(), cols[1].trim(), cols[2].trim(), cols[3].trim()]);
+            if (cols.length >= 4) {
+                let stage = cols[0].trim();
+                let home = cols[1].trim();
+                let away = cols[2].trim();
+                let rawTime = cols[3].trim();
+                
+                // แปลงรูปแบบวันที่กรณีที่ระบุมาแบบ DD-MM-YY H:mm หรือ DD/MM/YYYY
+                let formattedTime = rawTime;
+                const dateMatch = rawTime.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\s+(\d{1,2}:\d{2}(:\d{2})?)/);
+                
+                if (dateMatch) {
+                    let day = dateMatch[1].padStart(2, '0');
+                    let month = dateMatch[2].padStart(2, '0');
+                    let year = dateMatch[3];
+                    if (year.length === 2) year = '20' + year; // เพิ่ม 20 ด้านหน้าถ้าใส่แค่ 26
+                    let time = dateMatch[4];
+                    if (time.length <= 5) time += ':00'; // เติมวินาที
+                    formattedTime = `${year}-${month}-${day} ${time}`;
+                }
+
+                await pool.query('INSERT INTO matches (stage, home_team, away_team, kickoff_time) VALUES ($1, $2, $3, $4)', [stage, home, away, formattedTime]);
+            }
         }
         res.redirect('/admin');
-    } catch (err) { res.status(500).send('เกิดข้อผิดพลาดในการนำเข้า'); }
+    } catch (err) { 
+        console.error("Import Error: ", err);
+        res.status(500).send('เกิดข้อผิดพลาดในการนำเข้า'); 
+    }
 });
 
 app.post('/admin/import-predictions', checkAuth, upload.single('csv_file'), async (req, res) => {
