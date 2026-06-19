@@ -64,25 +64,51 @@ const getThaiTime = () => {
     return new Date(thaiTimeStr);
 };
 
+const formatDBDate = (d) => {
+    const pad = n => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+
 // ==========================================
-// API FOOTBALL INTEGRATION (LIVE SCORES)
+// API FOOTBALL INTEGRATION (SMART LIVE SCORES)
 // ==========================================
-const API_FOOTBALL_KEY = 'ec880bc6dd7cb67e7abea8ae30e178b4'; // <--- แก้ไขนำ API Key ของคุณมาใส่ที่นี่
+const API_FOOTBALL_KEY = 'ใส่_API_KEY_ที่นี่'; // <--- แก้ไขนำ API Key ของคุณมาใส่ที่นี่
 let liveScoresCache = { data: [], lastFetch: 0 };
 
 app.get('/api/live-scores', async (req, res) => {
-    // ถ้ายังไม่ได้ใส่คีย์ ให้จำลองคืนค่าว่างไปก่อน
     if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === 'ใส่_API_KEY_ที่นี่') {
         return res.json([]); 
     }
 
-    const now = Date.now();
-    // Cache ข้อมูล 1 นาที (60000ms) เพื่อป้องกัน API Limit 100 req/day (หากต้องการเซฟกว่านี้ให้ปรับเป็น 120000ms หรือ 300000ms)
-    if (now - liveScoresCache.lastFetch < 60000 && liveScoresCache.data.length > 0) {
-        return res.json(liveScoresCache.data);
-    }
-
     try {
+        const currentTime = getThaiTime();
+        const threeHoursAgo = new Date(currentTime.getTime() - (3 * 60 * 60 * 1000));
+        
+        // 1. เช็คฐานข้อมูลก่อนว่า มีแมตช์ที่เตะอยู่หรือไม่?
+        // (เวลาปัจจุบันอยู่ระหว่าง Kickoff ถึง +3 ชั่วโมง และสถานะยังไม่ FINISHED)
+        const { rows: activeMatches } = await pool.query(
+            `SELECT id FROM matches 
+             WHERE status != 'FINISHED' 
+             AND kickoff_time <= $1 
+             AND kickoff_time >= $2`, 
+            [formatDBDate(currentTime), formatDBDate(threeHoursAgo)]
+        );
+
+        // ถ้าไม่มีแมตช์เตะเลย (Idle Mode) คืนค่าเก่าและไม่ต้องเรียก API เพื่อประหยัดโควต้า 100%
+        if (activeMatches.length === 0) {
+            return res.json(liveScoresCache.data);
+        }
+
+        const now = Date.now();
+        // 2. ถ้ากำลังเตะอยู่ จะอัปเดตข้อมูลทุกๆ 5 นาที (300,000 ms)
+        // เพื่อให้โควต้า 100 req/day เพียงพอครอบคลุม 8-10 ชั่วโมง
+        // หากต้องการให้ดึงห่างขึ้น (เช่นกรณีเตะต่อเนื่อง 12 ชม.) เปลี่ยนค่านี้เป็น 480000 (8 นาที)
+        const CACHE_TIME_MS = 300000; 
+
+        if (now - liveScoresCache.lastFetch < CACHE_TIME_MS && liveScoresCache.data.length > 0) {
+            return res.json(liveScoresCache.data);
+        }
+
         const response = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
             headers: {
                 'x-apisports-key': API_FOOTBALL_KEY
@@ -92,6 +118,7 @@ app.get('/api/live-scores', async (req, res) => {
         liveScoresCache.data = json.response || [];
         liveScoresCache.lastFetch = now;
         res.json(liveScoresCache.data);
+
     } catch (e) {
         console.error('API Football Fetch Error:', e);
         res.json(liveScoresCache.data || []);
