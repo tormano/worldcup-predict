@@ -52,10 +52,22 @@
         .user-cell img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
         
         .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1rem; color: var(--primary); transition: background 0.2s; }
+        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1rem; color: var(--primary); transition: background 0.2s; position: relative; }
         .date-header:hover { background: #f1f5f9; }
         .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
         .date-content table { margin-bottom: 0; border-style: hidden; }
+
+        /* Highlight สำหรับ Match Day ปัจจุบัน */
+        .date-group.today-group { border: 2px solid var(--primary); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+        .date-group.today-group .date-header { background: #eef2ff; color: #3730a3; }
+        .date-group.today-group[open] .date-header { border-bottom: 2px solid #c7d2fe; }
+        .date-group.today-group .date-header:hover { background: #e0e7ff; }
+
+        .today-badge { position: absolute; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 2px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); pointer-events: none; }
+        
+        @media (max-width: 640px) {
+            .today-badge { position: static !important; transform: none !important; display: inline-block; margin-left: 10px; margin-top: 4px; }
+        }
 
         /* สไตล์ Match Layout ย่อส่วนสำหรับแอดมิน */
         .match-layout { display: grid; grid-template-columns: 1fr 32px 120px 32px 1fr; align-items: center; justify-content: center; width: 100%; gap: 8px; }
@@ -69,16 +81,13 @@
         .text-gray { color: #94a3b8; font-weight: 400; }
         
         .flag-icon { width: 32px; height: 24px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
-        
-        /* สไตล์ปุ่ม Toggle เปิด-ซ่อน */
-        .toggle-switch { position: relative; display: inline-block; width: 42px; height: 22px; margin: 0; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 22px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);}
-        input:checked + .slider { background-color: #10b981; }
-        input:checked + .slider:before { transform: translateX(20px); }
 
         .date-separator { text-align: center; font-size: 0.85rem; color: #64748b; padding: 6px; background: #f8fafc; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; font-weight: 500;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-box { background: var(--surface); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
 
         @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         
@@ -269,18 +278,24 @@
                         let startDay = new Date(year, month - 1, day, 12, 0, 0);
                         if (hour < 12) startDay.setDate(startDay.getDate() - 1);
                         
+                        let endDay = new Date(startDay);
+                        endDay.setDate(endDay.getDate() + 1);
+                        
                         const pad = n => n.toString().padStart(2, '0');
                         return {
-                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`
+                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
+                            startDayObj: startDay
                         };
                     };
 
                     const groupedMatches = {};
+                    const groupStartDates = {};
 
                     sortedMatches.forEach(m => {
                         const info = getMatchDayInfo(m.kickoff_time);
                         if(!groupedMatches[info.sortKey]) {
                             groupedMatches[info.sortKey] = [];
+                            groupStartDates[info.sortKey] = info.startDayObj;
                         }
                         groupedMatches[info.sortKey].push(m);
                     });
@@ -295,7 +310,7 @@
                     // เรียงการแสดงผล โดยเอาวันที่ใหม่ล่าสุดขึ้นบน (Reverse)
                     const datesToDisplay = [...sortedKeys].reverse();
 
-                    // หา Match Day ของวันนี้ เพื่อกาง Auto
+                    // หา Match Day ของวันนี้ เพื่อกาง Auto และ Highlight
                     const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
                     const thaiTime = new Date(thaiTimeStr);
                     let currentDayStart = new Date(thaiTime);
@@ -310,11 +325,17 @@
                         // ดึงชื่อรอบจากแมตช์แรกในกลุ่มมาแสดงเป็นชื่อ Grouping
                         const stageName = groupedMatches[date][0].stage_name;
                     %>
-                        <!-- กางไว้เฉพาะ Match Day ปัจจุบัน -->
-                        <details class="date-group" <%= date === currentSortKey ? 'open' : '' %>>
-                            <summary class="date-header">📅 Day <%= dateToDayMap[date] %> : <%= stageName %></summary>
+                        <!-- Highlight & กางไว้เฉพาะ Match Day ปัจจุบัน -->
+                        <details class="date-group <%= date === currentSortKey ? 'today-group' : '' %>" <%= date === currentSortKey ? 'open' : '' %>>
+                            <summary class="date-header">
+                                📅 Day <%= dateToDayMap[date] %> : <%= stageName %>
+                                <% if(date === currentSortKey) { %>
+                                    <span class="today-badge">⭐ Today Matches</span>
+                                <% } %>
+                            </summary>
                             <div class="date-content">
                                 <table>
+                                    <thead><tr><th width="15%">แมตช์ / รอบ</th><th width="55%">คู่แข่งขัน</th><th width="10%" style="text-align: center;">ดูบอลสด</th><th width="20%" style="text-align: right; padding-right: 15px;">จัดการสกอร์</th></tr></thead>
                                     <tbody>
                                         <% 
                                             let currentActualDate = '';
@@ -326,15 +347,20 @@
                                                     currentActualDate = matchActualDate;
                                         %>
                                                 <!-- เส้นคั่นวันที่หากเตะคนละวันใน Match Day เดียวกัน -->
-                                                <tr><td colspan="5" class="date-separator"><%= matchActualDate %></td></tr>
+                                                <tr><td colspan="4" class="date-separator"><%= matchActualDate %></td></tr>
                                         <% 
                                                 }
                                         %>
                                             <tr id="row-match-<%= match.id %>">
-                                                <td width="12%"><strong style="color: var(--primary);">Match <%= match.match_number %></strong></td>
-                                                <td width="15%"><span style="color: var(--text-muted); font-size: 0.85rem;"><%= match.stage_name %></span></td>
+                                                <td width="15%">
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <strong style="color: var(--primary);">Match <%= match.match_number %></strong>
+                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= match.kickoff_time %>')">EDIT</span>
+                                                    </div>
+                                                    <span style="color: var(--text-muted); font-size: 0.85rem;"><%= match.stage_name %></span>
+                                                </td>
                                                 
-                                                <td width="50%">
+                                                <td width="55%">
                                                     <% 
                                                         let homeColor = 'text-black'; let awayColor = 'text-black';
                                                         if(match.status === 'FINISHED') {
@@ -360,14 +386,14 @@
                                                                 <% } else { %>
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= timeStr %></span>
                                                                     <% if(isLive) { %>
-                                                                        <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
+                                                                        <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 2px;">LIVE</span>
                                                                     <% } %>
                                                                 <% } %>
                                                             </div>
                                                             <!-- Edit Mode (Inline Inputs) -->
                                                             <div id="edit-mode-<%= match.id %>" style="display: none; align-items: center; justify-content: center; gap: 6px; width: 100%;">
                                                                 <input type="number" id="home-score-<%= match.id %>" value="<%= match.home_score !== null ? match.home_score : '' %>" style="width: 45px; text-align: center; padding: 4px; font-size: 1.1rem; font-weight: 600;">
-                                                                <span style="font-weight: 500;">-</span>
+                                                                <span style="font-weight: 700;">-</span>
                                                                 <input type="number" id="away-score-<%= match.id %>" value="<%= match.away_score !== null ? match.away_score : '' %>" style="width: 45px; text-align: center; padding: 4px; font-size: 1.1rem; font-weight: 600;">
                                                             </div>
                                                         </div>
@@ -375,23 +401,15 @@
                                                         <div class="away-name <%= awayColor %>" id="away-name-<%= match.id %>" title="<%= match.away_team %>"><%= match.away_team %></div>
                                                     </div>
                                                 </td>
-                                                <td width="8%" style="text-align: center;">
-                                                    <!-- ปุ่ม Slide Toggle สำหรับเปิด/ซ่อน -->
-                                                    <label class="toggle-switch" title="เปิด/ล็อกการทายผล">
-                                                        <input type="checkbox" onchange="togglePublishCheckbox(this, <%= match.id %>)" <%= match.is_published ? 'checked' : '' %>>
-                                                        <span class="slider"></span>
-                                                    </label>
+                                                <td width="10%" style="text-align: center;">
+                                                    <a href="https://www.doballkub.com/live" target="_blank" style="text-decoration: none; font-size: 1.3rem; display: inline-block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="ดูบอลสด">📺</a>
                                                 </td>
-                                                <td width="15%" style="text-align: right; padding-right: 15px;">
+                                                <td width="20%" style="text-align: right; padding-right: 15px;">
                                                     <!-- กลุ่มปุ่มจัดการ -->
                                                     <div id="action-display-<%= match.id %>" style="display: flex; gap: 8px; justify-content: flex-end;">
                                                         <button type="button" id="btn-edit-label-<%= match.id %>" class="btn" style="background: #f1f5f9; color: #475569; padding: 6px 10px;" onclick="enableSettleEdit(<%= match.id %>)">
-                                                            <%= match.status === 'FINISHED' ? '✏️ แก้ไข' : '✏️ กรอกผล' %>
+                                                            <%= match.status === 'FINISHED' ? '✏️ แก้ผล' : '✏️ กรอกผล' %>
                                                         </button>
-                                                        <form action="/admin/delete-match" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบแมตช์นี้?');">
-                                                            <input type="hidden" name="match_id" value="<%= match.id %>">
-                                                            <button type="submit" class="btn btn-outline" style="padding: 6px 10px; border: none; color: #94a3b8;" title="ลบแมตช์">🗑️</button>
-                                                        </form>
                                                     </div>
                                                     <!-- กลุ่มปุ่มบันทึก -->
                                                     <div id="action-edit-<%= match.id %>" style="display: none; gap: 6px; justify-content: flex-end;">
@@ -496,6 +514,32 @@
 
     </div>
 
+    <!-- Modal สำหรับ Edit Match Info -->
+    <div id="editMatchModal" class="modal-overlay">
+        <div class="modal-box" style="text-align: left;">
+            <h3 style="margin-top: 0; color: var(--text);">✏️ แก้ไขข้อมูลแมตช์</h3>
+            <form action="/admin/edit-match-info" method="POST">
+                <input type="hidden" name="match_id" id="edit_match_id">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>ทีมเหย้า</label>
+                    <input type="text" name="home_team" id="edit_home_team" list="team-list" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>ทีมเยือน</label>
+                    <input type="text" name="away_team" id="edit_away_team" list="team-list" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label>
+                    <input type="datetime-local" name="kickoff_time" id="edit_kickoff_time" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">บันทึกการแก้ไข</button>
+                    <button type="button" class="btn" style="flex: 1; background: #e2e8f0; color: #475569;" onclick="closeEditMatchModal()">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function openTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -509,6 +553,19 @@
             openTab(activeTab);
         });
 
+        // ------------------ ระบบ แก้ไขข้อมูลแมตช์ ------------------
+        function openEditMatchModal(id, home, away, time) {
+            document.getElementById('edit_match_id').value = id;
+            document.getElementById('edit_home_team').value = home;
+            document.getElementById('edit_away_team').value = away;
+            document.getElementById('edit_kickoff_time').value = time.replace(' ', 'T');
+            document.getElementById('editMatchModal').classList.add('active');
+        }
+        function closeEditMatchModal() {
+            document.getElementById('editMatchModal').classList.remove('active');
+        }
+
+        // ------------------ ระบบ แก้ไข/บันทึกผลคะแนน ------------------
         function enableSettleEdit(matchId) {
             document.getElementById('display-mode-' + matchId).style.display = 'none';
             document.getElementById('edit-mode-' + matchId).style.display = 'flex';
@@ -580,9 +637,9 @@
                             awayEl.classList.add('text-black');
                         }
 
-                        // อัปเดตข้อความปุ่มให้เป็น แก้ไข หลังจากบันทึกไปแล้ว
+                        // อัปเดตข้อความปุ่มให้เป็น แก้ผล หลังจากบันทึกไปแล้ว
                         const editBtnLabel = document.getElementById('btn-edit-label-' + matchId);
-                        if (editBtnLabel) { editBtnLabel.innerHTML = '✏️ แก้ไข'; }
+                        if (editBtnLabel) { editBtnLabel.innerHTML = '✏️ แก้ผล'; }
                         
                         // กระพริบสีเขียวว่าสำเร็จ
                         const row = document.getElementById('row-match-' + matchId);
@@ -602,42 +659,7 @@
             }
         }
 
-        async function togglePublishCheckbox(checkbox, matchId) {
-            const isPublished = checkbox.checked ? 1 : 0;
-            const data = new URLSearchParams();
-            data.append('match_id', matchId);
-            data.append('is_published', isPublished);
-            
-            checkbox.disabled = true;
-
-            try {
-                let response = await fetch('/admin/toggle-publish', {
-                    method: 'POST', body: data,
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }
-                });
-                
-                if (response.ok) {
-                    let result = await response.json();
-                    if (result.warning) {
-                        if (confirm(result.message)) {
-                            data.append('force', 'true');
-                            await fetch('/admin/toggle-publish', {
-                                method: 'POST', body: data,
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }
-                            });
-                        } else {
-                            checkbox.checked = !checkbox.checked; // Revert
-                        }
-                    }
-                }
-            } catch (e) {
-                alert('เกิดข้อผิดพลาดในการปรับสถานะ');
-                checkbox.checked = !checkbox.checked; // Revert
-            } finally {
-                checkbox.disabled = false;
-            }
-        }
-
+        // ------------------ ระบบของรางวัล ------------------
         function editReward(id, rank, desc, icon, color) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;
