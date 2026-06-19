@@ -64,6 +64,41 @@ const getThaiTime = () => {
     return new Date(thaiTimeStr);
 };
 
+// ==========================================
+// API FOOTBALL INTEGRATION (LIVE SCORES)
+// ==========================================
+const API_FOOTBALL_KEY = 'ec880bc6dd7cb67e7abea8ae30e178b4'; // <--- แก้ไขนำ API Key ของคุณมาใส่ที่นี่
+let liveScoresCache = { data: [], lastFetch: 0 };
+
+app.get('/api/live-scores', async (req, res) => {
+    // ถ้ายังไม่ได้ใส่คีย์ ให้จำลองคืนค่าว่างไปก่อน
+    if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === 'ใส่_API_KEY_ที่นี่') {
+        return res.json([]); 
+    }
+
+    const now = Date.now();
+    // Cache ข้อมูล 1 นาที (60000ms) เพื่อป้องกัน API Limit 100 req/day (หากต้องการเซฟกว่านี้ให้ปรับเป็น 120000ms หรือ 300000ms)
+    if (now - liveScoresCache.lastFetch < 60000 && liveScoresCache.data.length > 0) {
+        return res.json(liveScoresCache.data);
+    }
+
+    try {
+        const response = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
+            headers: {
+                'x-apisports-key': API_FOOTBALL_KEY
+            }
+        });
+        const json = await response.json();
+        liveScoresCache.data = json.response || [];
+        liveScoresCache.lastFetch = now;
+        res.json(liveScoresCache.data);
+    } catch (e) {
+        console.error('API Football Fetch Error:', e);
+        res.json(liveScoresCache.data || []);
+    }
+});
+// ==========================================
+
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
@@ -159,7 +194,6 @@ app.post('/predict', checkAuth, async (req, res) => {
     const kickOff = new Date(match[0].kickoff_time);
     const currentTime = getThaiTime(); 
     
-    // ตรวจสอบเวลาเตะเป็นหลัก
     if (currentTime >= kickOff || match[0].status !== 'OPEN') {
         return res.status(400).send('ระบบปิดรับการทายผลแล้ว (หมดเวลาส่ง หรือแมตช์ถูกล็อกแล้ว)');
     }
@@ -172,7 +206,6 @@ app.post('/predict', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
-// อัปเดต Leaderboard: แชร์รางวัล + รวมเซล์
 app.get('/leaderboard', checkAuth, async (req, res) => {
     const query = `
         SELECT u.id, u.username, u.avatar,
@@ -282,7 +315,6 @@ app.get('/user/:id/predictions', checkAuth, async (req, res) => {
         const kickOff = new Date(m.kickoff_time);
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
-        // ซ่อนคะแนนถ้ายังไม่เริ่มแข่ง
         if (!m.is_locked) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
     });
     res.render('user-predictions', { user: req.session.user, targetUser: targetUser[0], matches });
@@ -292,7 +324,6 @@ app.get('/match/:id/predictions', checkAuth, async (req, res) => {
     const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
     if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
     
-    // ตรวจสอบเวลาเตะ อนุญาตให้ดูได้เมื่อถึงเวลาเตะแล้ว หรือเป็นแอดมิน
     const kickOff = new Date(matchInfo[0].kickoff_time);
     const currentTime = getThaiTime(); 
     if (currentTime < kickOff && !req.session.user.is_admin) {
