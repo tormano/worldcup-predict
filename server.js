@@ -70,26 +70,26 @@ app.get('/', checkAuth, async (req, res) => {
     const currentTime = getThaiTime(); 
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        // เพิ่มเงื่อนไข: หาก is_published เป็น 1 จะถูกล็อกอัตโนมัติ
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
 
-    // คำนวณอันดับปัจจุบันของผู้เล่น (อิงเกณฑ์คะแนนรวม -> แต้มโบนัสสกอร์เป๊ะ -> ตัวอักษร)
+    // คำนวณอันดับปัจจุบันของผู้เล่น (รองรับระบบ "อันดับร่วม")
     const rankQuery = `
         WITH Leaderboard AS (
-            SELECT u.id, u.username,
+            SELECT u.id,
                 COALESCE(SUM(p.score_earned), 0) as total_score,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
             FROM users u 
             LEFT JOIN predictions p ON u.id = p.user_id 
             LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
             LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
             WHERE u.is_admin = 0 AND u.is_hidden = 0
-            GROUP BY u.id, u.username
+            GROUP BY u.id
         ),
         Ranked AS (
-            SELECT id, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, username ASC) as user_rank
+            SELECT id, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC) as user_rank
             FROM Leaderboard
         )
         SELECT user_rank FROM Ranked WHERE id = $1;
@@ -152,7 +152,6 @@ app.post('/change-password', checkAuth, async (req, res) => {
 app.post('/predict', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
     
-    // ตรวจสอบทั้งเวลา และ สถานะการตีพิมพ์ (เปิดโพย)
     const { rows: match } = await pool.query('SELECT kickoff_time, status, is_published FROM matches WHERE id = $1', [req.body.match_id]);
     const kickOff = new Date(match[0].kickoff_time);
     const currentTime = getThaiTime(); 
@@ -169,6 +168,7 @@ app.post('/predict', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
+// อัปเดตตรรกะตารางคะแนนรวม เพื่อรองรับ "อันดับร่วม"
 app.get('/leaderboard', checkAuth, async (req, res) => {
     const query = `
         SELECT u.id, u.username, u.avatar,
@@ -184,25 +184,79 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
         LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
         WHERE u.is_admin = 0 AND u.is_hidden = 0
         GROUP BY u.id, u.username, u.avatar 
-        ORDER BY total_score DESC, exact_score_score DESC, u.username ASC
+        ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
     `;
-    const { rows: leaderboard } = await pool.query(query);
-    const { rows: rewards } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
-    res.render('leaderboard', { user: req.session.user, leaderboard, rewards });
+    const { rows: leaderboardData } = await pool.query(query);
+    const { rows: rewardsData } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
+
+    let groupedLeaderboard = [];
+    let currentGroup = [];
+
+    // เช็คว่าคะแนนเท่ากันไหม (รวมคะแนนหลัก, คะแนนโบนัสสกอร์เป๊ะ, และคะแนนทายผลถูก)
+    const isTie = (u1, u2) => {
+        return Number(u1.total_score) === Number(u2.total_score) &&
+               Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
+               Number(u1.correct_result_score) === Number(u2.correct_result_score);
+    };
+
+    // จัดกลุ่มคนที่มีคะแนนเท่ากัน
+    for (let i = 0; i < leaderboardData.length; i++) {
+        const user = leaderboardData[i];
+        user.originalRank = i + 1;
+
+        if (currentGroup.length === 0) {
+            currentGroup.push(user);
+        } else {
+            if (isTie(user, currentGroup[0])) {
+                currentGroup.push(user);
+            } else {
+                groupedLeaderboard.push(currentGroup);
+                currentGroup = [user];
+            }
+        }
+    }
+    if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
+
+    // แจกจ่ายอันดับ และ ของรางวัลให้คนในกลุ่ม
+    let finalLeaderboard = [];
+    groupedLeaderboard.forEach(group => {
+        const displayRank = group[0].originalRank; // ใช้หมายเลขอันดับบนสุดของกลุ่ม
+        let groupReward = null;
+        
+        // ค้นหาของรางวัลที่ตกอยู่ในช่วงอันดับของกลุ่มนี้ (เช่น อันดับ 7 ถึง 8 มีของรางวัลไหม)
+        for (let u of group) {
+            const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
+            if (r) {
+                groupReward = r;
+                break;
+            }
+        }
+
+        // แจกสถานะ "อันดับร่วม" ให้ทุกคนในกลุ่ม
+        group.forEach(u => {
+            u.displayRank = displayRank;
+            u.isTied = group.length > 1;
+            u.reward = groupReward;
+            finalLeaderboard.push(u);
+        });
+    });
+
+    res.render('leaderboard', { user: req.session.user, leaderboard: finalLeaderboard });
 });
 
 app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
     const userQuery = `
         SELECT u.id, u.username, u.avatar, 
                COALESCE(SUM(p.score_earned), 0) as total_score,
-               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score
+               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
         FROM users u 
         LEFT JOIN predictions p ON u.id = p.user_id 
         LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
         LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
         WHERE u.is_admin = 0 AND u.is_hidden = 0 
         GROUP BY u.id, u.username, u.avatar 
-        ORDER BY total_score DESC, exact_score_score DESC, u.username ASC
+        ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
     `;
     const { rows: users } = await pool.query(userQuery);
     const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
@@ -231,10 +285,7 @@ app.get('/match/:id/predictions', checkAuth, async (req, res) => {
     const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
     if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
     if (!matchInfo[0].is_published && !req.session.user.is_admin) return res.status(403).send('Admin ยังไม่เปิดเผยผลการทาย');
-    
-    // อัปเดต SQL Query: เพิ่มเงื่อนไข AND u.is_admin = 0 AND u.is_hidden = 0
     const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0 ORDER BY u.username ASC`, [req.params.id]);
-    
     res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
 });
 
@@ -314,7 +365,6 @@ app.post('/admin/delete-match', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
-// เปิดให้ส่งผ่าน AJAX และทำการตรวจสอบว่าทายผลครบไหม
 app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     
@@ -322,7 +372,6 @@ app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
     const isPublished = parseInt(req.body.is_published);
     const force = req.body.force;
 
-    // หากพยายามเปิดโพย และไม่ได้กดบังคับข้าม
     if (isPublished === 1 && force !== 'true') {
         const { rows: users } = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_admin = 0 AND is_hidden = 0');
         const totalUsers = parseInt(users[0].count);
@@ -330,7 +379,6 @@ app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
         const { rows: preds } = await pool.query('SELECT COUNT(*) as count FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0', [matchId]);
         const totalPreds = parseInt(preds[0].count);
 
-        // ตรวจพบคนทายไม่ครบ แจ้งเตือนกลับไปหา Admin
         if (totalPreds < totalUsers) {
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 return res.json({ 
@@ -341,7 +389,6 @@ app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
         }
     }
 
-    // บันทึกสถานะการตีพิมพ์
     await pool.query('UPDATE matches SET is_published = $1 WHERE id = $2', [isPublished, matchId]);
     
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
