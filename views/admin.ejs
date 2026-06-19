@@ -335,7 +335,6 @@
                             </summary>
                             <div class="date-content">
                                 <table>
-                                    <thead><tr><th width="15%">แมตช์ / รอบ</th><th width="55%">คู่แข่งขัน</th><th width="10%" style="text-align: center;">ดูบอลสด</th><th width="20%" style="text-align: right; padding-right: 15px;">จัดการสกอร์</th></tr></thead>
                                     <tbody>
                                         <% 
                                             let currentActualDate = '';
@@ -402,7 +401,11 @@
                                                     </div>
                                                 </td>
                                                 <td width="10%" style="text-align: center;">
-                                                    <a href="https://www.doballkub.com/live" target="_blank" style="text-decoration: none; font-size: 1.3rem; display: inline-block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="ดูบอลสด">📺</a>
+                                                    <a href="https://www.doballkub.com/live" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background-color: #ef4444; color: white; margin: 0 auto; transition: transform 0.2s, background-color 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.backgroundColor='#dc2626';" onmouseout="this.style.transform='scale(1)'; this.style.backgroundColor='#ef4444';" title="ดูบอลสด">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px; margin-left: 2px;">
+                                                            <path d="M8 5v14l11-7z"/>
+                                                        </svg>
+                                                    </a>
                                                 </td>
                                                 <td width="20%" style="text-align: right; padding-right: 15px;">
                                                     <!-- กลุ่มปุ่มจัดการ -->
@@ -547,10 +550,29 @@
             document.getElementById(tabId).classList.add('active');
             document.getElementById('btn-' + tabId).classList.add('active');
             localStorage.setItem('adminActiveTab', tabId);
+
+            // เลื่อนหน้าจอไปที่กลุ่ม Today Matches อัตโนมัติเมื่อเปิดแท็บตารางแข่งขัน
+            if (tabId === 'tab-matches') {
+                setTimeout(() => {
+                    const todayGroup = document.querySelector('.today-group');
+                    if (todayGroup) {
+                        todayGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
         }
+        
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
             openTab(activeTab);
+            
+            // ให้หน้าจอเลื่อนอัตโนมัติหาก Refresh ค้างอยู่ที่แท็บ Match
+            setTimeout(() => {
+                const todayGroup = document.querySelector('.today-group');
+                if (todayGroup && activeTab === 'tab-matches') {
+                    todayGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 300);
         });
 
         // ------------------ ระบบ แก้ไขข้อมูลแมตช์ ------------------
