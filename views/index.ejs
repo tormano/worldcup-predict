@@ -46,7 +46,6 @@
         .date-content table { margin-bottom: 0; border-style: hidden; }
         .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
 
-        /* อนิเมชั่นแถวกระพริบตอนบันทึกสำเร็จ */
         tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
@@ -58,7 +57,28 @@
 </head>
 <body>
     <div class="container">
-        <!-- แบนเนอร์ -->
+        <% 
+            const countryFlags = {
+                'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
+                'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
+                'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
+                'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
+                'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
+                'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
+                'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
+                'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
+                'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+                'Tunisia': 'tn', 'USA': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+                'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
+                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa'
+            };
+            const getFlag = (teamName) => {
+                if(!teamName) return '';
+                const code = countryFlags[teamName.trim()];
+                return code ? `<img src="https://flagcdn.com/w20/${code}.png" style="width: 18px; height: 13px; vertical-align: middle; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); margin-right: 4px;" alt="${teamName}">` : ''; 
+            };
+        %>
+
         <div style="width: 100%; text-align: center; margin-bottom: 20px;">
             <img src="https://c7.alamy.com/comp/3DATF7E/2026-soccer-world-cup-blue-modern-banner-3DATF7E.jpg" alt="Banner" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
         </div>
@@ -95,7 +115,6 @@
         </div>
 
         <% 
-            // 1. ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
             const getMatchDayInfo = (kickoffStr) => {
                 const [datePart, timePart] = kickoffStr.split(' ');
                 const [year, month, day] = datePart.split('-').map(Number);
@@ -114,7 +133,6 @@
                 };
             };
 
-            // 2. หา Match Day ปัจจุบัน และจำกัดให้ดูได้ล่วงหน้า 1 วัน
             const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
             const thaiTime = new Date(thaiTimeStr);
             let currentMatchDayStart = new Date(thaiTime);
@@ -122,18 +140,16 @@
             if (thaiTime.getHours() < 12) currentMatchDayStart.setDate(currentMatchDayStart.getDate() - 1);
             
             let maxMatchDayStart = new Date(currentMatchDayStart);
-            maxMatchDayStart.setDate(maxMatchDayStart.getDate() + 1); // เปิดให้เห็นล่วงหน้า 1 Match Day
+            maxMatchDayStart.setDate(maxMatchDayStart.getDate() + 1);
             
             const padDate = n => n.toString().padStart(2, '0');
             const maxSortKey = `${maxMatchDayStart.getFullYear()}-${padDate(maxMatchDayStart.getMonth()+1)}-${padDate(maxMatchDayStart.getDate())}`;
 
-            // 3. จัดกลุ่มแมตช์ตาม Match Day
             const groupedMatches = {};
             const groupLabels = {};
             
             matches.forEach(m => {
                 const info = getMatchDayInfo(m.kickoff_time);
-                // ดึงข้อมูล "อดีตทั้งหมด" จนถึง "Match Day ที่เปิดให้ทายผล"
                 if (info.sortKey <= maxSortKey) {
                     if(!groupedMatches[info.sortKey]) {
                         groupedMatches[info.sortKey] = [];
@@ -143,7 +159,6 @@
                 }
             });
             
-            // 4. เรียงลำดับจากล่าสุด (รอบที่จะทายผล) ลงไปหาอดีต
             const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
         %>
 
@@ -151,7 +166,6 @@
             <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันที่เปิดให้ทายผลในขณะนี้</div>
         <% } else { %>
             <% datesToDisplay.forEach((date, index) => { %>
-                <!-- กางหน้าต่าง (open) เฉพาะตารางรอบล่าสุด (index 0) นอกนั้นพับไว้ -->
                 <details class="date-group" <%= index === 0 ? 'open' : '' %>>
                     <summary class="date-header">📅 รอบการแข่งขัน: <%= groupLabels[date] %></summary>
                     <div class="date-content">
@@ -162,7 +176,7 @@
                                     <% const hasPredicted = match.home_predict !== null && match.home_predict !== undefined; %>
                                     <tr id="row-match-<%= match.id %>">
                                         <td><span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span><br><small><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
-                                        <td><span class="team-name"><%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%= match.away_team %></span></td>
+                                        <td><span class="team-name"><%- getFlag(match.home_team) %> <%= match.home_team %></span> <span class="vs">vs</span> <span class="team-name"><%- getFlag(match.away_team) %> <%= match.away_team %></span></td>
                                         <td>
                                             <% if(match.status === 'FINISHED') { %> <span style="color: #16a34a; font-weight: 700;"><%= match.home_score %> - <%= match.away_score %></span>
                                             <% } else { %> <span style="color: var(--text-muted);">-</span> <% } %>

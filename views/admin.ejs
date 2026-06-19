@@ -65,6 +65,29 @@
 </head>
 <body>
     <div class="container">
+        <% 
+            // ระบบแสดงผลรูปธงชาติอัตโนมัติ
+            const countryFlags = {
+                'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
+                'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
+                'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
+                'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
+                'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
+                'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
+                'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
+                'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
+                'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+                'Tunisia': 'tn', 'USA': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+                'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
+                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa'
+            };
+            const getFlag = (teamName) => {
+                if(!teamName) return '';
+                const code = countryFlags[teamName.trim()];
+                return code ? `<img src="https://flagcdn.com/w20/${code}.png" style="width: 18px; height: 13px; vertical-align: middle; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); margin-right: 4px;" alt="${teamName}">` : ''; 
+            };
+        %>
+
         <div class="admin-header-card">
             <div class="admin-info">
                 <img src="<%= user.avatar %>" alt="Admin Avatar">
@@ -156,12 +179,25 @@
 
         <!-- TAB 2: ตารางแข่งขัน & จัดการสกอร์ -->
         <div id="tab-matches" class="tab-content">
+            <datalist id="team-list">
+                <option value="Argentina"><option value="Australia"><option value="Austria"><option value="Belgium">
+                <option value="Brazil"><option value="Cameroon"><option value="Canada"><option value="Colombia">
+                <option value="Costa Rica"><option value="Croatia"><option value="Czech Republic"><option value="Denmark">
+                <option value="Ecuador"><option value="Egypt"><option value="England"><option value="France">
+                <option value="Germany"><option value="Ghana"><option value="Iran"><option value="Italy">
+                <option value="Japan"><option value="Mexico"><option value="Morocco"><option value="Netherlands">
+                <option value="Nigeria"><option value="Panama"><option value="Peru"><option value="Poland">
+                <option value="Portugal"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia">
+                <option value="South Korea"><option value="Spain"><option value="Sweden"><option value="Switzerland">
+                <option value="Tunisia"><option value="USA"><option value="Uruguay"><option value="Wales">
+            </datalist>
+
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">➕</span><h3>เพิ่มแมตช์ใหม่</h3></div>
                 <form action="/admin/add-match" method="POST" class="form-row">
                     <div class="form-group"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
-                    <div class="form-group"><label>ทีมเหย้า</label><input type="text" name="home_team" required></div>
-                    <div class="form-group"><label>ทีมเยือน</label><input type="text" name="away_team" required></div>
+                    <div class="form-group"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
+                    <div class="form-group"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
                     <div class="form-group" style="flex: 1.5;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" required></div>
                     <div class="form-group" style="flex: 0;"><button type="submit" class="btn">เพิ่ม</button></div>
                 </form>
@@ -218,12 +254,11 @@
                                             <tr id="row-match-<%= match.id %>">
                                                 <td><strong style="color: var(--primary);">#<%= match.id %></strong></td>
                                                 <td><%= match.stage_name %><br><small style="color: var(--text-muted);"><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
-                                                <td><strong><%= match.home_team %></strong> vs <strong><%= match.away_team %></strong></td>
+                                                <td><strong><%- getFlag(match.home_team) %> <%= match.home_team %></strong> vs <strong><%- getFlag(match.away_team) %> <%= match.away_team %></strong></td>
                                                 <td>
                                                     <span id="status-badge-<%= match.id %>" class="badge <%= match.status === 'FINISHED' ? '' : 'badge-warning' %>" style="display:block; margin-bottom:6px;">
                                                         <%= match.status === 'FINISHED' ? `จบ (${match.home_score}-${match.away_score})` : 'รอแข่ง' %>
                                                     </span>
-                                                    <!-- ส่งแบบ AJAX เพื่อให้หน้าไม่รีเฟรช -->
                                                     <form action="/admin/toggle-publish" method="POST" style="margin:0;" onsubmit="togglePublish(event, this)">
                                                         <input type="hidden" name="match_id" value="<%= match.id %>">
                                                         <input type="hidden" name="is_published" value="<%= match.is_published ? '0' : '1' %>">
@@ -236,7 +271,6 @@
                                                 </td>
                                                 <td>
                                                     <div style="display: flex; gap: 8px; align-items: center;">
-                                                        <!-- ฟอร์มบันทึกคะแนน AJAX -->
                                                         <form action="/admin/settle" method="POST" style="margin:0; display:flex; gap:4px; align-items:center;" onsubmit="submitSettle(event, this, <%= match.id %>)">
                                                             <input type="hidden" name="match_id" value="<%= match.id %>">
                                                             <input type="number" id="home-score-<%= match.id %>" class="score-input" name="home_score" required style="width:40px; padding: 4px;" value="<%= match.home_score !== null ? match.home_score : '' %>" <%= match.status === 'FINISHED' ? 'readonly' : '' %>> :
@@ -367,21 +401,13 @@
             openTab(activeTab);
         });
 
-        // ----------------------------------------------------
-        // ฟังก์ชัน AJAX สำหรับยืนยันสกอร์ (ตารางแข่งขัน)
-        // ----------------------------------------------------
         function enableSettleEdit(matchId) {
             const homeInput = document.getElementById('home-score-' + matchId);
             const awayInput = document.getElementById('away-score-' + matchId);
-            
-            // เปิดให้กรอกข้อมูลได้
             homeInput.readOnly = false;
             awayInput.readOnly = false;
-            
-            // สลับปุ่มแก้ไข -> บันทึก
             document.getElementById('btn-edit-' + matchId).style.display = 'none';
             document.getElementById('btn-save-' + matchId).style.display = 'inline-block';
-            
             homeInput.focus();
             homeInput.select();
         }
@@ -403,20 +429,15 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success) {
-                        // ปรับ UI ของช่องกรอกเป็น Readonly
                         document.getElementById('home-score-' + matchId).readOnly = true;
                         document.getElementById('away-score-' + matchId).readOnly = true;
-                        
-                        // สลับปุ่มเป็น แก้ไข
                         document.getElementById('btn-save-' + matchId).style.display = 'none';
                         document.getElementById('btn-edit-' + matchId).style.display = 'inline-block';
                         
-                        // เปลี่ยนป้ายเป็น 'จบ (x-y)'
                         const badge = document.getElementById('status-badge-' + matchId);
                         badge.className = 'badge';
                         badge.innerText = `จบ (${result.home_score}-${result.away_score})`;
                         
-                        // กระพริบสีเขียวที่แถวนั้น เพื่อบอกว่าบันทึกเสร็จแล้ว
                         const row = document.getElementById('row-match-' + matchId);
                         if (row) {
                             row.classList.add('flash-success');
@@ -434,9 +455,6 @@
             }
         }
 
-        // ----------------------------------------------------
-        // ฟังก์ชัน AJAX สำหรับปุ่มเปิด/ซ่อนไพ่ทายผล พร้อมระบบตรวจสอบคนทาย
-        // ----------------------------------------------------
         async function togglePublish(event, form) {
             event.preventDefault();
             const data = new URLSearchParams(new FormData(form));
@@ -484,9 +502,6 @@
             }
         }
 
-        // ----------------------------------------------------
-        // ฟังก์ชันสำหรับ รางวัล
-        // ----------------------------------------------------
         function editReward(id, rank, desc, icon, color) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;
