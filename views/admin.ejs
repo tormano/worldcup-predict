@@ -388,8 +388,8 @@
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
                                                                     <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
                                                                 <% } else if(isLive) { %>
-                                                                    <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= liveHome %> - <%= liveAway %></span>
-                                                                    <span class="live-minute-badge" data-kickoff="<%= match.kickoff_time %>" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
+                                                                    <span id="live-score-text-<%= match.id %>" style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= liveHome %> - <%= liveAway %></span>
+                                                                    <span class="live-minute-badge" data-match-id="<%= match.id %>" data-home="<%= match.home_team %>" data-away="<%= match.away_team %>" data-kickoff="<%= match.kickoff_time %>" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
                                                                 <% } else { %>
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= timeStr %></span>
                                                                 <% } %>
@@ -560,7 +560,6 @@
             document.getElementById('btn-' + tabId).classList.add('active');
             localStorage.setItem('adminActiveTab', tabId);
 
-            // เลื่อนหน้าจอไปที่กลุ่ม Today Matches
             if (tabId === 'tab-matches') {
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-group');
@@ -576,7 +575,6 @@
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
             openTab(activeTab);
             
-            // ให้หน้าจอเลื่อนอัตโนมัติหาก Refresh ค้างอยู่ที่แท็บ Match
             setTimeout(() => {
                 const todayGroup = document.querySelector('.today-group');
                 if (todayGroup && activeTab === 'tab-matches') {
@@ -586,37 +584,56 @@
             }, 300);
         });
 
-        // ------------------ ระบบคำนวณนาทีแข่งขัน Live ------------------
-        function updateLiveMinutes() {
+        // ------------------ ระบบดึงคะแนนและนาทีแข่งขัน Live จาก API ------------------
+        async function updateLiveScoresFromAPI() {
             const liveBadges = document.querySelectorAll('.live-minute-badge');
-            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-            
-            liveBadges.forEach(badge => {
-                const kickoffStr = badge.getAttribute('data-kickoff');
-                let kickoff = new Date(kickoffStr.replace(' ', 'T'));
-                if (isNaN(kickoff.getTime())) return;
-                
-                let diffMs = now - kickoff;
-                let mins = Math.floor(diffMs / 60000);
-                
-                let display = "LIVE";
-                if (mins >= 0 && mins <= 45) {
-                    display = mins + "'";
-                } else if (mins > 45 && mins <= 60) {
-                    display = "HT";
-                } else if (mins > 60 && mins <= 105) {
-                    display = (mins - 15) + "'";
-                } else if (mins > 105 && mins <= 120) {
-                    display = "90+'";
-                } else if (mins > 120) {
-                    display = "120+'";
-                }
-                
-                badge.innerText = display;
-            });
+            if (liveBadges.length === 0) return; 
+
+            try {
+                const res = await fetch('/api/live-scores');
+                const apiData = await res.json();
+
+                if (!apiData || apiData.length === 0) return;
+
+                liveBadges.forEach(badge => {
+                    const homeTeam = badge.getAttribute('data-home').toLowerCase();
+                    const awayTeam = badge.getAttribute('data-away').toLowerCase();
+                    const matchId = badge.getAttribute('data-match-id');
+
+                    // จับคู่ชื่อทีมจาก API (เทียบเงื่อนไขแบบยืดหยุ่น)
+                    const apiMatch = apiData.find(m =>
+                        m.teams.home.name.toLowerCase().includes(homeTeam) ||
+                        m.teams.away.name.toLowerCase().includes(awayTeam) ||
+                        homeTeam.includes(m.teams.home.name.toLowerCase()) ||
+                        awayTeam.includes(m.teams.away.name.toLowerCase())
+                    );
+
+                    if (apiMatch) {
+                        const elapsed = apiMatch.fixture.status.elapsed;
+                        const statusShort = apiMatch.fixture.status.short; 
+                        const goalsHome = apiMatch.goals.home !== null ? apiMatch.goals.home : 0;
+                        const goalsAway = apiMatch.goals.away !== null ? apiMatch.goals.away : 0;
+
+                        const scoreSpan = document.getElementById('live-score-text-' + matchId);
+                        if (scoreSpan) {
+                            scoreSpan.innerText = `${goalsHome} - ${goalsAway}`;
+                        }
+
+                        let displayTime = "LIVE";
+                        if (statusShort === 'HT') displayTime = "HT";
+                        else if (statusShort === 'FT') displayTime = "FT";
+                        else if (elapsed) displayTime = elapsed + "'";
+
+                        badge.innerText = displayTime;
+                    }
+                });
+            } catch (e) {
+                console.error("Failed to fetch live scores", e);
+            }
         }
-        updateLiveMinutes();
-        setInterval(updateLiveMinutes, 60000); // อัปเดตทุกๆ 1 นาที
+
+        setInterval(updateLiveScoresFromAPI, 60000); // อัปเดตทุก 1 นาที
+        setTimeout(updateLiveScoresFromAPI, 2000);   // ดึงครั้งแรกเมื่อโหลดหน้าเสร็จ
 
         // ------------------ ระบบ แก้ไขข้อมูลแมตช์ ------------------
         function openEditMatchModal(id, home, away, time) {
@@ -676,16 +693,13 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success) {
-                        // ปิดโหมด Edit
                         cancelSettleEdit(matchId);
                         
-                        // อัปเดตการแสดงผลคะแนน และเปลี่ยนกลับเป็น Display mode (มีอักษร FT เล็กๆ)
                         document.getElementById('display-mode-' + matchId).innerHTML = `
                             <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;">${result.home_score} - ${result.away_score}</span>
                             <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
                         `;
                         
-                        // ปรับสีทีมที่ชนะ (สีดำ) และทีมที่แพ้ (สีเทา) (ถอดตัวหนาออก)
                         const homeEl = document.getElementById('home-name-' + matchId);
                         const awayEl = document.getElementById('away-name-' + matchId);
                         homeEl.classList.remove('text-black', 'text-gray');
@@ -702,15 +716,12 @@
                             awayEl.classList.add('text-black');
                         }
 
-                        // อัปเดตข้อความปุ่มให้เป็น แก้ผล หลังจากบันทึกไปแล้ว
                         const editBtnLabel = document.getElementById('btn-edit-label-' + matchId);
                         if (editBtnLabel) { editBtnLabel.innerHTML = '✏️ แก้ผล'; }
                         
-                        // ซ่อนปุ่มดูบอลสดทันทีที่จบเกม
                         const liveLink = document.querySelector(`#row-match-${matchId} a[title="ดูบอลสด"]`);
                         if (liveLink) liveLink.style.display = 'none';
 
-                        // กระพริบสีเขียวว่าสำเร็จ
                         const row = document.getElementById('row-match-' + matchId);
                         if (row) {
                             row.classList.add('flash-success');
