@@ -72,7 +72,7 @@ const formatDBDate = (d) => {
 // ==========================================
 // API FOOTBALL INTEGRATION (SMART LIVE SCORES)
 // ==========================================
-const API_FOOTBALL_KEY = 'ใส่_API_KEY_ที่นี่'; // <--- แก้ไขนำ API Key ของคุณมาใส่ที่นี่
+const API_FOOTBALL_KEY = 'ec880bc6dd7cb67e7abea8ae30e178b4'; // <--- แก้ไขนำ API Key ของคุณมาใส่ที่นี่
 let liveScoresCache = { data: [], lastFetch: 0 };
 
 app.get('/api/live-scores', async (req, res) => {
