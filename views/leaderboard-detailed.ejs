@@ -30,7 +30,7 @@
         .sticky-col { position: sticky; left: 0; background-color: var(--surface); z-index: 20; text-align: left; min-width: 250px; max-width: 300px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
         thead .sticky-col { z-index: 30; background-color: var(--bg); vertical-align: bottom; padding-bottom: 8px; }
         
-        /* สไตล์ Match Layout ย่อส่วนสำหรับตาราง Matrix */
+        /* สไตล์ Match Layout แบบ 1 บรรทัด */
         .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; margin-top: 4px; }
         .match-layout .team { display: flex; align-items: center; flex: 1; gap: 4px; width: 40%; }
         .match-layout .team.home { justify-content: flex-end; text-align: right; }
@@ -76,12 +76,17 @@
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
                 'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
                 'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw'
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
-                const code = countryFlags[teamName.trim()];
-                return code ? `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
+                const searchName = teamName.trim().toLowerCase();
+                for (const [name, code] of Object.entries(countryFlags)) {
+                    if (name.toLowerCase() === searchName) {
+                        return `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">`;
+                    }
+                }
+                return ''; 
             };
         %>
 

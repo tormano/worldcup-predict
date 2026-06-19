@@ -47,10 +47,9 @@
         .pred-val { font-family: monospace; font-weight: 700; font-size: 1.1rem; letter-spacing: 1px; color: #334155; }
         .score-badge { font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 10px; min-width: 30px; display: inline-block; }
         
-        /* แยกระดับสีคะแนน */
-        .score-exact { background-color: #f59e0b; color: white; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3); } /* สีส้ม: ทายสกอร์เป๊ะ */
-        .score-success { background-color: #10b981; color: white; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); } /* สีเขียว: ทายถูกทิศทาง */
-        .score-zero { background-color: #f1f5f9; color: #64748b; } /* สีเทา: ทายผิด / ไม่ได้แต้ม */
+        .score-exact { background-color: #f59e0b; color: white; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3); } 
+        .score-success { background-color: #10b981; color: white; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); } 
+        .score-zero { background-color: #f1f5f9; color: #64748b; } 
         
         tbody tr:hover td { background-color: #f8fafc; }
         tbody tr:hover .sticky-col { background-color: #f8fafc; }
@@ -74,12 +73,19 @@
                 'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
                 'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
-                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is'
+                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
+                'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
-                const code = countryFlags[teamName.trim()];
-                return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
+                const searchName = teamName.trim().toLowerCase();
+                for (const [name, code] of Object.entries(countryFlags)) {
+                    if (name.toLowerCase() === searchName) {
+                        return `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">`;
+                    }
+                }
+                return ''; 
             };
         %>
 
