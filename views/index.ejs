@@ -22,38 +22,49 @@
         .card-title h2 { margin: 0; color: var(--text); font-size: 1.3rem; }
         
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
         
-        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
-        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 8px; width: 40%; }
-        .match-layout .team.home { justify-content: flex-end; text-align: right; }
-        .match-layout .team.away { justify-content: flex-start; text-align: left; }
-        .match-layout .team-name { font-weight: 600; font-size: 0.95rem; }
-        .match-layout .score-vs { width: 20%; text-align: center; font-weight: 700; color: var(--text-muted); }
-        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 6px; border: 1px solid #bbf7d0; font-size: 0.95rem; white-space: nowrap; }
-        .match-layout .vs { font-size: 0.85rem; color: #94a3b8; }
-        .flag-icon { width: 24px; height: 18px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
+        /* สไตล์ Match Layout ย่อส่วนสำหรับหน้าทายผล */
+        .match-layout { display: grid; grid-template-columns: 1fr 32px 100px 32px 1fr; align-items: center; justify-content: center; width: 100%; gap: 8px; }
+        .match-layout .home-name { text-align: right; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: end; transition: color 0.3s;}
+        .match-layout .home-flag { display: flex; justify-content: flex-end; }
+        .match-layout .score-vs { text-align: center; color: var(--text-muted); font-size: 0.85rem; min-height: 38px; display: flex; align-items: center; justify-content: center; }
+        .match-layout .away-flag { display: flex; justify-content: flex-start; }
+        .match-layout .away-name { text-align: left; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: start; transition: color 0.3s;}
         
-        input[type="number"] { width: 50px; padding: 6px; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-family: inherit; font-size: 0.95rem; transition: 0.2s; }
-        input[type="number"]:focus { outline: none; border-color: var(--primary); }
-        input[readonly] { background-color: #f1f5f9; color: #334155; font-weight: 600; border-color: transparent; cursor: default; }
-        input[readonly]:focus { outline: none; border-color: transparent; }
-        input:disabled { background-color: #e2e8f0; color: #94a3b8; cursor: not-allowed; border-color: transparent; }
+        .text-black { color: #0f172a; font-weight: 500; }
+        .text-gray { color: #94a3b8; font-weight: 400; }
         
-        .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.9rem;}
+        .flag-icon { width: 32px; height: 24px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
+        
+        .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.9rem; text-align: center;}
         .btn:hover { background-color: var(--primary-hover); }
-        .btn-view { background-color: #10b981; } .btn-view:hover { background-color: #059669; }
-        .btn-edit { background-color: #f59e0b; } .btn-edit:hover { background-color: #d97706; }
-        
-        .locked-badge { color: #94a3b8; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-view { background-color: #0ea5e9; } .btn-view:hover { background-color: #0284c7; }
+        .btn-success { background-color: #10b981; } .btn-success:hover { background-color: #059669; }
 
         .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05); }
-        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.05rem; color: var(--primary); transition: background 0.2s; }
+        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.05rem; color: var(--primary); transition: background 0.2s; position: relative;}
         .date-header:hover { background: #f1f5f9; }
         .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
         .date-content table { margin-bottom: 0; border-style: hidden; }
-        .date-content th { background: #ffffff; border-bottom: 2px solid var(--border); }
+
+        /* Highlight สำหรับ Match Day ปัจจุบัน/ถัดไป */
+        .date-group.today-group { border: 2px solid var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
+        .date-group.today-group .date-header { background: #eff6ff; color: #1e40af; }
+        .date-group.today-group[open] .date-header { border-bottom: 2px solid #bfdbfe; }
+        .date-group.today-group .date-header:hover { background: #dbeafe; }
+
+        .today-badge { position: absolute; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 2px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3); pointer-events: none; }
+        
+        @media (max-width: 640px) {
+            .today-badge { position: static !important; transform: none !important; display: inline-block; margin-left: 10px; margin-top: 4px; }
+            .match-layout { grid-template-columns: 1fr 24px 60px 24px 1fr; }
+            .match-layout .home-name, .match-layout .away-name { font-size: 0.8rem; max-width: 70px; }
+            .flag-icon { width: 24px; height: 18px; }
+        }
+
+        .date-separator { text-align: center; font-size: 0.85rem; color: #64748b; padding: 6px; background: #f8fafc; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; font-weight: 500;}
 
         tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
 
@@ -62,6 +73,8 @@
         .modal-box { background: var(--surface); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
         .modal-overlay.active .modal-box { transform: translateY(0); }
         .modal-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+
+        @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -84,17 +97,24 @@
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
                 'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
                 'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo', 'Czechia': 'cz'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
                 const searchName = teamName.trim().toLowerCase();
                 for (const [name, code] of Object.entries(countryFlags)) {
                     if (name.toLowerCase() === searchName) {
-                        return `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">`;
+                        return `<img src="https://flagcdn.com/32x24/${code}.png" class="flag-icon" alt="${teamName}">`;
                     }
                 }
                 return ''; 
+            };
+
+            const formatDayDate = (dStr) => {
+                const dObj = new Date(dStr.replace(' ', 'T'));
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
             };
         %>
 
@@ -130,10 +150,14 @@
 
         <div class="card-title">
             <h2 style="margin: 0;">🏆 ตารางแข่งขันและการทายผล</h2>
-            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง หรือเมื่อแอดมินกดเปิดโพยแล้ว</small>
+            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง</small>
         </div>
 
         <% 
+            // 1. เรียงแมตช์ตามเวลาเก่า->ใหม่ (เพื่อ Run Match No.)
+            const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+            sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
+
             const getMatchDayInfo = (kickoffStr) => {
                 const [datePart, timePart] = kickoffStr.split(' ');
                 const [year, month, day] = datePart.split('-').map(Number);
@@ -142,109 +166,159 @@
                 let startDay = new Date(year, month - 1, day, 12, 0, 0);
                 if (hour < 12) startDay.setDate(startDay.getDate() - 1);
                 
-                let endDay = new Date(startDay);
-                endDay.setDate(endDay.getDate() + 1);
-                
                 const pad = n => n.toString().padStart(2, '0');
                 return {
-                    sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
-                    displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
+                    sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`
                 };
             };
 
-            const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
-            const thaiTime = new Date(thaiTimeStr);
-            let currentMatchDayStart = new Date(thaiTime);
-            currentMatchDayStart.setHours(12, 0, 0, 0);
-            if (thaiTime.getHours() < 12) currentMatchDayStart.setDate(currentMatchDayStart.getDate() - 1);
-            
-            let maxMatchDayStart = new Date(currentMatchDayStart);
-            maxMatchDayStart.setDate(maxMatchDayStart.getDate() + 1);
-            
-            const padDate = n => n.toString().padStart(2, '0');
-            const maxSortKey = `${maxMatchDayStart.getFullYear()}-${padDate(maxMatchDayStart.getMonth()+1)}-${padDate(maxMatchDayStart.getDate())}`;
-
             const groupedMatches = {};
-            const groupLabels = {};
-            
-            matches.forEach(m => {
+            sortedMatches.forEach(m => {
                 const info = getMatchDayInfo(m.kickoff_time);
-                if (info.sortKey <= maxSortKey) {
-                    if(!groupedMatches[info.sortKey]) {
-                        groupedMatches[info.sortKey] = [];
-                        groupLabels[info.sortKey] = info.displayLabel;
-                    }
-                    groupedMatches[info.sortKey].push(m);
-                }
+                if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
+                groupedMatches[info.sortKey].push(m);
             });
-            
-            const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
+
+            // 2. สร้าง Day X
+            const sortedKeys = Object.keys(groupedMatches).sort();
+            const dateToDayMap = {};
+            sortedKeys.forEach((key, idx) => { dateToDayMap[key] = idx + 1; });
+
+            // 3. หาวันที่เป็น "Today Matches" (วันแรกที่ยังมีแมตช์ที่ยังแข่งไม่จบ)
+            let activeGroupKey = null;
+            for (let date of sortedKeys) {
+                const hasUnfinished = groupedMatches[date].some(m => m.status !== 'FINISHED');
+                if (hasUnfinished) {
+                    activeGroupKey = date;
+                    break;
+                }
+            }
+            if (!activeGroupKey && sortedKeys.length > 0) {
+                activeGroupKey = sortedKeys[sortedKeys.length - 1]; // ถ้าจบหมดแล้ว ให้ตกที่วันสุดท้าย
+            }
+
+            // 4. เอาวันใหม่สุดขึ้นบน
+            const datesToDisplay = [...sortedKeys].reverse();
         %>
 
         <% if(datesToDisplay.length === 0) { %>
             <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันที่เปิดให้ทายผลในขณะนี้</div>
         <% } else { %>
-            <% datesToDisplay.forEach((date, index) => { %>
-                <details class="date-group" <%= index === 0 ? 'open' : '' %>>
-                    <summary class="date-header">📅 รอบการแข่งขัน: <%= groupLabels[date] %></summary>
+            <% datesToDisplay.forEach(date => { 
+                const stageName = groupedMatches[date][0].stage_name;
+                const isTodayGroup = (date === activeGroupKey);
+            %>
+                <details class="date-group <%= isTodayGroup ? 'today-group' : '' %>" <%= isTodayGroup ? 'open' : '' %>>
+                    <summary class="date-header">
+                        📅 Day <%= dateToDayMap[date] %> : <%= stageName %>
+                        <% if(isTodayGroup) { %>
+                            <span class="today-badge">⭐ Today Matches</span>
+                        <% } %>
+                    </summary>
                     <div class="date-content">
                         <table>
-                            <thead><tr><th width="15%">รอบ/เวลา</th><th width="45%">คู่แข่งขัน (ผลการแข่งขัน)</th><th width="25%">การทายผล</th><th width="15%">ดูคำทายเพื่อน</th></tr></thead>
+                            <thead><tr><th width="15%">แมตช์ / รอบ</th><th width="45%">คู่แข่งขัน (ผลการแข่งขัน)</th><th width="25%" style="text-align: center;">การทายผล</th><th width="15%" style="text-align: center;">ดูโพยเพื่อน</th></tr></thead>
                             <tbody>
-                                <% groupedMatches[date].forEach(match => { %>
-                                    <% const hasPredicted = match.home_predict !== null && match.home_predict !== undefined; %>
+                                <% 
+                                    let currentActualDate = '';
+                                    groupedMatches[date].sort((a, b) => new Date(b.kickoff_time.replace(' ', 'T')) - new Date(a.kickoff_time.replace(' ', 'T'))).forEach(match => { 
+                                        const hasPredicted = match.home_predict !== null && match.home_predict !== undefined;
+                                        const matchActualDate = formatDayDate(match.kickoff_time);
+                                        if (matchActualDate !== currentActualDate) {
+                                            currentActualDate = matchActualDate;
+                                %>
+                                            <tr><td colspan="4" class="date-separator"><%= matchActualDate %></td></tr>
+                                <% 
+                                        }
+
+                                        // คำนวณสถานะ Live
+                                        const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                        const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+                                        const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
+                                        const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
+                                        const timeStr = match.kickoff_time.substring(11, 16);
+
+                                        const liveHome = match.home_score !== null ? match.home_score : 0;
+                                        const liveAway = match.away_score !== null ? match.away_score : 0;
+                                %>
                                     <tr id="row-match-<%= match.id %>">
-                                        <td><span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span><br><small><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
+                                        <td width="15%">
+                                            <strong style="color: var(--primary);">Match <%= match.match_number %></strong><br>
+                                            <span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span>
+                                        </td>
                                         
-                                        <td>
+                                        <td width="45%">
+                                            <% 
+                                                let homeColor = 'text-black'; let awayColor = 'text-black';
+                                                if(match.status === 'FINISHED') {
+                                                    if(match.home_score > match.away_score) { homeColor = 'text-black'; awayColor = 'text-gray'; }
+                                                    else if(match.away_score > match.home_score) { homeColor = 'text-gray'; awayColor = 'text-black'; }
+                                                }
+                                            %>
                                             <div class="match-layout">
-                                                <div class="team home">
-                                                    <span class="team-name"><%= match.home_team %></span>
-                                                    <%- getFlag(match.home_team) %>
-                                                </div>
-                                                <div class="score-vs">
+                                                <div class="home-name <%= homeColor %>" title="<%= match.home_team %>"><%= match.home_team %></div>
+                                                <div class="home-flag"><%- getFlag(match.home_team) %></div>
+                                                <div class="score-vs" style="flex-direction: column;">
                                                     <% if(match.status === 'FINISHED') { %>
-                                                        <span class="actual-score"><%= match.home_score %> - <%= match.away_score %></span>
+                                                        <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
+                                                        <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
+                                                    <% } else if(isLive) { %>
+                                                        <span id="live-score-text-<%= match.id %>" style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= liveHome %> - <%= liveAway %></span>
+                                                        <span class="live-minute-badge" data-match-id="<%= match.id %>" data-home="<%= match.home_team %>" data-away="<%= match.away_team %>" data-kickoff="<%= match.kickoff_time %>" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
                                                     <% } else { %>
-                                                        <span class="vs">vs</span>
+                                                        <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= timeStr %></span>
                                                     <% } %>
                                                 </div>
-                                                <div class="team away">
-                                                    <%- getFlag(match.away_team) %>
-                                                    <span class="team-name"><%= match.away_team %></span>
-                                                </div>
+                                                <div class="away-flag"><%- getFlag(match.away_team) %></div>
+                                                <div class="away-name <%= awayColor %>" title="<%= match.away_team %>"><%= match.away_team %></div>
                                             </div>
                                         </td>
                                         
-                                        <td>
-                                            <form action="/predict" method="POST" style="margin:0; display:flex; gap:8px; align-items:center; justify-content: center;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
-                                                <input type="hidden" name="match_id" value="<%= match.id %>">
-                                                <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required> :
-                                                <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" <% if(match.is_locked) { %>disabled<% } else if(hasPredicted) { %>readonly<% } %> required>
-                                                
-                                                <% if(!match.is_locked) { %> 
-                                                    <% if(hasPredicted) { %>
-                                                        <button type="button" class="btn btn-edit" id="btn-edit-<%= match.id %>" onclick="enableEdit(<%= match.id %>)">แก้ไข</button>
-                                                        <button type="submit" class="btn" id="btn-save-<%= match.id %>" style="display:none;">บันทึก</button>
+                                        <td width="25%" style="text-align: center;">
+                                            <div id="pred-display-<%= match.id %>" style="display: <%= (!hasPredicted && !match.is_locked) ? 'none' : 'block' %>;">
+                                                <% if (hasPredicted) { %>
+                                                    <div style="font-family: monospace; font-size: 1.15rem; font-weight: 700; color: #334155; letter-spacing: 1px;"><%= match.home_predict %> - <%= match.away_predict %></div>
+                                                    
+                                                    <% if (!match.is_locked) { %>
+                                                        <button type="button" class="btn" style="background: #f1f5f9; color: #475569; padding: 4px 12px; font-size: 0.8rem; margin-top: 4px;" onclick="enableEdit(<%= match.id %>)">✏️ แก้ผล</button>
+                                                    <% } else if(match.status === 'FINISHED') { %>
+                                                        <div style="margin-top: 4px; font-size: 0.75rem; font-weight: 700; color: <%= match.score_earned > 0 ? '#10b981' : '#64748b' %>; background: <%= match.score_earned > 0 ? '#dcfce7' : '#f1f5f9' %>; padding: 2px 8px; border-radius: 6px; display: inline-block;">
+                                                            <%= match.score_earned > 0 ? `+${match.score_earned} แต้ม` : '0 แต้ม' %>
+                                                        </div>
                                                     <% } else { %>
-                                                        <button type="button" class="btn btn-edit" id="btn-edit-<%= match.id %>" onclick="enableEdit(<%= match.id %>)" style="display:none;">แก้ไข</button>
-                                                        <button type="submit" class="btn" id="btn-save-<%= match.id %>">บันทึก</button>
+                                                        <div style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8;">🔒 รอลุ้นผล</div>
                                                     <% } %>
-                                                <% } else { %> 
-                                                    <div class="locked-badge">🔒 ล็อกผลแล้ว</div> 
+                                                    
+                                                <% } else { %>
+                                                    <span style="color: var(--text-muted); font-size: 0.85rem;">- ไม่ได้ทายผล -</span>
                                                 <% } %>
-                                            </form>
-                                            <% if(match.status === 'FINISHED') { %>
-                                                <div style="margin-top: 5px; font-size: 0.85rem; font-weight: 600; text-align: center; color: <%= match.score_earned > 0 ? '#10b981' : '#ef4444' %>;">
-                                                    <%= match.score_earned > 0 ? `+${match.score_earned} แต้ม` : '0 แต้ม' %>
-                                                </div>
+                                            </div>
+
+                                            <% if (!match.is_locked) { %>
+                                                <% if (!hasPredicted) { %>
+                                                    <div id="btn-init-<%= match.id %>">
+                                                        <button type="button" class="btn btn-view" style="padding: 6px 14px; font-size: 0.85rem;" onclick="enableEdit(<%= match.id %>)">✏️ กรอกผล</button>
+                                                    </div>
+                                                <% } %>
+                                                <form action="/predict" method="POST" id="pred-form-<%= match.id %>" style="display: none; flex-direction: column; align-items: center; gap: 8px;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
+                                                    <input type="hidden" name="match_id" value="<%= match.id %>">
+                                                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                                        <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" style="width: 42px; text-align: center; padding: 4px; font-size: 1.05rem; font-weight: 600;" required>
+                                                        <span style="font-weight: 700;">-</span>
+                                                        <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" style="width: 42px; text-align: center; padding: 4px; font-size: 1.05rem; font-weight: 600;" required>
+                                                    </div>
+                                                    <div style="display: flex; gap: 6px;">
+                                                        <button type="submit" class="btn btn-success" style="padding: 4px 10px; font-size: 0.8rem;" id="btn-save-<%= match.id %>">💾 บันทึก</button>
+                                                        <button type="button" class="btn" style="background: #e2e8f0; color: #475569; padding: 4px 10px; font-size: 0.8rem;" onclick="cancelEdit(<%= match.id %>, <%= hasPredicted %>)">ยกเลิก</button>
+                                                    </div>
+                                                </form>
                                             <% } %>
                                         </td>
-                                        <td>
+                                        <td width="15%" style="text-align: center;">
                                             <% if(match.is_published) { %>
-                                                <a href="/match/<%= match.id %>/predictions" class="btn btn-view" style="font-size: 0.8rem; padding: 4px 8px;">👁️ ดูของเพื่อน</a>
+                                                <a href="/match/<%= match.id %>/predictions" class="btn" style="background: #38bdf8; color: #fff; font-size: 0.8rem; padding: 6px 10px;">👁️ ดูของเพื่อน</a>
                                             <% } else { %>
-                                                <small style="color: var(--text-muted);">🔒 รอยืนยัน</small>
+                                                <span style="color: var(--text-muted); font-size: 0.8rem; background: #f1f5f9; padding: 4px 8px; border-radius: 6px;">🔒 รอเวลาเตะ</span>
                                             <% } %>
                                         </td>
                                     </tr>
@@ -267,15 +341,90 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // เลื่อนหน้าจอไปที่กลุ่ม Today Matches อัตโนมัติ (หน่วงเวลาเล็กน้อยเพื่อให้เรนเดอร์เสร็จ)
+            setTimeout(() => {
+                const todayGroup = document.querySelector('.today-group');
+                if (todayGroup) {
+                    todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 300);
+        });
+
+        // ------------------ ระบบดึงคะแนนและนาทีแข่งขัน Live จาก API ------------------
+        async function updateLiveScoresFromAPI() {
+            const liveBadges = document.querySelectorAll('.live-minute-badge');
+            if (liveBadges.length === 0) return; 
+
+            try {
+                const res = await fetch('/api/live-scores');
+                const apiData = await res.json();
+
+                if (!apiData || apiData.length === 0) return;
+
+                liveBadges.forEach(badge => {
+                    const homeTeam = badge.getAttribute('data-home').toLowerCase();
+                    const awayTeam = badge.getAttribute('data-away').toLowerCase();
+                    const matchId = badge.getAttribute('data-match-id');
+
+                    const apiMatch = apiData.find(m =>
+                        m.teams.home.name.toLowerCase().includes(homeTeam) ||
+                        m.teams.away.name.toLowerCase().includes(awayTeam) ||
+                        homeTeam.includes(m.teams.home.name.toLowerCase()) ||
+                        awayTeam.includes(m.teams.away.name.toLowerCase())
+                    );
+
+                    if (apiMatch) {
+                        const elapsed = apiMatch.fixture.status.elapsed;
+                        const statusShort = apiMatch.fixture.status.short; 
+                        const goalsHome = apiMatch.goals.home !== null ? apiMatch.goals.home : 0;
+                        const goalsAway = apiMatch.goals.away !== null ? apiMatch.goals.away : 0;
+
+                        const scoreSpan = document.getElementById('live-score-text-' + matchId);
+                        if (scoreSpan) {
+                            scoreSpan.innerText = `${goalsHome} - ${goalsAway}`;
+                        }
+
+                        let displayTime = "LIVE";
+                        if (statusShort === 'HT') displayTime = "HT";
+                        else if (statusShort === 'FT') displayTime = "FT";
+                        else if (elapsed) displayTime = elapsed + "'";
+
+                        badge.innerText = displayTime;
+                    }
+                });
+            } catch (e) {
+                console.error("Failed to fetch live scores", e);
+            }
+        }
+
+        setInterval(updateLiveScoresFromAPI, 60000); 
+        setTimeout(updateLiveScoresFromAPI, 2000);
+
+        // ------------------ ระบบ Form กรอกผล ------------------
         function enableEdit(matchId) {
-            const homeInput = document.getElementById('home-' + matchId);
-            const awayInput = document.getElementById('away-' + matchId);
-            document.getElementById('btn-edit-' + matchId).style.display = 'none';
-            document.getElementById('btn-save-' + matchId).style.display = 'inline-block';
-            homeInput.removeAttribute('readonly'); 
-            awayInput.removeAttribute('readonly');
-            homeInput.focus(); 
-            homeInput.select(); 
+            const displayBox = document.getElementById('pred-display-' + matchId);
+            const initBtn = document.getElementById('btn-init-' + matchId);
+            const formBox = document.getElementById('pred-form-' + matchId);
+            
+            if (displayBox) displayBox.style.display = 'none';
+            if (initBtn) initBtn.style.display = 'none';
+            formBox.style.display = 'flex';
+            
+            document.getElementById('home-' + matchId).focus(); 
+        }
+
+        function cancelEdit(matchId, hasPredicted) {
+            const displayBox = document.getElementById('pred-display-' + matchId);
+            const initBtn = document.getElementById('btn-init-' + matchId);
+            const formBox = document.getElementById('pred-form-' + matchId);
+
+            formBox.style.display = 'none';
+            if (hasPredicted && displayBox) {
+                displayBox.style.display = 'block';
+            } else if (!hasPredicted && initBtn) {
+                initBtn.style.display = 'block';
+            }
         }
 
         async function submitPrediction(event, form, matchId) {
@@ -294,15 +443,13 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success) {
-                        document.getElementById('home-' + matchId).setAttribute('readonly', true);
-                        document.getElementById('away-' + matchId).setAttribute('readonly', true);
-                        document.getElementById('btn-save-' + matchId).style.display = 'none';
-                        document.getElementById('btn-edit-' + matchId).style.display = 'inline-block';
-                        
                         const row = document.getElementById('row-match-' + matchId);
                         if (row) {
                             row.classList.add('flash-success');
-                            setTimeout(() => row.classList.remove('flash-success'), 1000);
+                            setTimeout(() => {
+                                row.classList.remove('flash-success');
+                                window.location.reload(); // รีเฟรชเพื่อแสดง UI ใหม่ที่เซฟแล้ว
+                            }, 500);
                         }
                     }
                 } else if (response.status === 400) { showModal(await response.text());
