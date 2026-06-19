@@ -74,7 +74,33 @@ app.get('/', checkAuth, async (req, res) => {
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
-    res.render('index', { user: req.session.user, matches });
+
+    // คำนวณอันดับปัจจุบันของผู้เล่น (อิงเกณฑ์คะแนนรวม -> แต้มโบนัสสกอร์เป๊ะ -> ตัวอักษร)
+    const rankQuery = `
+        WITH Leaderboard AS (
+            SELECT u.id, u.username,
+                COALESCE(SUM(p.score_earned), 0) as total_score,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score
+            FROM users u 
+            LEFT JOIN predictions p ON u.id = p.user_id 
+            LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+            LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+            WHERE u.is_admin = 0 AND u.is_hidden = 0
+            GROUP BY u.id, u.username
+        ),
+        Ranked AS (
+            SELECT id, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, username ASC) as user_rank
+            FROM Leaderboard
+        )
+        SELECT user_rank FROM Ranked WHERE id = $1;
+    `;
+    let userRank = '-';
+    try {
+        const { rows: rankRows } = await pool.query(rankQuery, [req.session.user.id]);
+        if (rankRows.length > 0) userRank = rankRows[0].user_rank;
+    } catch (e) { console.error('Error fetching rank:', e); }
+
+    res.render('index', { user: req.session.user, matches, userRank });
 });
 
 app.get('/login', (req, res) => res.render('login', { msg: null }));
