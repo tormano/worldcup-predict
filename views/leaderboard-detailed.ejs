@@ -27,30 +27,62 @@
         .user-th .username { display: block; color: var(--text); font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-th .score { display: block; color: var(--primary); font-size: 0.75rem; font-weight: 700; background: #eff6ff; border-radius: 4px; margin-top: 2px; padding: 1px 0; }
         
-        .sticky-col { position: sticky; left: 0; background-color: var(--surface); z-index: 20; text-align: left; min-width: 160px; max-width: 200px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
+        .sticky-col { position: sticky; left: 0; background-color: var(--surface); z-index: 20; text-align: left; min-width: 250px; max-width: 300px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
         thead .sticky-col { z-index: 30; background-color: var(--bg); vertical-align: bottom; padding-bottom: 8px; }
         
-        .match-info { font-weight: 600; color: var(--text); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
-        .match-stage { display: block; font-size: 0.65rem; color: var(--text-muted); font-weight: 400; margin-bottom: 1px; }
-        .actual-score { color: #16a34a; font-weight: 700; background: #dcfce7; padding: 1px 4px; border-radius: 4px; font-size: 0.75rem; margin: 0 4px; }
+        /* สไตล์ Match Layout ย่อส่วนสำหรับตาราง Matrix */
+        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; margin-top: 4px; }
+        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 4px; width: 40%; }
+        .match-layout .team.home { justify-content: flex-end; text-align: right; }
+        .match-layout .team.away { justify-content: flex-start; text-align: left; }
+        .match-layout .team-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75px; }
+        .match-layout .score-vs { width: 20%; text-align: center; }
+        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 0.8rem; font-weight: 700; white-space: nowrap;}
+        .flag-icon { width: 20px; height: 15px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
+        
+        .match-stage { display: block; font-size: 0.65rem; color: var(--text-muted); font-weight: 400; margin-bottom: 1px; text-align: center; }
         
         .pred-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
         .pred-val { font-family: monospace; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.5px; color: #334155; }
         .score-badge { font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 8px; min-width: 16px; }
-        .score-success { background-color: #10b981; color: white; } /* สีเขียว: ถูกทิศทาง */
-        .score-exact { background-color: #f59e0b; color: white; } /* สีส้ม: สกอร์เป๊ะ */
+        .score-success { background-color: #10b981; color: white; }
+        .score-exact { background-color: #f59e0b; color: white; }
         .score-zero { background-color: #f1f5f9; color: #94a3b8; }
         
         tbody tr:hover td { background-color: #f8fafc; }
         tbody tr:hover .sticky-col { background-color: #f8fafc; }
 
-        /* สีและแถบแบ่งสำหรับ Match Day */
         .matchday-row th { background-color: #e2e8f0; padding: 6px 10px; font-weight: 600; border-bottom: 2px solid #cbd5e1; }
         .matchday-row .sticky-col { z-index: 25; color: var(--primary); font-size: 0.85rem; }
     </style>
 </head>
 <body>
     <div class="container">
+        <% 
+            const countryFlags = {
+                'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
+                'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
+                'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
+                'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
+                'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
+                'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
+                'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
+                'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
+                'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+                'Tunisia': 'tn', 'USA': 'us', 'United States': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+                'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
+                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
+                'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
+                'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
+                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is'
+            };
+            const getFlag = (teamName) => {
+                if(!teamName) return '';
+                const code = countryFlags[teamName.trim()];
+                return code ? `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
+            };
+        %>
+
         <div class="top-nav-bar">
             <a href="/leaderboard" class="nav-link">⬅️ กลับตารางคะแนนรวม (ปกติ)</a>
             <a href="/" class="nav-link">🏠 หน้าหลักทายผล</a>
@@ -60,7 +92,6 @@
             <h2>🔍 ตารางเปรียบเทียบผลการทายแบบละเอียด</h2>
             
             <% 
-                // ฟังก์ชันคำนวณ Match Day (ตัดยอดตอน 12:00 น.)
                 const getMatchDayInfo = (kickoffTime) => {
                     let dateObj = new Date(kickoffTime);
                     let hour = dateObj.getHours();
@@ -84,7 +115,6 @@
                 const groupedMatches = {};
                 const groupLabels = {};
                 
-                // จัดกลุ่มแมตช์ที่แข่งจบแล้ว
                 matches.forEach(m => {
                     const info = getMatchDayInfo(m.kickoff_time);
                     if(!groupedMatches[info.sortKey]) {
@@ -94,7 +124,6 @@
                     groupedMatches[info.sortKey].push(m);
                 });
                 
-                // จัดเรียงรอบที่เตะล่าสุดมาอยู่ด้านบน (Reverse Sort)
                 const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
             %>
 
@@ -108,7 +137,7 @@
                         <thead>
                             <tr>
                                 <th class="sticky-col">
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">แมตช์ที่แข่งจบแล้ว</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">แมตช์ที่แข่งจบแล้ว</div>
                                 </th>
                                 <% users.forEach(u => { %>
                                     <th class="user-th">
@@ -121,26 +150,30 @@
                         </thead>
                         <tbody>
                             <% datesToDisplay.forEach(date => { %>
-                                <!-- แถบหัวข้อ Match Day แบ่งแต่ละกลุ่ม -->
                                 <tr class="matchday-row">
-                                    <th class="sticky-col">📅 <%= groupLabels[date] %></th>
+                                    <th class="sticky-col" style="text-align: left;">📅 <%= groupLabels[date] %></th>
                                     <th colspan="<%= users.length %>"></th>
                                 </tr>
 
-                                <!-- วนลูปแมตช์ใน Match Day นั้นๆ -->
                                 <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(m => { %>
                                     <tr>
-                                        <!-- คอลัมน์แมตช์ (ล็อกซ้าย) -->
                                         <td class="sticky-col">
                                             <span class="match-stage"><%= m.stage_name %></span>
-                                            <div class="match-info">
-                                                <span><%= m.home_team %></span>
-                                                <span class="actual-score"><%= m.home_score %>-<%= m.away_score %></span>
-                                                <span><%= m.away_team %></span>
+                                            <div class="match-layout">
+                                                <div class="team home">
+                                                    <span class="team-name" title="<%= m.home_team %>"><%= m.home_team %></span>
+                                                    <%- getFlag(m.home_team) %>
+                                                </div>
+                                                <div class="score-vs">
+                                                    <span class="actual-score"><%= m.home_score %>-<%= m.away_score %></span>
+                                                </div>
+                                                <div class="team away">
+                                                    <%- getFlag(m.away_team) %>
+                                                    <span class="team-name" title="<%= m.away_team %>"><%= m.away_team %></span>
+                                                </div>
                                             </div>
                                         </td>
                                         
-                                        <!-- คอลัมน์ผู้เล่นแต่ละคน -->
                                         <% users.forEach(u => { 
                                             const p = predMap[m.id] && predMap[m.id][u.id];
                                             let isExact = false;

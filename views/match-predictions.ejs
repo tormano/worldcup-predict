@@ -27,13 +27,21 @@
         .user-th img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #cbd5e1; object-fit: cover; margin-bottom: 5px; }
         .user-th .username { display: block; color: var(--text); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .sticky-col { position: sticky; left: 0; background-color: var(--surface); z-index: 20; text-align: left; min-width: 180px; max-width: 250px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); vertical-align: middle; }
+        .sticky-col { position: sticky; left: 0; background-color: var(--surface); z-index: 20; text-align: left; min-width: 250px; max-width: 300px; box-shadow: 2px 0 4px rgba(0,0,0,0.05); vertical-align: middle; }
         thead .sticky-col { z-index: 30; background-color: var(--bg); vertical-align: bottom; padding-bottom: 12px; }
         
-        .match-info { font-weight: 600; color: var(--text); font-size: 0.95rem; display: flex; flex-direction: column; gap: 4px; white-space: nowrap; }
-        .match-stage { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 400; margin-bottom: 6px; }
-        .actual-score { color: #16a34a; font-weight: 700; background: #dcfce7; padding: 4px 10px; border-radius: 6px; font-size: 0.9rem; display: inline-block; margin-top: 8px; border: 1px solid #bbf7d0;}
-        .pending-score { color: #854d0e; font-weight: 600; background: #fef9c3; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; display: inline-block; margin-top: 8px; border: 1px solid #fef08a;}
+        /* สไตล์ Match Layout */
+        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; margin-top: 6px; }
+        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 4px; width: 40%; }
+        .match-layout .team.home { justify-content: flex-end; text-align: right; }
+        .match-layout .team.away { justify-content: flex-start; text-align: left; }
+        .match-layout .team-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
+        .match-layout .score-vs { width: 20%; text-align: center; }
+        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+        .match-layout .pending-score { color: #854d0e; font-weight: 600; background: #fef9c3; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #fef08a; white-space: nowrap;}
+        .flag-icon { width: 20px; height: 15px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
+        
+        .match-stage { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: 400; margin-bottom: 6px; text-align: center; }
         
         .pred-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
         .pred-val { font-family: monospace; font-weight: 700; font-size: 1.1rem; letter-spacing: 1px; color: #334155; }
@@ -50,6 +58,31 @@
 </head>
 <body>
     <div class="container">
+        <% 
+            const countryFlags = {
+                'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
+                'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
+                'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
+                'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
+                'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
+                'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
+                'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
+                'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
+                'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+                'Tunisia': 'tn', 'USA': 'us', 'United States': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+                'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
+                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
+                'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
+                'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
+                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is'
+            };
+            const getFlag = (teamName) => {
+                if(!teamName) return '';
+                const code = countryFlags[teamName.trim()];
+                return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
+            };
+        %>
+
         <div class="top-nav-bar">
             <a href="/" class="nav-link">⬅️ กลับหน้าหลักทายผล</a>
             <% if (user.is_admin === 1) { %>
@@ -69,7 +102,7 @@
                         <thead>
                             <tr>
                                 <th class="sticky-col">
-                                    <div style="font-size: 0.85rem; color: var(--text-muted);">ข้อมูลแมตช์</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">ข้อมูลแมตช์</div>
                                 </th>
                                 <% predictions.forEach(p => { %>
                                     <th class="user-th">
@@ -81,21 +114,27 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <!-- คอลัมน์แมตช์ (ล็อกซ้าย) -->
                                 <td class="sticky-col">
                                     <span class="match-stage"><%= match.stage_name %></span>
-                                    <div class="match-info">
-                                        <span>🏠 <%= match.home_team %></span>
-                                        <span>✈️ <%= match.away_team %></span>
+                                    <div class="match-layout">
+                                        <div class="team home">
+                                            <span class="team-name" title="<%= match.home_team %>"><%= match.home_team %></span>
+                                            <%- getFlag(match.home_team) %>
+                                        </div>
+                                        <div class="score-vs">
+                                            <% if(match.status === 'FINISHED') { %>
+                                                <span class="actual-score"><%= match.home_score %> - <%= match.away_score %></span>
+                                            <% } else { %>
+                                                <span class="pending-score">รอผล</span>
+                                            <% } %>
+                                        </div>
+                                        <div class="team away">
+                                            <%- getFlag(match.away_team) %>
+                                            <span class="team-name" title="<%= match.away_team %>"><%= match.away_team %></span>
+                                        </div>
                                     </div>
-                                    <% if(match.status === 'FINISHED') { %>
-                                        <span class="actual-score">ผลจริง: <%= match.home_score %> - <%= match.away_score %></span>
-                                    <% } else { %>
-                                        <span class="pending-score">รอผลการแข่งขัน</span>
-                                    <% } %>
                                 </td>
                                 
-                                <!-- คอลัมน์ผู้เล่นแต่ละคน -->
                                 <% predictions.forEach(p => { 
                                     let isExact = false;
                                     let isCorrect = false;

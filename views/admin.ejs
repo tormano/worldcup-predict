@@ -58,15 +58,22 @@
         .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
         .date-content table { margin-bottom: 0; border-style: hidden; }
         .date-content th { background: #ffffff; }
+
+        /* สไตล์ Match Layout ย่อส่วนสำหรับแอดมิน */
+        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; }
+        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 4px; width: 45%; }
+        .match-layout .team.home { justify-content: flex-end; text-align: right; }
+        .match-layout .team.away { justify-content: flex-start; text-align: left; }
+        .match-layout .team-name { font-weight: 600; font-size: 0.95rem; }
+        .match-layout .score-vs { width: 10%; text-align: center; color: var(--text-muted); font-size: 0.85rem;}
+        .flag-icon { width: 22px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
         
-        /* Transition ให้แถวกระพริบสีตอนบันทึกสำเร็จ */
         tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
     </style>
 </head>
 <body>
     <div class="container">
         <% 
-            // ระบบแสดงผลรูปธงชาติอัตโนมัติ
             const countryFlags = {
                 'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
                 'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
@@ -77,14 +84,17 @@
                 'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
                 'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
                 'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
-                'Tunisia': 'tn', 'USA': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+                'Tunisia': 'tn', 'USA': 'us', 'United States': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
                 'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
-                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa'
+                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
+                'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
+                'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
+                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
                 const code = countryFlags[teamName.trim()];
-                return code ? `<img src="https://flagcdn.com/w20/${code}.png" style="width: 18px; height: 13px; vertical-align: middle; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); margin-right: 4px;" alt="${teamName}">` : ''; 
+                return code ? `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
             };
         %>
 
@@ -189,7 +199,12 @@
                 <option value="Nigeria"><option value="Panama"><option value="Peru"><option value="Poland">
                 <option value="Portugal"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia">
                 <option value="South Korea"><option value="Spain"><option value="Sweden"><option value="Switzerland">
-                <option value="Tunisia"><option value="USA"><option value="Uruguay"><option value="Wales">
+                <option value="Tunisia"><option value="USA"><option value="United States"><option value="Uruguay"><option value="Wales">
+                <option value="South Africa"><option value="Bosnia and Herzegovina"><option value="Chile"><option value="Paraguay">
+                <option value="Venezuela"><option value="New Zealand"><option value="Qatar"><option value="Scotland">
+                <option value="Haiti"><option value="Turkey"><option value="Ivory Coast"><option value="Jamaica">
+                <option value="Republic of Ireland"><option value="Northern Ireland"><option value="Ukraine"><option value="Greece">
+                <option value="Algeria"><option value="Honduras"><option value="Iceland">
             </datalist>
 
             <div class="card">
@@ -248,13 +263,25 @@
                             <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
-                                    <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
+                                    <thead><tr><th width="10%">ID</th><th width="20%">รอบ/เวลาเตะ</th><th width="35%">คู่แข่งขัน</th><th width="15%">สถานะ/ซ่อน</th><th width="20%">จัดการสกอร์/ลบ</th></tr></thead>
                                     <tbody>
                                         <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(match => { %>
                                             <tr id="row-match-<%= match.id %>">
                                                 <td><strong style="color: var(--primary);">#<%= match.id %></strong></td>
                                                 <td><%= match.stage_name %><br><small style="color: var(--text-muted);"><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
-                                                <td><strong><%- getFlag(match.home_team) %> <%= match.home_team %></strong> vs <strong><%- getFlag(match.away_team) %> <%= match.away_team %></strong></td>
+                                                <td>
+                                                    <div class="match-layout">
+                                                        <div class="team home">
+                                                            <span class="team-name" title="<%= match.home_team %>"><%= match.home_team %></span>
+                                                            <%- getFlag(match.home_team) %>
+                                                        </div>
+                                                        <div class="score-vs">vs</div>
+                                                        <div class="team away">
+                                                            <%- getFlag(match.away_team) %>
+                                                            <span class="team-name" title="<%= match.away_team %>"><%= match.away_team %></span>
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td>
                                                     <span id="status-badge-<%= match.id %>" class="badge <%= match.status === 'FINISHED' ? '' : 'badge-warning' %>" style="display:block; margin-bottom:6px;">
                                                         <%= match.status === 'FINISHED' ? `จบ (${match.home_score}-${match.away_score})` : 'รอแข่ง' %>
