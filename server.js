@@ -68,9 +68,13 @@ app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     const currentTime = getThaiTime(); 
+    
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
+        // ล็อกผลเมื่อถึงเวลาเตะ หรือ แอดมินยืนยันคะแนนแล้ว
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
+        // ใช้เป็น flag เพื่อเปิดให้ดูโพยเพื่อนเมื่อถึงเวลาเตะแล้ว
+        m.is_published = currentTime >= kickOff ? 1 : 0; 
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
 
@@ -151,12 +155,13 @@ app.post('/change-password', checkAuth, async (req, res) => {
 app.post('/predict', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
     
-    const { rows: match } = await pool.query('SELECT kickoff_time, status, is_published FROM matches WHERE id = $1', [req.body.match_id]);
+    const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
     const kickOff = new Date(match[0].kickoff_time);
     const currentTime = getThaiTime(); 
     
-    if (currentTime >= kickOff || match[0].status !== 'OPEN' || match[0].is_published === 1) {
-        return res.status(400).send('ระบบปิดรับการทายผลแล้ว (แอดมินเปิดโพย หรือแมตช์ถูกล็อกแล้ว)');
+    // ตรวจสอบเวลาเตะเป็นหลัก
+    if (currentTime >= kickOff || match[0].status !== 'OPEN') {
+        return res.status(400).send('ระบบปิดรับการทายผลแล้ว (หมดเวลาส่ง หรือแมตช์ถูกล็อกแล้ว)');
     }
     
     await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
@@ -275,9 +280,10 @@ app.get('/user/:id/predictions', checkAuth, async (req, res) => {
     const currentTime = getThaiTime(); 
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN' || m.is_published === 1;
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
-        if (!m.is_locked && !m.is_published) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
+        // ซ่อนคะแนนถ้ายังไม่เริ่มแข่ง
+        if (!m.is_locked) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
     });
     res.render('user-predictions', { user: req.session.user, targetUser: targetUser[0], matches });
 });
@@ -285,7 +291,14 @@ app.get('/user/:id/predictions', checkAuth, async (req, res) => {
 app.get('/match/:id/predictions', checkAuth, async (req, res) => {
     const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
     if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
-    if (!matchInfo[0].is_published && !req.session.user.is_admin) return res.status(403).send('Admin ยังไม่เปิดเผยผลการทาย');
+    
+    // ตรวจสอบเวลาเตะ อนุญาตให้ดูได้เมื่อถึงเวลาเตะแล้ว หรือเป็นแอดมิน
+    const kickOff = new Date(matchInfo[0].kickoff_time);
+    const currentTime = getThaiTime(); 
+    if (currentTime < kickOff && !req.session.user.is_admin) {
+        return res.status(403).send('ยังไม่ถึงเวลาแข่งขัน ไม่สามารถเปิดดูโพยเพื่อนได้');
+    }
+    
     const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0 ORDER BY u.username ASC`, [req.params.id]);
     res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
 });
@@ -366,35 +379,12 @@ app.post('/admin/delete-match', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
-app.post('/admin/toggle-publish', checkAuth, async (req, res) => {
+app.post('/admin/edit-match-info', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    
-    const matchId = parseInt(req.body.match_id);
-    const isPublished = parseInt(req.body.is_published);
-    const force = req.body.force;
-
-    if (isPublished === 1 && force !== 'true') {
-        const { rows: users } = await pool.query('SELECT COUNT(*) as count FROM users WHERE is_admin = 0 AND is_hidden = 0');
-        const totalUsers = parseInt(users[0].count);
-
-        const { rows: preds } = await pool.query('SELECT COUNT(*) as count FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0', [matchId]);
-        const totalPreds = parseInt(preds[0].count);
-
-        if (totalPreds < totalUsers) {
-            if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                return res.json({ 
-                    warning: true, 
-                    message: `⚠️ ยังมีผู้เล่นทายผลไม่ครบ (${totalPreds}/${totalUsers} คน)\n\nหากเปิดโพย ระบบจะ "ล็อกผลการทาย" ของแมตช์นี้ทันที!\nยืนยันที่จะเปิดให้ดูโพยเลยหรือไม่?` 
-                });
-            }
-        }
-    }
-
-    await pool.query('UPDATE matches SET is_published = $1 WHERE id = $2', [isPublished, matchId]);
-    
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ success: true, is_published: isPublished });
-    }
+    await pool.query(
+        'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3 WHERE id = $4',
+        [req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' '), req.body.match_id]
+    );
     res.redirect('/admin');
 });
 
