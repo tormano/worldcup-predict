@@ -24,16 +24,17 @@
         th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
         td:nth-child(2) { text-align: left; }
         
-        /* สไตล์จัดระเบียบตารางแข่งขัน */
-        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
-        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 8px; width: 40%; }
-        .match-layout .team.home { justify-content: flex-end; text-align: right; }
-        .match-layout .team.away { justify-content: flex-start; text-align: left; }
-        .match-layout .team-name { font-weight: 600; font-size: 0.95rem; }
-        .match-layout .score-vs { width: 20%; text-align: center; font-weight: 700; color: var(--text-muted); }
-        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 10px; border-radius: 6px; border: 1px solid #bbf7d0; font-size: 0.95rem; white-space: nowrap; }
-        .match-layout .vs { font-size: 0.85rem; color: #94a3b8; }
-        .flag-icon { width: 24px; height: 18px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
+        /* CSS Grid: จัด Alignment ตารางแข่งให้ตรงกันทุกแถว */
+        .match-layout { display: grid; grid-template-columns: 1fr 28px 70px 28px 1fr; align-items: center; justify-content: center; width: 100%; gap: 6px; }
+        .match-layout .home-name { text-align: right; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .match-layout .home-flag { display: flex; justify-content: flex-end; }
+        .match-layout .score-vs { text-align: center; }
+        .match-layout .away-flag { display: flex; justify-content: flex-start; }
+        .match-layout .away-name { text-align: left; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; display: inline-block;}
+        .match-layout .vs { font-size: 0.85rem; color: #94a3b8; font-weight: 700; display: inline-block;}
+        .flag-icon { width: 24px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
         
         .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
         .date-header { padding: 10px 12px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 0.95rem; color: var(--primary); transition: background 0.2s; }
@@ -70,7 +71,7 @@
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
                 'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
                 'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo', 'Czechia': 'cz'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
@@ -159,10 +160,8 @@
                                         </td>
                                         <td>
                                             <div class="match-layout">
-                                                <div class="team home">
-                                                    <span class="team-name"><%= match.home_team %></span>
-                                                    <%- getFlag(match.home_team) %>
-                                                </div>
+                                                <div class="home-name" title="<%= match.home_team %>"><%= match.home_team %></div>
+                                                <div class="home-flag"><%- getFlag(match.home_team) %></div>
                                                 <div class="score-vs">
                                                     <% if(match.status === 'FINISHED') { %>
                                                         <span class="actual-score"><%= match.home_score %> - <%= match.away_score %></span>
@@ -170,10 +169,8 @@
                                                         <span class="vs">vs</span>
                                                     <% } %>
                                                 </div>
-                                                <div class="team away">
-                                                    <%- getFlag(match.away_team) %>
-                                                    <span class="team-name"><%= match.away_team %></span>
-                                                </div>
+                                                <div class="away-flag"><%- getFlag(match.away_team) %></div>
+                                                <div class="away-name" title="<%= match.away_team %>"><%= match.away_team %></div>
                                             </div>
                                         </td>
                                         <td>

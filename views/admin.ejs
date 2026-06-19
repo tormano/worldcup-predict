@@ -60,13 +60,15 @@
         .date-content th { background: #ffffff; }
 
         /* สไตล์ Match Layout ย่อส่วนสำหรับแอดมิน */
-        .match-layout { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; }
-        .match-layout .team { display: flex; align-items: center; flex: 1; gap: 4px; width: 45%; }
-        .match-layout .team.home { justify-content: flex-end; text-align: right; }
-        .match-layout .team.away { justify-content: flex-start; text-align: left; }
-        .match-layout .team-name { font-weight: 600; font-size: 0.95rem; }
-        .match-layout .score-vs { width: 10%; text-align: center; color: var(--text-muted); font-size: 0.85rem;}
-        .flag-icon { width: 22px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; flex-shrink: 0; }
+        .match-layout { display: grid; grid-template-columns: 1fr 24px 70px 24px 1fr; align-items: center; justify-content: center; width: 100%; gap: 6px; }
+        .match-layout .home-name { text-align: right; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; justify-self: end;}
+        .match-layout .home-flag { display: flex; justify-content: flex-end; }
+        .match-layout .score-vs { text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        .match-layout .away-flag { display: flex; justify-content: flex-start; }
+        .match-layout .away-name { text-align: left; font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; justify-self: start;}
+        
+        .match-layout .actual-score { background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbf7d0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; display: inline-block;}
+        .flag-icon { width: 22px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
         
         tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
     </style>
@@ -91,14 +93,14 @@
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
                 'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
                 'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo', 'Czechia': 'cz'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
                 const searchName = teamName.trim().toLowerCase();
                 for (const [name, code] of Object.entries(countryFlags)) {
                     if (name.toLowerCase() === searchName) {
-                        return `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">`;
+                        return `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">`;
                     }
                 }
                 return ''; 
@@ -166,7 +168,7 @@
                                         <img src="<%= u.avatar %>">
                                         <span style="<%= u.is_hidden ? 'text-decoration: line-through; color: var(--text-muted);' : '' %>">
                                             <%= u.username %>
-                                            <% if(u.is_hidden) { %><span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
+                                            <% if(u.is_hidden) { %span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
                                         </span>
                                     </div>
                                 </td>
@@ -213,13 +215,13 @@
                 <option value="Republic of Ireland"><option value="Northern Ireland"><option value="Ukraine"><option value="Greece">
                 <option value="Algeria"><option value="Honduras"><option value="Iceland">
                 <option value="Uzbekistan"><option value="DR Congo"><option value="Iraq"><option value="Norway">
-                <option value="Cape Verde"><option value="Curacao">
+                <option value="Cape Verde"><option value="Curacao"><option value="Jordan"><option value="Czechia">
             </datalist>
 
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">➕</span><h3>เพิ่มแมตช์ใหม่</h3></div>
                 <form action="/admin/add-match" method="POST" class="form-row">
-                    <div class="form-group"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
+                    <div class="form-group"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><option value="<%= r.stage_name %></option><% }) %></select></div>
                     <div class="form-group"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
                     <div class="form-group"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
                     <div class="form-group" style="flex: 1.5;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" required></div>
@@ -272,7 +274,7 @@
                             <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
-                                    <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
+                                    <thead><tr><th width="10%">ID</th><th width="20%">รอบ/เวลาเตะ</th><th width="35%">คู่แข่งขัน</th><th width="15%">สถานะ/ซ่อน</th><th width="20%">จัดการสกอร์/ลบ</th></tr></thead>
                                     <tbody>
                                         <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(match => { %>
                                             <tr id="row-match-<%= match.id %>">
@@ -280,15 +282,17 @@
                                                 <td><%= match.stage_name %><br><small style="color: var(--text-muted);"><%= match.kickoff_time.substring(11, 16) %> น.</small></td>
                                                 <td>
                                                     <div class="match-layout">
-                                                        <div class="team home">
-                                                            <span class="team-name" title="<%= match.home_team %>"><%= match.home_team %></span>
-                                                            <%- getFlag(match.home_team) %>
+                                                        <div class="home-name" title="<%= match.home_team %>"><%= match.home_team %></div>
+                                                        <div class="home-flag"><%- getFlag(match.home_team) %></div>
+                                                        <div class="score-vs" id="score-display-<%= match.id %>">
+                                                            <% if(match.status === 'FINISHED') { %>
+                                                                <span class="actual-score"><%= match.home_score %> - <%= match.away_score %></span>
+                                                            <% } else { %>
+                                                                vs
+                                                            <% } %>
                                                         </div>
-                                                        <div class="score-vs">vs</div>
-                                                        <div class="team away">
-                                                            <%- getFlag(match.away_team) %>
-                                                            <span class="team-name" title="<%= match.away_team %>"><%= match.away_team %></span>
-                                                        </div>
+                                                        <div class="away-flag"><%- getFlag(match.away_team) %></div>
+                                                        <div class="away-name" title="<%= match.away_team %>"><%= match.away_team %></div>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -473,6 +477,12 @@
                         const badge = document.getElementById('status-badge-' + matchId);
                         badge.className = 'badge';
                         badge.innerText = `จบ (${result.home_score}-${result.away_score})`;
+
+                        // อัปเดตช่อง vs ให้แสดงเป็นสกอร์แทน
+                        const scoreDisplay = document.getElementById('score-display-' + matchId);
+                        if(scoreDisplay) {
+                            scoreDisplay.innerHTML = `<span class="actual-score">${result.home_score} - ${result.away_score}</span>`;
+                        }
                         
                         const row = document.getElementById('row-match-' + matchId);
                         if (row) {
