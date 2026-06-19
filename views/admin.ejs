@@ -59,13 +59,14 @@
 
         /* สไตล์ Match Layout ย่อส่วนสำหรับแอดมิน */
         .match-layout { display: grid; grid-template-columns: 1fr 32px 120px 32px 1fr; align-items: center; justify-content: center; width: 100%; gap: 8px; }
-        .match-layout .home-name { text-align: right; font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: end;}
+        .match-layout .home-name { text-align: right; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: end; transition: color 0.3s;}
         .match-layout .home-flag { display: flex; justify-content: flex-end; }
-        .match-layout .score-vs { text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; min-height: 38px; display: flex; align-items: center; justify-content: center; }
+        .match-layout .score-vs { text-align: center; color: var(--text-muted); font-size: 0.85rem; min-height: 38px; display: flex; align-items: center; justify-content: center; }
         .match-layout .away-flag { display: flex; justify-content: flex-start; }
-        .match-layout .away-name { text-align: left; font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: start;}
+        .match-layout .away-name { text-align: left; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: start; transition: color 0.3s;}
         
-        .fw-bold { font-weight: 800 !important; color: #0f172a; }
+        .text-black { color: #0f172a; font-weight: 500; }
+        .text-gray { color: #94a3b8; font-weight: 400; }
         
         .flag-icon { width: 32px; height: 24px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
         
@@ -76,6 +77,8 @@
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);}
         input:checked + .slider { background-color: #10b981; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        .date-separator { text-align: center; font-size: 0.85rem; color: #64748b; padding: 6px; background: #f8fafc; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; font-weight: 500;}
 
         @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         
@@ -115,8 +118,9 @@
                 return ''; 
             };
 
-            const formatLongDate = (dObj) => {
-                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const formatShortDate = (dStr) => {
+                const dObj = new Date(dStr.replace(' ', 'T'));
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                 return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
             };
@@ -253,7 +257,7 @@
                 </div>
                 
                 <% 
-                    // เรียงแมตช์ทั้งหมดตามเวลา และสร้างลำดับ Match Running No.
+                    // เรียงแมตช์ทั้งหมดตามเวลาเก่า-ใหม่ (เพื่อ Run Match ID 1, 2, 3...)
                     const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
                     sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
 
@@ -265,24 +269,18 @@
                         let startDay = new Date(year, month - 1, day, 12, 0, 0);
                         if (hour < 12) startDay.setDate(startDay.getDate() - 1);
                         
-                        let endDay = new Date(startDay);
-                        endDay.setDate(endDay.getDate() + 1);
-                        
                         const pad = n => n.toString().padStart(2, '0');
                         return {
-                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
-                            startDayObj: startDay
+                            sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`
                         };
                     };
 
                     const groupedMatches = {};
-                    const groupStartDates = {};
 
                     sortedMatches.forEach(m => {
                         const info = getMatchDayInfo(m.kickoff_time);
                         if(!groupedMatches[info.sortKey]) {
                             groupedMatches[info.sortKey] = [];
-                            groupStartDates[info.sortKey] = info.startDayObj;
                         }
                         groupedMatches[info.sortKey].push(m);
                     });
@@ -308,29 +306,44 @@
                 %>
 
                 <% if(datesToDisplay.length === 0) { %><div style="text-align: center; padding: 30px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
-                    <% datesToDisplay.forEach(date => { %>
+                    <% datesToDisplay.forEach(date => { 
+                        // ดึงชื่อรอบจากแมตช์แรกในกลุ่มมาแสดงเป็นชื่อ Grouping
+                        const stageName = groupedMatches[date][0].stage_name;
+                    %>
                         <!-- กางไว้เฉพาะ Match Day ปัจจุบัน -->
                         <details class="date-group" <%= date === currentSortKey ? 'open' : '' %>>
-                            <summary class="date-header">📅 Day <%= dateToDayMap[date] %> : <%= formatLongDate(groupStartDates[date]) %></summary>
+                            <summary class="date-header">📅 Day <%= dateToDayMap[date] %> : <%= stageName %></summary>
                             <div class="date-content">
                                 <table>
-                                    <!-- ลบ thead ออกเพื่อความ Modern -->
                                     <tbody>
-                                        <% groupedMatches[date].forEach(match => { %>
-                                            <tr id="row-match-<%= match.id %>">
-                                                <td width="10%"><strong style="color: var(--primary);">Match <%= match.match_number %></strong></td>
-                                                <td width="18%"><span style="color: var(--text-muted); font-size: 0.85rem;"><%= match.stage_name %></span></td>
+                                        <% 
+                                            let currentActualDate = '';
+                                            // เรียงแมตช์ใน Day จากล่าสุด(ใหม่) ไป อดีต(เก่า)
+                                            groupedMatches[date].sort((a, b) => new Date(b.kickoff_time.replace(' ', 'T')) - new Date(a.kickoff_time.replace(' ', 'T'))).forEach(match => { 
                                                 
-                                                <td width="47%">
+                                                const matchActualDate = formatShortDate(match.kickoff_time);
+                                                if (matchActualDate !== currentActualDate) {
+                                                    currentActualDate = matchActualDate;
+                                        %>
+                                                <!-- เส้นคั่นวันที่หากเตะคนละวันใน Match Day เดียวกัน -->
+                                                <tr><td colspan="5" class="date-separator"><%= matchActualDate %></td></tr>
+                                        <% 
+                                                }
+                                        %>
+                                            <tr id="row-match-<%= match.id %>">
+                                                <td width="12%"><strong style="color: var(--primary);">Match <%= match.match_number %></strong></td>
+                                                <td width="15%"><span style="color: var(--text-muted); font-size: 0.85rem;"><%= match.stage_name %></span></td>
+                                                
+                                                <td width="50%">
                                                     <% 
-                                                        let homeBold = ''; let awayBold = '';
+                                                        let homeColor = 'text-black'; let awayColor = 'text-black';
                                                         if(match.status === 'FINISHED') {
-                                                            if(match.home_score > match.away_score) homeBold = 'fw-bold';
-                                                            else if(match.away_score > match.home_score) awayBold = 'fw-bold';
+                                                            if(match.home_score > match.away_score) { homeColor = 'text-black'; awayColor = 'text-gray'; }
+                                                            else if(match.away_score > match.home_score) { homeColor = 'text-gray'; awayColor = 'text-black'; }
                                                         }
                                                     %>
                                                     <div class="match-layout">
-                                                        <div class="home-name <%= homeBold %>" id="home-name-<%= match.id %>" title="<%= match.home_team %>"><%= match.home_team %></div>
+                                                        <div class="home-name <%= homeColor %>" id="home-name-<%= match.id %>" title="<%= match.home_team %>"><%= match.home_team %></div>
                                                         <div class="home-flag"><%- getFlag(match.home_team) %></div>
                                                         <div class="score-vs" id="score-container-<%= match.id %>">
                                                             <!-- Display Mode -->
@@ -342,26 +355,27 @@
                                                                     const timeStr = match.kickoff_time.substring(11, 16);
                                                                 %>
                                                                 <% if(match.status === 'FINISHED') { %>
-                                                                    <span class="actual-score" style="font-size: 1.35rem; color: var(--text); background: none; border: none;"><%= match.home_score %> - <%= match.away_score %></span>
+                                                                    <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
+                                                                    <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
                                                                 <% } else { %>
-                                                                    <span style="font-size: 1.35rem; font-weight: 700; color: var(--text); line-height: 1;"><%= timeStr %></span>
+                                                                    <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= timeStr %></span>
                                                                     <% if(isLive) { %>
-                                                                        <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 2px;">LIVE</span>
+                                                                        <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
                                                                     <% } %>
                                                                 <% } %>
                                                             </div>
                                                             <!-- Edit Mode (Inline Inputs) -->
                                                             <div id="edit-mode-<%= match.id %>" style="display: none; align-items: center; justify-content: center; gap: 6px; width: 100%;">
                                                                 <input type="number" id="home-score-<%= match.id %>" value="<%= match.home_score !== null ? match.home_score : '' %>" style="width: 45px; text-align: center; padding: 4px; font-size: 1.1rem; font-weight: 600;">
-                                                                <span style="font-weight: 700;">-</span>
+                                                                <span style="font-weight: 500;">-</span>
                                                                 <input type="number" id="away-score-<%= match.id %>" value="<%= match.away_score !== null ? match.away_score : '' %>" style="width: 45px; text-align: center; padding: 4px; font-size: 1.1rem; font-weight: 600;">
                                                             </div>
                                                         </div>
                                                         <div class="away-flag"><%- getFlag(match.away_team) %></div>
-                                                        <div class="away-name <%= awayBold %>" id="away-name-<%= match.id %>" title="<%= match.away_team %>"><%= match.away_team %></div>
+                                                        <div class="away-name <%= awayColor %>" id="away-name-<%= match.id %>" title="<%= match.away_team %>"><%= match.away_team %></div>
                                                     </div>
                                                 </td>
-                                                <td width="10%" style="text-align: center;">
+                                                <td width="8%" style="text-align: center;">
                                                     <!-- ปุ่ม Slide Toggle สำหรับเปิด/ซ่อน -->
                                                     <label class="toggle-switch" title="เปิด/ล็อกการทายผล">
                                                         <input type="checkbox" onchange="togglePublishCheckbox(this, <%= match.id %>)" <%= match.is_published ? 'checked' : '' %>>
@@ -371,7 +385,9 @@
                                                 <td width="15%" style="text-align: right; padding-right: 15px;">
                                                     <!-- กลุ่มปุ่มจัดการ -->
                                                     <div id="action-display-<%= match.id %>" style="display: flex; gap: 8px; justify-content: flex-end;">
-                                                        <button type="button" class="btn" style="background: #f1f5f9; color: #475569; padding: 6px 10px;" onclick="enableSettleEdit(<%= match.id %>)">✏️ แก้ไข</button>
+                                                        <button type="button" id="btn-edit-label-<%= match.id %>" class="btn" style="background: #f1f5f9; color: #475569; padding: 6px 10px;" onclick="enableSettleEdit(<%= match.id %>)">
+                                                            <%= match.status === 'FINISHED' ? '✏️ แก้ไข' : '✏️ กรอกผล' %>
+                                                        </button>
                                                         <form action="/admin/delete-match" method="POST" style="margin:0;" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบแมตช์นี้?');">
                                                             <input type="hidden" name="match_id" value="<%= match.id %>">
                                                             <button type="submit" class="btn btn-outline" style="padding: 6px 10px; border: none; color: #94a3b8;" title="ลบแมตช์">🗑️</button>
@@ -541,17 +557,32 @@
                         // ปิดโหมด Edit
                         cancelSettleEdit(matchId);
                         
-                        // อัปเดตการแสดงผลคะแนน
-                        document.getElementById('display-mode-' + matchId).innerHTML = `<span class="actual-score" style="font-size: 1.35rem; color: var(--text); background: none; border: none;">${result.home_score} - ${result.away_score}</span>`;
+                        // อัปเดตการแสดงผลคะแนน และเปลี่ยนกลับเป็น Display mode (มีอักษร FT เล็กๆ)
+                        document.getElementById('display-mode-' + matchId).innerHTML = `
+                            <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;">${result.home_score} - ${result.away_score}</span>
+                            <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
+                        `;
                         
-                        // ปรับตัวหนาทีมที่ชนะ
+                        // ปรับสีทีมที่ชนะ (สีดำ) และทีมที่แพ้ (สีเทา) (ถอดตัวหนาออก)
                         const homeEl = document.getElementById('home-name-' + matchId);
                         const awayEl = document.getElementById('away-name-' + matchId);
-                        homeEl.classList.remove('fw-bold');
-                        awayEl.classList.remove('fw-bold');
+                        homeEl.classList.remove('text-black', 'text-gray');
+                        awayEl.classList.remove('text-black', 'text-gray');
                         
-                        if(parseInt(result.home_score) > parseInt(result.away_score)) homeEl.classList.add('fw-bold');
-                        else if(parseInt(result.away_score) > parseInt(result.home_score)) awayEl.classList.add('fw-bold');
+                        if(parseInt(result.home_score) > parseInt(result.away_score)) {
+                            homeEl.classList.add('text-black');
+                            awayEl.classList.add('text-gray');
+                        } else if(parseInt(result.away_score) > parseInt(result.home_score)) {
+                            homeEl.classList.add('text-gray');
+                            awayEl.classList.add('text-black');
+                        } else {
+                            homeEl.classList.add('text-black');
+                            awayEl.classList.add('text-black');
+                        }
+
+                        // อัปเดตข้อความปุ่มให้เป็น แก้ไข หลังจากบันทึกไปแล้ว
+                        const editBtnLabel = document.getElementById('btn-edit-label-' + matchId);
+                        if (editBtnLabel) { editBtnLabel.innerHTML = '✏️ แก้ไข'; }
                         
                         // กระพริบสีเขียวว่าสำเร็จ
                         const row = document.getElementById('row-match-' + matchId);
