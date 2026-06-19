@@ -89,12 +89,19 @@
                 'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
                 'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
                 'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
-                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is'
+                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
+                'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
+                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw'
             };
             const getFlag = (teamName) => {
                 if(!teamName) return '';
-                const code = countryFlags[teamName.trim()];
-                return code ? `<img src="https://flagcdn.com/w20/${code}.png" class="flag-icon" alt="${teamName}">` : ''; 
+                const searchName = teamName.trim().toLowerCase();
+                for (const [name, code] of Object.entries(countryFlags)) {
+                    if (name.toLowerCase() === searchName) {
+                        return `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">`;
+                    }
+                }
+                return ''; 
             };
         %>
 
@@ -205,6 +212,8 @@
                 <option value="Haiti"><option value="Turkey"><option value="Ivory Coast"><option value="Jamaica">
                 <option value="Republic of Ireland"><option value="Northern Ireland"><option value="Ukraine"><option value="Greece">
                 <option value="Algeria"><option value="Honduras"><option value="Iceland">
+                <option value="Uzbekistan"><option value="DR Congo"><option value="Iraq"><option value="Norway">
+                <option value="Cape Verde"><option value="Curacao">
             </datalist>
 
             <div class="card">
@@ -263,7 +272,7 @@
                             <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
-                                    <thead><tr><th width="10%">ID</th><th width="20%">รอบ/เวลาเตะ</th><th width="35%">คู่แข่งขัน</th><th width="15%">สถานะ/ซ่อน</th><th width="20%">จัดการสกอร์/ลบ</th></tr></thead>
+                                    <thead><tr><th>ID</th><th>รอบ/เวลาเตะ</th><th>คู่แข่งขัน</th><th>สถานะ/ซ่อน</th><th>จัดการสกอร์/ลบ</th></tr></thead>
                                     <tbody>
                                         <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(match => { %>
                                             <tr id="row-match-<%= match.id %>">
