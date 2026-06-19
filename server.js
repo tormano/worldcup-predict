@@ -74,7 +74,6 @@ app.get('/', checkAuth, async (req, res) => {
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
 
-    // คำนวณอันดับปัจจุบันของผู้เล่น (รองรับระบบ "อันดับร่วม")
     const rankQuery = `
         WITH Leaderboard AS (
             SELECT u.id,
@@ -168,7 +167,7 @@ app.post('/predict', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
-// อัปเดตตรรกะตารางคะแนนรวม เพื่อรองรับ "อันดับร่วม"
+// อัปเดต Leaderboard: แชร์รางวัล + รวมเซล์
 app.get('/leaderboard', checkAuth, async (req, res) => {
     const query = `
         SELECT u.id, u.username, u.avatar,
@@ -192,14 +191,14 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     let groupedLeaderboard = [];
     let currentGroup = [];
 
-    // เช็คว่าคะแนนเท่ากันไหม (รวมคะแนนหลัก, คะแนนโบนัสสกอร์เป๊ะ, และคะแนนทายผลถูก)
+    // ฟังก์ชันเช็คว่าคะแนนทุกอย่างเท่ากันเป๊ะหรือไม่
     const isTie = (u1, u2) => {
         return Number(u1.total_score) === Number(u2.total_score) &&
                Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
                Number(u1.correct_result_score) === Number(u2.correct_result_score);
     };
 
-    // จัดกลุ่มคนที่มีคะแนนเท่ากัน
+    // 1. จัดกลุ่มคนคะแนนเท่ากัน
     for (let i = 0; i < leaderboardData.length; i++) {
         const user = leaderboardData[i];
         user.originalRank = i + 1;
@@ -217,13 +216,12 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
     }
     if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
 
-    // แจกจ่ายอันดับ และ ของรางวัลให้คนในกลุ่ม
+    // 2. แจกจ่ายรางวัลและเตรียมค่า rowspan
     let finalLeaderboard = [];
     groupedLeaderboard.forEach(group => {
-        const displayRank = group[0].originalRank; // ใช้หมายเลขอันดับบนสุดของกลุ่ม
         let groupReward = null;
         
-        // ค้นหาของรางวัลที่ตกอยู่ในช่วงอันดับของกลุ่มนี้ (เช่น อันดับ 7 ถึง 8 มีของรางวัลไหม)
+        // หาว่าในกลุ่มนี้ มีใครตกอยู่ในอันดับที่ได้ของรางวัลไหม (ถ้ามี เอามาแชร์กัน)
         for (let u of group) {
             const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
             if (r) {
@@ -232,11 +230,20 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
             }
         }
 
-        // แจกสถานะ "อันดับร่วม" ให้ทุกคนในกลุ่ม
-        group.forEach(u => {
-            u.displayRank = displayRank;
+        group.forEach((u, index) => {
+            u.displayRank = u.originalRank; // ใช้ลำดับเรียงปกติ 1, 2, 3, 4
             u.isTied = group.length > 1;
             u.reward = groupReward;
+
+            // ตรวจจับคนแรกของกลุ่ม เพื่อเอาไว้ใส่ rowspan ใน EJS
+            if (index === 0) {
+                u.rowspan = group.length;
+                u.isFirstInGroup = true;
+            } else {
+                u.rowspan = 0;
+                u.isFirstInGroup = false;
+            }
+
             finalLeaderboard.push(u);
         });
     });
