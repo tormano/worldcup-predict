@@ -30,9 +30,9 @@
         .stat-number { font-weight: 600; color: #475569; }
         .stat-score { font-weight: 600; color: #10b981; font-size: 0.85rem;}
         
-        .reward-item { display: inline-flex; align-items: center; gap: 8px; background: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .reward-item { display: inline-flex; align-items: center; gap: 8px; background: #fff; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .reward-icon { font-size: 1.2rem; }
-        .shared-badge { font-size: 0.65rem; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 8px; font-weight: 500;}
+        .shared-badge { font-size: 0.7rem; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 10px; font-weight: 600; display: inline-block; margin-top: 6px; border: 1px solid #cbd5e1;}
         
         .btn { padding: 8px 16px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-family: inherit; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.95rem;}
         .btn:hover { background-color: #1d4ed8; }
@@ -93,17 +93,25 @@
                             <td class="stat-number"><%= row.exact_score_count %></td>
                             <td class="stat-score">+<%= row.exact_score_score %></td>
                             <td class="score-cell" style="text-align: right;"><%= row.total_score || 0 %> แต้ม</td>
-                            <td style="text-align: center;">
-                                <% if(rewardInfo) { %>
-                                    <div class="reward-item" style="border-color: <%= hasColor ? rewardInfo.color : '#fde68a' %>;">
-                                        <span class="reward-icon"><%= rewardInfo.icon %></span>
-                                        <span>
-                                            <%= rewardInfo.description %> 
-                                            <% if(row.isTied) { %><span class="shared-badge">แชร์กัน</span><% } %>
-                                        </span>
-                                    </div>
-                                <% } else { %><span style="color: var(--border);">-</span><% } %>
-                            </td>
+                            
+                            <!-- ตรวจจับคนแรกของกลุ่ม เพื่อเปิดใช้ Rowspan -->
+                            <% if (row.isFirstInGroup) { %>
+                                <td rowspan="<%= row.rowspan %>" style="text-align: center; vertical-align: middle; border-left: 1px solid var(--border); background-color: inherit;">
+                                    <% if(rewardInfo) { %>
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                            <div class="reward-item" style="border-color: <%= hasColor ? rewardInfo.color : '#fde68a' %>;">
+                                                <span class="reward-icon"><%= rewardInfo.icon %></span>
+                                                <span><%= rewardInfo.description %></span>
+                                            </div>
+                                            <% if(row.isTied) { %>
+                                                <span class="shared-badge">แชร์กัน <%= row.rowspan %> คน</span>
+                                            <% } %>
+                                        </div>
+                                    <% } else { %>
+                                        <span style="color: var(--border);">-</span>
+                                    <% } %>
+                                </td>
+                            <% } %>
                         </tr>
                     <% }) %>
                 </tbody>
