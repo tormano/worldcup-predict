@@ -222,7 +222,6 @@
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">➕</span><h3>เพิ่มแมตช์ใหม่</h3></div>
                 <form action="/admin/add-match" method="POST" class="form-row">
-                    <!-- แก้ไขพิมพ์ผิดในตัวเลือก stage -->
                     <div class="form-group"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
                     <div class="form-group"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
                     <div class="form-group"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
@@ -258,6 +257,15 @@
                         };
                     };
 
+                    // คำนวณหา SortKey ของปัจจุบัน (Match Day ปัจจุบัน)
+                    const thaiTimeStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"});
+                    const thaiTime = new Date(thaiTimeStr);
+                    let currentDayStart = new Date(thaiTime);
+                    currentDayStart.setHours(12, 0, 0, 0);
+                    if (thaiTime.getHours() < 12) currentDayStart.setDate(currentDayStart.getDate() - 1);
+                    const padDate = n => n.toString().padStart(2, '0');
+                    const currentSortKey = `${currentDayStart.getFullYear()}-${padDate(currentDayStart.getMonth()+1)}-${padDate(currentDayStart.getDate())}`;
+
                     const groupedMatches = {};
                     const groupLabels = {};
                     matches.forEach(m => {
@@ -272,7 +280,8 @@
                 %>
                 <% if(dates.length === 0) { %><div style="text-align: center; padding: 30px;">ยังไม่มีข้อมูลการแข่งขัน</div><% } else { %>
                     <% dates.forEach(date => { %>
-                        <details class="date-group" open>
+                        <!-- กางไว้เฉพาะ Match Day ปัจจุบัน -->
+                        <details class="date-group" <%= date === currentSortKey ? 'open' : '' %>>
                             <summary class="date-header">📅 รอบ: <%= groupLabels[date] %> <span style="font-size: 0.85rem; margin-left: 8px;">(<%= groupedMatches[date].length %> คู่)</span></summary>
                             <div class="date-content">
                                 <table>
