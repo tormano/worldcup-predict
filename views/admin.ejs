@@ -259,7 +259,7 @@
 
             <div class="card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
                 <div class="card-header" style="background: var(--surface); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์ และเปิดไพ่ (แยกตาม Match Day)</h3></div>
+                    <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 1.2rem;">📋</span><h3 style="margin:0; font-size: 1.1rem;">จัดการสกอร์</h3></div>
                     <form action="/admin/recalculate-all" method="POST" style="margin:0;" onsubmit="return confirm('ระบบจะทำการคำนวณคะแนนใหม่ทั้งหมด ยืนยันหรือไม่?');">
                         <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">🔄 คำนวณคะแนนใหม่</button>
                     </form>
@@ -349,6 +349,13 @@
                                                 <tr><td colspan="4" class="date-separator"><%= matchActualDate %></td></tr>
                                         <% 
                                                 }
+                                                
+                                                // คำนวณสถานะ Live (ไม่เกิน 3 ชั่วโมงหลังจากเริ่มเตะ)
+                                                const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                                const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+                                                const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
+                                                const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
+                                                const timeStr = match.kickoff_time.substring(11, 16);
                                         %>
                                             <tr id="row-match-<%= match.id %>">
                                                 <td width="15%">
@@ -373,12 +380,6 @@
                                                         <div class="score-vs" id="score-container-<%= match.id %>">
                                                             <!-- Display Mode -->
                                                             <div id="display-mode-<%= match.id %>" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-                                                                <% 
-                                                                    const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
-                                                                    const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-                                                                    const isLive = matchDateObj <= nowObj && match.status !== 'FINISHED';
-                                                                    const timeStr = match.kickoff_time.substring(11, 16);
-                                                                %>
                                                                 <% if(match.status === 'FINISHED') { %>
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
                                                                     <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
@@ -401,11 +402,15 @@
                                                     </div>
                                                 </td>
                                                 <td width="10%" style="text-align: center;">
+                                                    <% if(isLive) { %>
                                                     <a href="https://www.doballkub.com/live" target="_blank" style="text-decoration: none; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background-color: #ef4444; color: white; margin: 0 auto; transition: transform 0.2s, background-color 0.2s;" onmouseover="this.style.transform='scale(1.1)'; this.style.backgroundColor='#dc2626';" onmouseout="this.style.transform='scale(1)'; this.style.backgroundColor='#ef4444';" title="ดูบอลสด">
                                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px; margin-left: 2px;">
                                                             <path d="M8 5v14l11-7z"/>
                                                         </svg>
                                                     </a>
+                                                    <% } else { %>
+                                                        <span style="color: var(--border);">-</span>
+                                                    <% } %>
                                                 </td>
                                                 <td width="20%" style="text-align: right; padding-right: 15px;">
                                                     <!-- กลุ่มปุ่มจัดการ -->
