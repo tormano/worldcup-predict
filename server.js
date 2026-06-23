@@ -69,69 +69,6 @@ const formatDBDate = (d) => {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
-// ==========================================
-// API FOOTBALL INTEGRATION (SMART LIVE SCORES)
-// ==========================================
-const API_FOOTBALL_KEY = 'ec880bc6dd7cb67e7abea8ae30e178b4'; // อัปเดต API Key
-let liveScoresCache = { data: [], lastFetch: 0 };
-
-app.get('/api/live-scores', async (req, res) => {
-    if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === 'ใส่_API_KEY_ที่นี่') {
-        return res.json([]); 
-    }
-
-    try {
-        const currentTime = getThaiTime();
-        const threeHoursAgo = new Date(currentTime.getTime() - (3 * 60 * 60 * 1000));
-        
-        // 1. เช็คฐานข้อมูลก่อนว่า มีแมตช์ที่เตะอยู่หรือไม่?
-        // (เวลาปัจจุบันอยู่ระหว่าง Kickoff ถึง +3 ชั่วโมง และสถานะยังไม่ FINISHED)
-        const { rows: activeMatches } = await pool.query(
-            `SELECT id FROM matches 
-             WHERE status != 'FINISHED' 
-             AND kickoff_time <= $1 
-             AND kickoff_time >= $2`, 
-            [formatDBDate(currentTime), formatDBDate(threeHoursAgo)]
-        );
-
-        // ถ้าไม่มีแมตช์เตะเลย (Idle Mode) คืนค่าเก่าและไม่ต้องเรียก API เพื่อประหยัดโควต้า 100%
-        if (activeMatches.length === 0) {
-            return res.json(liveScoresCache.data);
-        }
-
-        const now = Date.now();
-        // 2. ถ้ากำลังเตะอยู่ จะอัปเดตข้อมูลทุกๆ 5 นาที (300,000 ms)
-        // เพื่อให้โควต้า 100 req/day เพียงพอครอบคลุม 8-10 ชั่วโมง
-        // หากต้องการให้ดึงห่างขึ้น เปลี่ยนค่านี้เป็น 480000 (8 นาที) เป็นต้น
-        const CACHE_TIME_MS = 300000; 
-
-        if (now - liveScoresCache.lastFetch < CACHE_TIME_MS && liveScoresCache.data.length > 0) {
-            return res.json(liveScoresCache.data);
-        }
-
-        console.log(`📡 [API-Football] Fetching live scores at ${new Date().toLocaleTimeString()}... (Uses API quota)`);
-        const response = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
-            headers: {
-                'x-apisports-key': API_FOOTBALL_KEY
-            }
-        });
-        const json = await response.json();
-        
-        if(json.errors && Object.keys(json.errors).length > 0) {
-            console.error("⚠️ API Error:", json.errors);
-        }
-
-        liveScoresCache.data = json.response || [];
-        liveScoresCache.lastFetch = now;
-        res.json(liveScoresCache.data);
-
-    } catch (e) {
-        console.error('API Football Fetch Error:', e);
-        res.json(liveScoresCache.data || []);
-    }
-});
-// ==========================================
-
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
