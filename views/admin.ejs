@@ -119,6 +119,17 @@
 </head>
 <body>
     <% 
+        // ----------------------------------------------------
+        // SAFEGUARDS: ป้องกัน Error 500 หาก Backend ส่งตัวแปรมาไม่ครบ
+        // ----------------------------------------------------
+        const sMatches = typeof matches !== 'undefined' ? matches : [];
+        const sRules = typeof rules !== 'undefined' ? rules : [];
+        const sUserStats = typeof userStats !== 'undefined' ? userStats : [];
+        const sTotalMatches = typeof activeTotalMatches !== 'undefined' ? activeTotalMatches : 0;
+        const sMatchDayText = typeof matchDayText !== 'undefined' ? matchDayText : '-';
+        const sAllUsers = typeof allUsers !== 'undefined' ? allUsers : [];
+        const sRewards = typeof rewards !== 'undefined' ? rewards : [];
+        
         const countryFlags = {
             'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
             'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
@@ -149,8 +160,10 @@
             return ''; 
         };
 
-        const formatShortDate = (dStr) => {
-            const dObj = new Date(dStr.replace(' ', 'T'));
+        // ฟังก์ชันช่วยจัดการเรื่องเวลาป้องกัน Error Date() 
+        const formatShortDate = (val) => {
+            const dObj = new Date(typeof val === 'string' ? val.replace(' ', 'T') : val);
+            if(isNaN(dObj.getTime())) return '-';
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
             return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
@@ -166,9 +179,9 @@
             </div>
             <div class="nav-profile">
                 <div class="profile-dropdown">
-                    <img src="<%= user.avatar %>" alt="Avatar" class="avatar-img">
+                    <img src="<%= typeof user !== 'undefined' && user ? user.avatar : '' %>" alt="Avatar" class="avatar-img">
                     <div class="profile-info">
-                        <span class="profile-name"><%= user.username %></span>
+                        <span class="profile-name"><%= typeof user !== 'undefined' && user ? user.username : 'Admin' %></span>
                         <a href="/logout" class="logout-text">Sign Out</a>
                     </div>
                 </div>
@@ -200,20 +213,20 @@
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น (ประจำวัน)</h3></div>
                 <p style="color: var(--pl-text-muted); font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">
-                    รอบการแข่งขัน: <strong style="color: var(--pl-primary);"><%= matchDayText %></strong>
+                    รอบการแข่งขัน: <strong style="color: var(--pl-primary);"><%= sMatchDayText %></strong>
                 </p>
                 <table>
                     <thead><tr><th>ผู้เล่น</th><th>ทายผลแล้ว (ของวันนี้)</th><th>สถานะ</th></tr></thead>
                     <tbody>
-                        <% if(userStats.length === 0) { %><tr><td colspan="3" style="text-align: center; color: var(--pl-text-muted); padding: 15px;">ยังไม่มีผู้เล่น</td></tr><% } %>
-                        <% userStats.forEach(u => { %>
+                        <% if(sUserStats.length === 0) { %><tr><td colspan="3" style="text-align: center; color: var(--pl-text-muted); padding: 15px;">ยังไม่มีผู้เล่น</td></tr><% } %>
+                        <% sUserStats.forEach(u => { %>
                             <tr>
                                 <td><div class="user-cell"><img src="<%= u.avatar %>"><%= u.username %></div></td>
-                                <td><strong><%= u.predicted_count %></strong> / <%= activeTotalMatches %> คู่</td>
+                                <td><strong><%= u.predicted_count %></strong> / <%= sTotalMatches %> คู่</td>
                                 <td>
-                                    <% if(u.predicted_count >= activeTotalMatches && activeTotalMatches > 0) { %> 
+                                    <% if(u.predicted_count >= sTotalMatches && sTotalMatches > 0) { %> 
                                         <span class="badge">✅ ครบแล้ว</span> 
-                                    <% } else if (activeTotalMatches > 0) { %> 
+                                    <% } else if (sTotalMatches > 0) { %> 
                                         <span class="badge badge-warning">⏳ รอทายผล</span> 
                                     <% } else { %>
                                         <span class="badge badge-warning">- ไม่มีเตะ -</span>
@@ -230,8 +243,8 @@
                 <table>
                     <thead><tr><th>ผู้เล่น</th><th style="width: 250px;">จัดการ</th></tr></thead>
                     <tbody>
-                        <% if(allUsers.length === 0) { %><tr><td colspan="2" style="text-align: center; color: var(--pl-text-muted); padding: 15px;">ไม่มีผู้ใช้งาน</td></tr><% } %>
-                        <% allUsers.forEach(u => { %>
+                        <% if(sAllUsers.length === 0) { %><tr><td colspan="2" style="text-align: center; color: var(--pl-text-muted); padding: 15px;">ไม่มีผู้ใช้งาน</td></tr><% } %>
+                        <% sAllUsers.forEach(u => { %>
                             <tr>
                                 <td>
                                     <div class="user-cell">
@@ -247,7 +260,7 @@
                                         <form action="/admin/toggle-visibility" method="POST" style="margin:0;">
                                             <input type="hidden" name="user_id" value="<%= u.id %>">
                                             <input type="hidden" name="is_hidden" value="<%= u.is_hidden ? 0 : 1 %>">
-                                            <button type="submit" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background-color: <%= u.is_hidden ? 'var(--pl-primary)' : 'rgba(255,255,255,0.1)'; color: <%= u.is_hidden ? '#0f172a' : 'white' %>;"><%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อน' %></button>
+                                            <button type="submit" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background-color: <%= u.is_hidden ? 'var(--pl-primary)' : 'rgba(255,255,255,0.1)'%>; color: <%= u.is_hidden ? '#0f172a' : 'white' %>;"><%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อน' %></button>
                                         </form>
                                         <form action="/admin/reset-password" method="POST" style="margin:0;" onsubmit="return confirm('รีเซ็ตรหัสผ่านของ <%= u.username %> เป็น 123456 ใช่หรือไม่?');">
                                             <input type="hidden" name="user_id" value="<%= u.id %>">
@@ -300,16 +313,19 @@
                 </div>
                 
                 <% 
-                    const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+                    const sortedMatches = [...sMatches].sort((a,b) => {
+                        const da = new Date(typeof a.kickoff_time === 'string' ? a.kickoff_time.replace(' ', 'T') : a.kickoff_time);
+                        const db = new Date(typeof b.kickoff_time === 'string' ? b.kickoff_time.replace(' ', 'T') : b.kickoff_time);
+                        return da - db;
+                    });
                     sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
 
-                    const getMatchDayInfo = (kickoffStr) => {
-                        const [datePart, timePart] = kickoffStr.split(' ');
-                        const [year, month, day] = datePart.split('-').map(Number);
-                        const [hour] = timePart.split(':').map(Number);
+                    const getMatchDayInfo = (kickoffTime) => {
+                        let dObj = new Date(typeof kickoffTime === 'string' ? kickoffTime.replace(' ', 'T') : kickoffTime);
+                        if (isNaN(dObj.getTime())) dObj = new Date();
                         
-                        let startDay = new Date(year, month - 1, day, 12, 0, 0);
-                        if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+                        let startDay = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate(), 12, 0, 0);
+                        if (dObj.getHours() < 12) startDay.setDate(startDay.getDate() - 1);
                         
                         const pad = n => n.toString().padStart(2, '0');
                         return { sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}` };
@@ -353,7 +369,11 @@
                                     <tbody>
                                         <% 
                                             let currentActualDate = '';
-                                            groupedMatches[date].sort((a, b) => new Date(b.kickoff_time.replace(' ', 'T')) - new Date(a.kickoff_time.replace(' ', 'T'))).forEach(match => { 
+                                            groupedMatches[date].sort((a, b) => {
+                                                const da = new Date(typeof a.kickoff_time === 'string' ? a.kickoff_time.replace(' ', 'T') : a.kickoff_time);
+                                                const db = new Date(typeof b.kickoff_time === 'string' ? b.kickoff_time.replace(' ', 'T') : b.kickoff_time);
+                                                return da - db;
+                                            }).forEach(match => { 
                                                 const matchActualDate = formatShortDate(match.kickoff_time);
                                                 if (matchActualDate !== currentActualDate) {
                                                     currentActualDate = matchActualDate;
@@ -362,17 +382,20 @@
                                         <% 
                                                 }
                                                 
-                                                const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                                const matchDateObj = new Date(typeof match.kickoff_time === 'string' ? match.kickoff_time.replace(' ', 'T') : match.kickoff_time);
                                                 const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
                                                 const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
                                                 const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
-                                                const timeStr = match.kickoff_time.substring(11, 16);
+                                                
+                                                const pad = n => n.toString().padStart(2, '0');
+                                                const timeStr = isNaN(matchDateObj.getTime()) ? '-' : `${pad(matchDateObj.getHours())}:${pad(matchDateObj.getMinutes())}`;
+                                                const koStrSafe = isNaN(matchDateObj.getTime()) ? '' : `${matchDateObj.getFullYear()}-${pad(matchDateObj.getMonth()+1)}-${pad(matchDateObj.getDate())} ${timeStr}`;
                                         %>
                                             <tr id="row-match-<%= match.id %>">
                                                 <td width="15%">
                                                     <div style="display: flex; align-items: center; gap: 6px;">
                                                         <strong style="color: var(--pl-primary);">Match <%= match.match_number %></strong>
-                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= match.kickoff_time %>')">EDIT</span>
+                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= koStrSafe %>')">EDIT</span>
                                                     </div>
                                                     <span style="color: var(--pl-text-muted); font-size: 0.8rem;"><%= match.stage_name %></span>
                                                 </td>
@@ -442,7 +465,7 @@
                     <table style="margin-bottom: 15px;">
                         <thead><tr><th>รอบการแข่งขัน</th><th>คะแนนทายผลถูก (แพ้/ชนะ/เสมอ)</th><th>คะแนนโบนัสสกอร์เป๊ะ</th></tr></thead>
                         <tbody>
-                            <% rules.forEach(r => { %>
+                            <% sRules.forEach(r => { %>
                                 <tr>
                                     <td><strong style="color: var(--pl-text);"><%= r.stage_name %></strong></td>
                                     <td><input type="number" name="rules[<%= r.stage_id %>][base_score]" value="<%= r.base_score %>" required></td>
@@ -495,8 +518,8 @@
                 <table>
                     <thead><tr><th width="10%">อันดับ</th><th width="10%" style="text-align: center;">สี</th><th width="15%" style="text-align: center;">ไอคอน</th><th>รายละเอียดรางวัล</th><th width="20%">จัดการ</th></tr></thead>
                     <tbody>
-                        <% if(!rewards || rewards.length === 0) { %><tr><td colspan="5" style="text-align: center; color: var(--pl-text-muted); padding: 20px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
-                        <% if(rewards) { rewards.forEach(r => { %>
+                        <% if(sRewards.length === 0) { %><tr><td colspan="5" style="text-align: center; color: var(--pl-text-muted); padding: 20px;">ยังไม่มีการตั้งค่าของรางวัลในระบบ</td></tr><% } %>
+                        <% sRewards.forEach(r => { %>
                             <tr>
                                 <td style="color: var(--pl-text);"><strong>อันดับที่ <%= r.rank %></strong></td>
                                 <td style="text-align: center;"><div style="width: 24px; height: 24px; border-radius: 4px; background-color: <%= r.color || '#ffffff' %>; border: 1px solid var(--pl-border); margin: 0 auto;"></div></td>
@@ -512,7 +535,7 @@
                                     </div>
                                 </td>
                             </tr>
-                        <% }) } %>
+                        <% }) %>
                     </tbody>
                 </table>
             </div>
@@ -525,7 +548,7 @@
         <div class="modal-box">
             <h3 style="margin-top: 0;">➕ เพิ่มแมตช์ใหม่</h3>
             <form action="/admin/add-match" method="POST">
-                <div class="form-group" style="margin-bottom: 12px;"><label>รอบ</label><select name="stage" required><% rules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
+                <div class="form-group" style="margin-bottom: 12px;"><label>รอบ</label><select name="stage" required><% sRules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
                 <div class="form-group" style="margin-bottom: 20px;"><label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label><input type="datetime-local" name="kickoff_time" required style="background: white; color: black;"></div>
@@ -596,7 +619,7 @@
             document.getElementById('edit_match_id').value = id;
             document.getElementById('edit_home_team').value = home;
             document.getElementById('edit_away_team').value = away;
-            document.getElementById('edit_kickoff_time').value = time.replace(' ', 'T');
+            document.getElementById('edit_kickoff_time').value = time;
             document.getElementById('editMatchModal').classList.add('active');
         }
         function closeEditMatchModal() {
