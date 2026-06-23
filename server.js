@@ -69,48 +69,100 @@ const formatDBDate = (d) => {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
+// ==========================================
+// เส้นทางหน้าหลัก (รวมหน้าทายผลและ Leaderboard)
+// ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
+    
+    // ดึงข้อมูลแมตช์และการทายผล
     const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.session.user.id]);
     const currentTime = getThaiTime(); 
     
     matches.forEach(m => {
         const kickOff = new Date(m.kickoff_time);
-        // ล็อกผลเมื่อถึงเวลาเตะ หรือ แอดมินยืนยันคะแนนแล้ว
         m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
-        // ใช้เป็น flag เพื่อเปิดให้ดูโพยเพื่อนเมื่อถึงเวลาเตะแล้ว
         m.is_published = currentTime >= kickOff ? 1 : 0; 
         m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
     });
 
+    // ดึงข้อมูล Leaderboard เพื่อใช้ในแท็บ Table
     const rankQuery = `
         WITH Leaderboard AS (
-            SELECT u.id,
-                COALESCE(SUM(p.score_earned), 0) as total_score,
+            SELECT u.id, u.username, u.avatar,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN 1 ELSE 0 END), 0) as correct_result_count,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN 1 ELSE 0 END), 0) as exact_score_count,
                 COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
+                COALESCE(SUM(p.score_earned), 0) as total_score
             FROM users u 
             LEFT JOIN predictions p ON u.id = p.user_id 
-            LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+            LEFT JOIN matches m ON p.match_id = m.id
             LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
             WHERE u.is_admin = 0 AND u.is_hidden = 0
-            GROUP BY u.id
+            GROUP BY u.id, u.username, u.avatar
         ),
         Ranked AS (
-            SELECT id, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC) as user_rank
+            SELECT *, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC) as user_rank
             FROM Leaderboard
         )
-        SELECT user_rank FROM Ranked WHERE id = $1;
+        SELECT * FROM Ranked ORDER BY user_rank ASC, username ASC;
     `;
+    
     let userRank = '-';
+    let leaderboardData = [];
     try {
-        const { rows: rankRows } = await pool.query(rankQuery, [req.session.user.id]);
-        if (rankRows.length > 0) userRank = rankRows[0].user_rank;
+        const { rows: rankRows } = await pool.query(rankQuery);
+        leaderboardData = rankRows;
+        const myRankInfo = rankRows.find(r => r.id === req.session.user.id);
+        if (myRankInfo) userRank = myRankInfo.user_rank;
     } catch (e) { console.error('Error fetching rank:', e); }
 
-    res.render('index', { user: req.session.user, matches, userRank });
+    const { rows: rewardsData } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
+
+    let groupedLeaderboard = [];
+    let currentGroup = [];
+    const isTie = (u1, u2) => {
+        return Number(u1.total_score) === Number(u2.total_score) &&
+               Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
+               Number(u1.correct_result_score) === Number(u2.correct_result_score);
+    };
+
+    for (let i = 0; i < leaderboardData.length; i++) {
+        const u = leaderboardData[i];
+        u.originalRank = i + 1;
+        if (currentGroup.length === 0) currentGroup.push(u);
+        else {
+            if (isTie(u, currentGroup[0])) currentGroup.push(u);
+            else { groupedLeaderboard.push(currentGroup); currentGroup = [u]; }
+        }
+    }
+    if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
+
+    let finalLeaderboard = [];
+    groupedLeaderboard.forEach(group => {
+        let groupReward = null;
+        for (let u of group) {
+            const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
+            if (r) { groupReward = r; break; }
+        }
+        group.forEach((u, index) => {
+            u.displayRank = u.originalRank;
+            u.isTied = group.length > 1;
+            u.reward = groupReward;
+            u.rowspan = (index === 0) ? group.length : 0;
+            u.isFirstInGroup = (index === 0);
+            finalLeaderboard.push(u);
+        });
+    });
+
+    res.render('index', { user: req.session.user, matches, userRank, leaderboard: finalLeaderboard });
 });
 
+// ==========================================
+// Authentication & User Profile
+// ==========================================
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 
 app.post('/register', upload.single('avatar'), async (req, res) => {
@@ -157,6 +209,9 @@ app.post('/change-password', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
+// ==========================================
+// Prediction & Leaderboard Features
+// ==========================================
 app.post('/predict', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
     
@@ -176,82 +231,8 @@ app.post('/predict', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
-app.get('/leaderboard', checkAuth, async (req, res) => {
-    const query = `
-        SELECT u.id, u.username, u.avatar,
-            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
-            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN 1 ELSE 0 END), 0) as correct_result_count,
-            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score,
-            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN 1 ELSE 0 END), 0) as exact_score_count,
-            COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
-            COALESCE(SUM(p.score_earned), 0) as total_score
-        FROM users u 
-        LEFT JOIN predictions p ON u.id = p.user_id 
-        LEFT JOIN matches m ON p.match_id = m.id
-        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
-        WHERE u.is_admin = 0 AND u.is_hidden = 0
-        GROUP BY u.id, u.username, u.avatar 
-        ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
-    `;
-    const { rows: leaderboardData } = await pool.query(query);
-    const { rows: rewardsData } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
-
-    let groupedLeaderboard = [];
-    let currentGroup = [];
-
-    const isTie = (u1, u2) => {
-        return Number(u1.total_score) === Number(u2.total_score) &&
-               Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
-               Number(u1.correct_result_score) === Number(u2.correct_result_score);
-    };
-
-    for (let i = 0; i < leaderboardData.length; i++) {
-        const user = leaderboardData[i];
-        user.originalRank = i + 1;
-
-        if (currentGroup.length === 0) {
-            currentGroup.push(user);
-        } else {
-            if (isTie(user, currentGroup[0])) {
-                currentGroup.push(user);
-            } else {
-                groupedLeaderboard.push(currentGroup);
-                currentGroup = [user];
-            }
-        }
-    }
-    if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
-
-    let finalLeaderboard = [];
-    groupedLeaderboard.forEach(group => {
-        let groupReward = null;
-        for (let u of group) {
-            const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
-            if (r) {
-                groupReward = r;
-                break;
-            }
-        }
-
-        group.forEach((u, index) => {
-            u.displayRank = u.originalRank;
-            u.isTied = group.length > 1;
-            u.reward = groupReward;
-
-            if (index === 0) {
-                u.rowspan = group.length;
-                u.isFirstInGroup = true;
-            } else {
-                u.rowspan = 0;
-                u.isFirstInGroup = false;
-            }
-
-            finalLeaderboard.push(u);
-        });
-    });
-
-    res.render('leaderboard', { user: req.session.user, leaderboard: finalLeaderboard });
-});
+// เก็บ Route เดิมไว้กรณีเข้าถึงตรง
+app.get('/leaderboard', checkAuth, (req, res) => res.redirect('/'));
 
 app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
     const userQuery = `
@@ -489,7 +470,6 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                 let away = cols[2].trim();
                 let rawTime = cols[3].trim();
                 
-                // แปลงรูปแบบวันที่กรณีที่ระบุมาแบบ DD-MM-YY H:mm หรือ DD/MM/YYYY
                 let formattedTime = rawTime;
                 const dateMatch = rawTime.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\s+(\d{1,2}:\d{2}(:\d{2})?)/);
                 
@@ -497,9 +477,9 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                     let day = dateMatch[1].padStart(2, '0');
                     let month = dateMatch[2].padStart(2, '0');
                     let year = dateMatch[3];
-                    if (year.length === 2) year = '20' + year; // เพิ่ม 20 ด้านหน้าถ้าใส่แค่ 26
+                    if (year.length === 2) year = '20' + year; 
                     let time = dateMatch[4];
-                    if (time.length <= 5) time += ':00'; // เติมวินาที
+                    if (time.length <= 5) time += ':00'; 
                     formattedTime = `${year}-${month}-${day} ${time}`;
                 }
 
