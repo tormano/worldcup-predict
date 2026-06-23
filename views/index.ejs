@@ -176,8 +176,12 @@
             return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
         };
 
+        // Safeguard Data
+        const safeMatches = typeof matches !== 'undefined' ? matches : [];
+        const safeLeaderboard = typeof leaderboard !== 'undefined' ? leaderboard : [];
+
         // 1. เรียงแมตช์และสร้าง Match Day Info
-        const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+        const sortedMatches = [...safeMatches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
         sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
 
         const getMatchDayInfo = (kickoffStr) => {
@@ -231,7 +235,6 @@
         });
     %>
 
-    <!-- Top Navbar -->
     <header class="pl-header">
         <div class="nav-container">
             <div class="nav-brand">
@@ -241,9 +244,10 @@
                 <a href="#" class="nav-item active" onclick="switchTab('matches')" id="nav-matches">Matches</a>
                 <a href="#" class="nav-item" onclick="switchTab('fixtures')" id="nav-fixtures">Fixtures</a>
                 <a href="#" class="nav-item" onclick="switchTab('table')" id="nav-table">Table</a>
-                <% if(user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
+                <% if(typeof user !== 'undefined' && user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
             </div>
             <div class="nav-profile">
+                <% if(typeof user !== 'undefined') { %>
                 <div class="profile-dropdown">
                     <img src="<%= user.avatar %>" alt="Avatar" class="avatar-img" onclick="document.getElementById('avatarUpload').click()" title="เปลี่ยนรูปโปรไฟล์">
                     <form id="avatarForm" action="/update-avatar" method="POST" enctype="multipart/form-data" style="display: none;">
@@ -254,18 +258,17 @@
                         <a href="/logout" class="logout-text">Sign Out</a>
                     </div>
                 </div>
+                <% } %>
             </div>
         </div>
     </header>
 
-    <!-- Dynamic Banner -->
     <div class="page-banner" id="page-banner">
         <div class="banner-content">
             <h1 id="banner-title">Matches</h1>
         </div>
     </div>
 
-    <!-- Submenu for Table -->
     <div class="page-submenu" id="page-submenu" style="display:none;">
         <div class="submenu-content">
             <a href="#" class="submenu-item active">Table</a>
@@ -273,15 +276,12 @@
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
     <div class="main-content">
 
-        <!-- TAB 1: MATCHES (ทายผล) -->
         <div id="tab-matches" class="tab-content active">
             <% if(matchDaysList.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
             <% } else { %>
-                <!-- Match Day Filter / Caption -->
                 <div class="matchday-selector">
                     <button class="arrow-btn" onclick="changeMatchDay(-1)">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
@@ -300,7 +300,6 @@
                     </button>
                 </div>
 
-                <!-- Match Containers -->
                 <div id="matches-containers-wrapper">
                     <% sortedKeys.forEach((date, idx) => { %>
                         <div class="matchday-container" id="md-container-<%= idx %>" style="display: none;">
@@ -351,9 +350,7 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Action Right -->
                                     <div class="match-actions">
-                                        <!-- Form Edit -->
                                         <form action="/predict" method="POST" id="pred-form-<%= match.id %>" class="pred-form" style="display: none;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
                                             <input type="hidden" name="match_id" value="<%= match.id %>">
                                             <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" class="score-input" required>
@@ -363,7 +360,6 @@
                                             <button type="button" class="btn-icon btn-outline" onclick="cancelEdit(<%= match.id %>, <%= hasPredicted %>)">❌</button>
                                         </form>
 
-                                        <!-- Display Prediction -->
                                         <div class="pred-display" id="pred-display-<%= match.id %>" style="display: flex; gap: 8px; align-items: center;">
                                             <% if(hasPredicted) { %>
                                                 <div class="pred-badge" onclick="<% if(!match.is_locked){ %>enableEdit(<%= match.id %>)<% } %>">
@@ -395,7 +391,6 @@
             <% } %>
         </div>
 
-        <!-- TAB 2: FIXTURES (ดูตารางแข่งรวมทั้งหมด) -->
         <div id="tab-fixtures" class="tab-content" style="display:none;">
             <% if(matchDaysList.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
@@ -466,9 +461,8 @@
             <% } %>
         </div>
 
-        <!-- TAB 3: TABLE (Leaderboard) -->
         <div id="tab-table" class="tab-content" style="display:none;">
-            <% if(leaderboard.length === 0) { %>
+            <% if(safeLeaderboard.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
             <% } else { %>
                 <div style="overflow-x: auto;">
@@ -485,7 +479,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% leaderboard.forEach((row) => { 
+                            <% safeLeaderboard.forEach((row) => { 
                                 const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
                                 const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
                             %>
@@ -509,7 +503,6 @@
                                     <td><%= row.correct_result_count %></td>
                                     <td><strong style="font-size: 1.15rem;"><%= row.total_score || 0 %></strong></td>
                                     
-                                    <!-- Rowspan for Rewards -->
                                     <% if (row.isFirstInGroup) { %>
                                         <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
                                             <% if(row.reward) { %>
@@ -538,22 +531,25 @@
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
-            document.getElementById('tab-' + tabId).style.display = 'block';
-            document.getElementById('nav-' + tabId).classList.add('active');
+            const targetTab = document.getElementById('tab-' + tabId);
+            const targetNav = document.getElementById('nav-' + tabId);
+            
+            if (targetTab) targetTab.style.display = 'block';
+            if (targetNav) targetNav.classList.add('active');
             
             // เปลี่ยนสี Banner
             const banner = document.getElementById('page-banner');
             const title = document.getElementById('banner-title');
-            banner.className = 'page-banner banner-' + tabId;
+            if (banner) banner.className = 'page-banner banner-' + tabId;
             
             const submenu = document.getElementById('page-submenu');
             
             if (tabId === 'matches') {
-                title.innerText = 'Matches';
-                submenu.style.display = 'none';
+                if (title) title.innerText = 'Matches';
+                if (submenu) submenu.style.display = 'none';
             } else if (tabId === 'fixtures') {
-                title.innerText = 'Fixtures';
-                submenu.style.display = 'none';
+                if (title) title.innerText = 'Fixtures';
+                if (submenu) submenu.style.display = 'none';
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-fixture');
                     if (todayGroup) {
@@ -561,8 +557,8 @@
                     }
                 }, 100);
             } else if (tabId === 'table') {
-                title.innerText = 'Table';
-                submenu.style.display = 'block';
+                if (title) title.innerText = 'Table';
+                if (submenu) submenu.style.display = 'block';
             }
             
             // อัปเดต URL Param โดยไม่รีเฟรชหน้า
@@ -572,22 +568,27 @@
         }
 
         // --- Match Day Filter Logic (Matches Tab) ---
-        const matchDaysData = <%- JSON.stringify(matchDaysList || []) %>;
+        const matchDaysData = <%- JSON.stringify(typeof matchDaysList !== 'undefined' ? matchDaysList : []) %>;
         let currentMdIndex = 0;
 
         function initMatchDay() {
-            if(matchDaysData.length === 0) return;
-            const activeKey = "<%= activeGroupKey %>";
+            if(!matchDaysData || matchDaysData.length === 0) return;
+            const activeKey = "<%= typeof activeGroupKey !== 'undefined' ? activeGroupKey : '' %>";
             currentMdIndex = matchDaysData.findIndex(md => md.id === activeKey);
             if(currentMdIndex === -1) currentMdIndex = 0;
             renderMatchDay();
-            document.querySelector('.md-dropdown').value = currentMdIndex;
+            
+            const dropdown = document.querySelector('.md-dropdown');
+            if (dropdown) dropdown.value = currentMdIndex;
         }
 
         function renderMatchDay() {
-            if(matchDaysData.length === 0) return;
-            document.getElementById('md-title').innerHTML = `${matchDaysData[currentMdIndex].title}`;
-            document.getElementById('md-period').innerText = matchDaysData[currentMdIndex].period;
+            if(!matchDaysData || matchDaysData.length === 0) return;
+            const titleEl = document.getElementById('md-title');
+            const periodEl = document.getElementById('md-period');
+            
+            if (titleEl) titleEl.innerHTML = `${matchDaysData[currentMdIndex].title}`;
+            if (periodEl) periodEl.innerText = matchDaysData[currentMdIndex].period;
             
             document.querySelectorAll('.matchday-container').forEach((el, idx) => {
                 el.style.display = (idx === currentMdIndex) ? 'block' : 'none';
@@ -595,11 +596,13 @@
         }
 
         function changeMatchDay(dir) {
-            if(matchDaysData.length === 0) return;
+            if(!matchDaysData || matchDaysData.length === 0) return;
             currentMdIndex += dir;
             if(currentMdIndex < 0) currentMdIndex = 0;
             if(currentMdIndex >= matchDaysData.length) currentMdIndex = matchDaysData.length - 1;
-            document.querySelector('.md-dropdown').value = currentMdIndex;
+            
+            const dropdown = document.querySelector('.md-dropdown');
+            if (dropdown) dropdown.value = currentMdIndex;
             renderMatchDay();
         }
         
@@ -608,12 +611,25 @@
             renderMatchDay();
         }
 
+        // --- แก้ไขจุดนี้: ใส่ Try/Catch และหน่วงเวลาเปิดแท็บ ---
         document.addEventListener('DOMContentLoaded', () => {
-            initMatchDay();
+            try {
+                initMatchDay();
+            } catch (error) {
+                console.error("MatchDay Init Error:", error);
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
-            if (tabParam) switchTab(tabParam);
-            else switchTab('matches');
+            
+            if (tabParam) {
+                // หน่วงเวลา 0.1 วิ ให้หน้า HTML วาดเสร็จสมบูรณ์ก่อน ค่อยสั่งเปิดแท็บ (แก้ปัญหาจอค้าง)
+                setTimeout(() => {
+                    switchTab(tabParam);
+                }, 100);
+            } else {
+                switchTab('matches');
+            }
         });
 
         // --- Prediction Form ---
@@ -621,14 +637,16 @@
             const displayBox = document.getElementById('pred-display-' + matchId);
             const formBox = document.getElementById('pred-form-' + matchId);
             if (displayBox) displayBox.style.display = 'none';
-            formBox.style.display = 'flex';
-            document.getElementById('home-' + matchId).focus(); 
+            if (formBox) {
+                formBox.style.display = 'flex';
+                document.getElementById('home-' + matchId).focus(); 
+            }
         }
 
         function cancelEdit(matchId, hasPredicted) {
             const displayBox = document.getElementById('pred-display-' + matchId);
             const formBox = document.getElementById('pred-form-' + matchId);
-            formBox.style.display = 'none';
+            if (formBox) formBox.style.display = 'none';
             if (displayBox) displayBox.style.display = 'flex';
         }
 
@@ -636,8 +654,10 @@
             event.preventDefault(); 
             const data = new URLSearchParams(new FormData(form));
             const saveBtn = document.getElementById('btn-save-' + matchId);
-            saveBtn.innerText = '⏳';
-            saveBtn.disabled = true;
+            if(saveBtn) {
+                saveBtn.innerText = '⏳';
+                saveBtn.disabled = true;
+            }
 
             try {
                 const response = await fetch(form.action, { 
@@ -658,7 +678,12 @@
                     }
                 } else { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
             } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); } 
-            finally { saveBtn.innerText = '💾'; saveBtn.disabled = false; }
+            finally { 
+                if(saveBtn) {
+                    saveBtn.innerText = '💾'; 
+                    saveBtn.disabled = false; 
+                }
+            }
         }
     </script>
 </body>
