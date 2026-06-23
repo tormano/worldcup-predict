@@ -43,7 +43,7 @@
         .submenu-item.active { color: var(--pl-text); border-bottom-color: var(--pl-accent); font-weight: 600; }
 
         /* Main Detailed Table */
-        .main-content { max-width: 1000px; margin: 20px auto; padding: 0 15px 50px; }
+        .main-content { max-width: 1200px; margin: 20px auto; padding: 0 15px 50px; }
         .card { background: transparent; border: none; overflow: hidden; }
         
         .table-wrapper { overflow-x: auto; max-width: 100%; border: 1px solid var(--pl-border); border-radius: 8px; max-height: 75vh; background: var(--pl-surface); }
@@ -84,6 +84,22 @@
 
         .matchday-row th { background-color: #4a0052; padding: 8px 10px; font-weight: 600; border-bottom: 1px solid var(--pl-border); color: var(--pl-primary); text-align: left; }
         .matchday-row .sticky-col { z-index: 25; font-size: 0.9rem; }
+
+        /* ปรับสำหรับ Desktop ให้พอดีจอ ไม่ต้อง Scroll แนวนอน */
+        @media (min-width: 992px) {
+            .table-wrapper { overflow-x: hidden; }
+            table { table-layout: fixed; width: 100%; min-width: 100%; }
+            .sticky-col { position: relative; width: 28%; max-width: none; min-width: auto; box-shadow: none; }
+            .user-th { width: auto; max-width: none; min-width: auto; }
+            .user-th img { width: 24px; height: 24px; }
+            .user-th .username { font-size: 0.7rem; }
+            
+            /* ลด gap ภายใน Layout แมตช์ เพื่อประหยัดพื้นที่ */
+            .match-layout { grid-template-columns: 1fr 20px 40px 20px 1fr; gap: 4px; }
+            .match-layout .home-name, .match-layout .away-name { max-width: 70px; font-size: 0.75rem; }
+            .pred-val { font-size: 0.8rem; }
+            .score-badge { font-size: 0.65rem; padding: 1px 4px; }
+        }
     </style>
 </head>
 <body>
@@ -155,39 +171,31 @@
     <div class="main-content">
         <div class="card">            
             <% 
-                const getMatchDayInfo = (kickoffTime) => {
-                    let dateObj = new Date(kickoffTime);
-                    let hour = dateObj.getHours();
-                    let year = dateObj.getFullYear();
-                    let month = dateObj.getMonth();
-                    let date = dateObj.getDate();
-                    
-                    let startDay = new Date(year, month, date, 12, 0, 0);
+                // ซิงก์รูปแบบวันที่กับหน้าหลัก (index.ejs)
+                const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+                sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
+
+                const getMatchDayInfo = (kickoffStr) => {
+                    const [datePart, timePart] = kickoffStr.split(' ');
+                    const [year, month, day] = datePart.split('-').map(Number);
+                    const [hour] = timePart.split(':').map(Number);
+                    let startDay = new Date(year, month - 1, day, 12, 0, 0);
                     if (hour < 12) startDay.setDate(startDay.getDate() - 1);
-                    
-                    let endDay = new Date(startDay);
-                    endDay.setDate(endDay.getDate() + 1);
-                    
                     const pad = n => n.toString().padStart(2, '0');
-                    return {
-                        sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`,
-                        displayLabel: `${pad(startDay.getDate())}/${pad(startDay.getMonth()+1)} 12:00 น. ถึง ${pad(endDay.getDate())}/${pad(endDay.getMonth()+1)} 12:00 น.`
-                    };
+                    return { sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}` };
                 };
 
                 const groupedMatches = {};
-                const groupLabels = {};
-                
-                matches.forEach(m => {
+                sortedMatches.forEach(m => {
                     const info = getMatchDayInfo(m.kickoff_time);
-                    if(!groupedMatches[info.sortKey]) {
-                        groupedMatches[info.sortKey] = [];
-                        groupLabels[info.sortKey] = info.displayLabel;
-                    }
+                    if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
                     groupedMatches[info.sortKey].push(m);
                 });
-                
-                const datesToDisplay = Object.keys(groupedMatches).sort().reverse();
+
+                const sortedKeys = Object.keys(groupedMatches).sort();
+                const dateToDayMap = {};
+                sortedKeys.forEach((key, idx) => { dateToDayMap[key] = idx + 1; });
+                const datesToDisplay = [...sortedKeys].reverse();
             %>
 
             <% if(matches.length === 0) { %>
@@ -212,10 +220,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% datesToDisplay.forEach(date => { %>
+                            <% datesToDisplay.forEach(date => { 
+                                const stageName = groupedMatches[date][0].stage_name;
+                            %>
                                 <tr class="matchday-row">
-                                    <th class="sticky-col">📅 <%= groupLabels[date] %></th>
-                                    <th colspan="<%= users.length %>"></th>
+                                    <th class="sticky-col" style="z-index: 25;">📅 Match Day <%= dateToDayMap[date] %> : <%= stageName %></th>
+                                    <th colspan="<%= users.length %>" style="background-color: #4a0052; border-bottom: 1px solid var(--pl-border);"></th>
                                 </tr>
 
                                 <% groupedMatches[date].sort((a, b) => b.id - a.id).forEach(m => { 
