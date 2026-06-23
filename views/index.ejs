@@ -41,17 +41,9 @@
         .page-banner { padding: 35px 20px; color: white; transition: background 0.3s ease; }
         .banner-matches { background: linear-gradient(90deg, #02e1a2 0%, #00b4d8 100%); }
         .banner-fixtures { background: linear-gradient(90deg, #ff0046 0%, #963cff 100%); }
-        .banner-table { background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); }
         
         .banner-content { max-width: 1000px; margin: 0 auto; }
         .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; }
-
-        /* Submenu (For Table) */
-        .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
-        .submenu-content { max-width: 1000px; margin: 0 auto; display: flex; gap: 25px; padding: 0 15px; }
-        .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s;}
-        .submenu-item:hover { color: var(--pl-text); }
-        .submenu-item.active { color: var(--pl-text); border-bottom-color: var(--pl-accent); font-weight: 600; }
 
         .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
@@ -109,23 +101,6 @@
         .btn-success { background: var(--pl-primary); color: var(--pl-bg); }
         .btn-outline { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--pl-border); }
 
-        /* Table Styles */
-        .pl-table { width: 100%; border-collapse: collapse; color: var(--pl-text); }
-        .pl-table th { background: rgba(255,255,255,0.03); color: var(--pl-text-muted); font-weight: 500; padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); font-size: 0.85rem;}
-        .pl-table td { padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); transition: 0.2s;}
-        .pl-table th:nth-child(1), .pl-table td:nth-child(1) { text-align: left; padding-left: 20px;}
-        .pl-table th:nth-child(2), .pl-table td:nth-child(2) { text-align: left; }
-        .pl-table tr:hover td { background: var(--pl-surface); }
-        
-        .rank-reward { font-size: 1.4rem; font-weight: 700; color: var(--pl-text); }
-        .rank-normal { font-size: 1.05rem; font-weight: 500; color: var(--pl-text-muted); }
-        .user-cell { display: flex; align-items: center; gap: 12px; }
-        .user-cell img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
-        .user-cell .username { font-weight: 600; font-size: 0.95rem; }
-        
-        .reward-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid var(--pl-border); }
-        .shared-badge { font-size: 0.65rem; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; margin-left: 4px; color: var(--pl-text-muted);}
-
         @media (max-width: 768px) {
             .match-main { max-width: 100%; justify-content: flex-start; }
             .match-item { flex-direction: column; align-items: stretch; gap: 15px; }
@@ -176,9 +151,7 @@
             return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
         };
 
-        // Safeguard Data
         const safeMatches = typeof matches !== 'undefined' ? matches : [];
-        const safeLeaderboard = typeof leaderboard !== 'undefined' ? leaderboard : [];
 
         // 1. เรียงแมตช์และสร้าง Match Day Info
         const sortedMatches = [...safeMatches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
@@ -243,7 +216,7 @@
             <div class="nav-menu">
                 <a href="#" class="nav-item active" onclick="switchTab('matches')" id="nav-matches">Matches</a>
                 <a href="#" class="nav-item" onclick="switchTab('fixtures')" id="nav-fixtures">Fixtures</a>
-                <a href="#" class="nav-item" onclick="switchTab('table')" id="nav-table">Table</a>
+                <a href="/leaderboard" class="nav-item" id="nav-table">Table</a>
                 <% if(typeof user !== 'undefined' && user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
             </div>
             <div class="nav-profile">
@@ -266,13 +239,6 @@
     <div class="page-banner" id="page-banner">
         <div class="banner-content">
             <h1 id="banner-title">Matches</h1>
-        </div>
-    </div>
-
-    <div class="page-submenu" id="page-submenu" style="display:none;">
-        <div class="submenu-content">
-            <a href="#" class="submenu-item active">Table</a>
-            <a href="/leaderboard/detailed" class="submenu-item">View details</a>
         </div>
     </div>
 
@@ -461,73 +427,17 @@
             <% } %>
         </div>
 
-        <div id="tab-table" class="tab-content" style="display:none;">
-            <% if(safeLeaderboard.length === 0) { %>
-                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
-            <% } else { %>
-                <div style="overflow-x: auto;">
-                    <table class="pl-table">
-                        <thead>
-                            <tr>
-                                <th width="8%">Pos</th>
-                                <th width="30%">Club / Player</th>
-                                <th width="10%">MP</th>
-                                <th width="12%">Exact</th>
-                                <th width="12%">Result</th>
-                                <th width="15%">Pts</th>
-                                <th width="13%">Reward</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% safeLeaderboard.forEach((row) => { 
-                                const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
-                                const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
-                            %>
-                                <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
-                                    <td style="<%= hasColor ? 'border-left: none;' : '' %>">
-                                        <% if(row.reward) { %>
-                                            <span class="rank-reward"><%= row.displayRank %></span>
-                                        <% } else { %>
-                                            <span class="rank-normal"><%= row.displayRank %></span>
-                                        <% } %>
-                                        <% if(row.isTied) { %><br><span style="font-size: 0.65rem; color: var(--pl-text-muted);">(ร่วม)</span><% } %>
-                                    </td>
-                                    <td>
-                                        <div class="user-cell">
-                                            <img src="<%= row.avatar %>" alt="avatar">
-                                            <span class="username"><%= row.username %></span>
-                                        </div>
-                                    </td>
-                                    <td><%= row.mp %></td>
-                                    <td><%= row.exact_score_count %></td>
-                                    <td><%= row.correct_result_count %></td>
-                                    <td><strong style="font-size: 1.15rem;"><%= row.total_score || 0 %></strong></td>
-                                    
-                                    <% if (row.isFirstInGroup) { %>
-                                        <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
-                                            <% if(row.reward) { %>
-                                                <div class="reward-badge" style="border-color: <%= hasColor ? row.reward.color : 'var(--pl-border)' %>;">
-                                                    <%= row.reward.icon %> <%= row.reward.description %>
-                                                    <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
-                                                </div>
-                                            <% } else { %>
-                                                <span style="color: var(--pl-border);">-</span>
-                                            <% } %>
-                                        </td>
-                                    <% } %>
-                                </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            <% } %>
-        </div>
-
     </div>
 
     <script>
         // --- Tab Management ---
         function switchTab(tabId) {
+            // ป้องกันเอฟเฟกต์ค้างกรณีมีคนส่งค่า table เข้ามาทำงานในหน้านี้
+            if (tabId === 'table') {
+                window.location.href = '/leaderboard';
+                return;
+            }
+            
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
@@ -537,37 +447,28 @@
             if (targetTab) targetTab.style.display = 'block';
             if (targetNav) targetNav.classList.add('active');
             
-            // เปลี่ยนสี Banner
             const banner = document.getElementById('page-banner');
             const title = document.getElementById('banner-title');
             if (banner) banner.className = 'page-banner banner-' + tabId;
             
-            const submenu = document.getElementById('page-submenu');
-            
             if (tabId === 'matches') {
                 if (title) title.innerText = 'Matches';
-                if (submenu) submenu.style.display = 'none';
             } else if (tabId === 'fixtures') {
                 if (title) title.innerText = 'Fixtures';
-                if (submenu) submenu.style.display = 'none';
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-fixture');
                     if (todayGroup) {
                         todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }, 100);
-            } else if (tabId === 'table') {
-                if (title) title.innerText = 'Table';
-                if (submenu) submenu.style.display = 'block';
             }
             
-            // อัปเดต URL Param โดยไม่รีเฟรชหน้า
             const url = new URL(window.location);
             url.searchParams.set('tab', tabId);
             window.history.pushState({}, '', url);
         }
 
-        // --- Match Day Filter Logic (Matches Tab) ---
+        // --- Match Day Filter Logic ---
         const matchDaysData = <%- JSON.stringify(typeof matchDaysList !== 'undefined' ? matchDaysList : []) %>;
         let currentMdIndex = 0;
 
@@ -611,7 +512,6 @@
             renderMatchDay();
         }
 
-        // --- แก้ไขจุดนี้: ใส่ Try/Catch และหน่วงเวลาเปิดแท็บ ---
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 initMatchDay();
@@ -622,11 +522,10 @@
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
             
-            if (tabParam) {
-                // หน่วงเวลา 0.1 วิ ให้หน้า HTML วาดเสร็จสมบูรณ์ก่อน ค่อยสั่งเปิดแท็บ (แก้ปัญหาจอค้าง)
-                setTimeout(() => {
-                    switchTab(tabParam);
-                }, 100);
+            if (tabParam === 'table') {
+                window.location.href = '/leaderboard';
+            } else if (tabParam) {
+                switchTab(tabParam);
             } else {
                 switchTab('matches');
             }
