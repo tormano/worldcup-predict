@@ -3,383 +3,640 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ทายผลบอลโลก World Cup 2026</title>
+    <title>World Cup 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --primary: #2563eb; --primary-hover: #1d4ed8; --border: #e2e8f0; }
-        body { font-family: 'Prompt', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; font-size: 0.9rem; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .header-card { background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .user-info { display: flex; align-items: center; gap: 12px; }
-        .user-info img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; background: #fff; transition: transform 0.2s; }
-        .user-info img:hover { transform: scale(1.05); }
-        .user-info h3 { margin: 0; font-size: 1.1rem; }
-        .user-info p { margin: 0; color: #94a3b8; font-size: 0.85rem; }
-        .nav-links a { color: white; text-decoration: none; font-weight: 500; margin-left: 15px; transition: color 0.2s; font-size: 0.9rem; }
-        .nav-links a:hover { color: #38bdf8; } .nav-links a.admin-link { color: #86efac; } .nav-links a.logout-link { color: #fca5a5; }
-        
-        .card-title { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; background: var(--surface); padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border);}
-        .card-title h2 { margin: 0; color: var(--text); font-size: 1.3rem; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        th { background-color: var(--bg); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; }
-        
-        /* สไตล์ Match Layout ย่อส่วนสำหรับหน้าทายผล */
-        .match-layout { display: grid; grid-template-columns: 1fr 32px 100px 32px 1fr; align-items: center; justify-content: center; width: 100%; gap: 8px; }
-        .match-layout .home-name { text-align: right; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: end; transition: color 0.3s;}
-        .match-layout .home-flag { display: flex; justify-content: flex-end; }
-        .match-layout .score-vs { text-align: center; color: var(--text-muted); font-size: 0.85rem; min-height: 38px; display: flex; align-items: center; justify-content: center; }
-        .match-layout .away-flag { display: flex; justify-content: flex-start; }
-        .match-layout .away-name { text-align: left; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: start; transition: color 0.3s;}
-        
-        .text-black { color: #0f172a; font-weight: 500; }
-        .text-gray { color: #94a3b8; font-weight: 400; }
-        
-        .flag-icon { width: 32px; height: 24px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); object-fit: cover; display: block; }
-        
-        .btn { padding: 6px 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 500; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.9rem; text-align: center;}
-        .btn:hover { background-color: var(--primary-hover); }
-        .btn-view { background-color: #0ea5e9; } .btn-view:hover { background-color: #0284c7; }
-        .btn-success { background-color: #10b981; } .btn-success:hover { background-color: #059669; }
-
-        .date-group { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05); }
-        .date-header { padding: 12px 15px; background: #f8fafc; font-weight: 600; cursor: pointer; user-select: none; font-size: 1.05rem; color: var(--primary); transition: background 0.2s; position: relative;}
-        .date-header:hover { background: #f1f5f9; }
-        .date-group[open] .date-header { border-bottom: 1px solid var(--border); }
-        .date-content table { margin-bottom: 0; border-style: hidden; }
-
-        /* Highlight สำหรับ Match Day ปัจจุบัน/ถัดไป */
-        .date-group.today-group { border: 2px solid var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
-        .date-group.today-group .date-header { background: #eff6ff; color: #1e40af; }
-        .date-group.today-group[open] .date-header { border-bottom: 2px solid #bfdbfe; }
-        .date-group.today-group .date-header:hover { background: #dbeafe; }
-
-        .today-badge { position: absolute; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 2px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3); pointer-events: none; }
-        
-        @media (max-width: 640px) {
-            .today-badge { position: static !important; transform: none !important; display: inline-block; margin-left: 10px; margin-top: 4px; }
-            .match-layout { grid-template-columns: 1fr 24px 60px 24px 1fr; }
-            .match-layout .home-name, .match-layout .away-name { font-size: 0.8rem; max-width: 70px; }
-            .flag-icon { width: 24px; height: 18px; }
+        :root { 
+            --pl-bg: #37003c;
+            --pl-nav: #240028;
+            --pl-surface: rgba(255, 255, 255, 0.03);
+            --pl-text: #ffffff; 
+            --pl-text-muted: #cbd5e1; 
+            --pl-border: rgba(255, 255, 255, 0.1); 
+            --pl-primary: #00ff85; 
+            --pl-accent: #04f5ff;
         }
+        body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
+        
+        /* Navbar */
+        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
+        .nav-brand { display: flex; align-items: center; }
+        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
+        
+        .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
+        .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .nav-item:hover { color: var(--pl-primary); }
+        .nav-item.active { border-bottom-color: var(--pl-primary); }
+        .admin-link { color: #86efac; }
+        
+        .nav-profile { display: flex; align-items: center; }
+        .profile-dropdown { display: flex; align-items: center; gap: 10px; }
+        .avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 1px solid var(--pl-border); }
+        .profile-info { display: flex; flex-direction: column; }
+        .profile-name { font-size: 0.85rem; font-weight: 600; }
+        .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        .date-separator { text-align: center; font-size: 0.85rem; color: #64748b; padding: 6px; background: #f8fafc; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0; font-weight: 500;}
+        /* Banners */
+        .page-banner { padding: 35px 20px; color: white; transition: background 0.3s ease; }
+        .banner-matches { background: linear-gradient(90deg, #02e1a2 0%, #00b4d8 100%); }
+        .banner-fixtures { background: linear-gradient(90deg, #ff0046 0%, #963cff 100%); }
+        .banner-table { background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); }
+        
+        .banner-content { max-width: 1000px; margin: 0 auto; }
+        .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; }
 
-        tr.flash-success { background-color: #dcfce7 !important; transition: background-color 0.5s ease; }
+        /* Submenu (For Table) */
+        .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
+        .submenu-content { max-width: 1000px; margin: 0 auto; display: flex; gap: 25px; padding: 0 15px; }
+        .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s;}
+        .submenu-item:hover { color: var(--pl-text); }
+        .submenu-item.active { color: var(--pl-text); border-bottom-color: var(--pl-accent); font-weight: 600; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-box { background: var(--surface); padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
-        .modal-overlay.active .modal-box { transform: translateY(0); }
-        .modal-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+        .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
-        @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+        /* Match Day Filter (Matches Tab) */
+        .matchday-selector { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 30px; position: relative;}
+        .arrow-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .arrow-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--pl-primary); color: var(--pl-primary); }
+        
+        /* Dropdown Overlay */
+        .matchday-info { position: relative; text-align: center; min-width: 250px; }
+        .md-dropdown { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        .matchday-info h2 { margin: 0; font-size: 1.3rem; color: var(--pl-text); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .matchday-info h2::after { content: '⌄'; font-size: 1rem; color: var(--pl-text-muted); font-weight: 400;}
+        .matchday-info p { margin: 2px 0 0; font-size: 0.85rem; color: var(--pl-text-muted); }
+
+        /* Fixture Header (Fixtures Tab) */
+        .fixture-header { text-align: center; margin: 40px 0 20px; }
+        .fixture-header h3 { margin: 0; font-size: 1.4rem; color: var(--pl-text); font-weight: 700; }
+        .fixture-header p { margin: 4px 0 0; font-size: 0.85rem; color: var(--pl-text-muted); }
+
+        /* Match Layout Styling */
+        .date-separator { font-size: 1.05rem; font-weight: 600; color: var(--pl-text); padding: 25px 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .match-item { display: flex; align-items: center; justify-content: space-between; padding: 15px 10px; border-bottom: 1px solid var(--pl-border); transition: 0.2s; position: relative;}
+        .match-item:hover { background-color: var(--pl-surface); }
+        
+        .match-main { display: flex; align-items: center; justify-content: center; width: 100%; max-width: 500px; margin: 0 auto; gap: 15px; }
+        .team { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .team.home { justify-content: flex-end; }
+        .team.away { justify-content: flex-start; }
+        .team-name { font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .flag-icon { width: 28px; height: 20px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); object-fit: cover; }
+        
+        .real-score-time { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 65px; background: rgba(255,255,255,0.05); padding: 4px 0; border-radius: 4px; border: 1px solid var(--pl-border); }
+        .real-score-time.is-ft { background: transparent; border: none; }
+        .real-score-time .val { font-size: 1.1rem; font-weight: 500; }
+        .real-score-time .status { font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 2px;}
+        .text-danger { color: #ef4444 !important; font-weight: 700; }
+
+        /* Actions (Predict Box) */
+        .match-actions { position: absolute; right: 10px; display: flex; gap: 8px; align-items: center; }
+        .pred-badge { display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); border-radius: 6px; padding: 4px 12px; cursor: pointer; transition: 0.2s; }
+        .pred-badge:hover { background: rgba(255,255,255,0.1); }
+        .pred-badge .nums { font-family: monospace; font-size: 1.05rem; font-weight: 700; letter-spacing: 1px;}
+        .pred-badge .pts { font-size: 0.7rem; font-weight: 600; margin-top: 2px;}
+        .pts-success { color: var(--pl-primary); } .pts-zero { color: var(--pl-text-muted); }
+        
+        .btn-predict { background: white; color: var(--pl-bg); border: none; border-radius: 20px; padding: 6px 16px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; font-family: inherit;}
+        .btn-predict:hover { background: #cbd5e1; }
+        .btn-view-friends { background: transparent; color: var(--pl-text-muted); border: 1px solid var(--pl-border); border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: 0.2s;}
+        .btn-view-friends:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        .pred-form { display: flex; align-items: center; gap: 6px; }
+        .score-input { width: 36px; text-align: center; padding: 4px; font-size: 1rem; font-weight: 600; border-radius: 4px; border: 1px solid var(--pl-border); background: white; color: black; }
+        .btn-icon { width: 30px; height: 30px; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;}
+        .btn-success { background: var(--pl-primary); color: var(--pl-bg); }
+        .btn-outline { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--pl-border); }
+
+        /* Table Styles */
+        .pl-table { width: 100%; border-collapse: collapse; color: var(--pl-text); }
+        .pl-table th { background: rgba(255,255,255,0.03); color: var(--pl-text-muted); font-weight: 500; padding: 12px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); font-size: 0.85rem;}
+        .pl-table td { padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); transition: 0.2s;}
+        .pl-table th:nth-child(1), .pl-table td:nth-child(1) { text-align: left; padding-left: 20px;}
+        .pl-table th:nth-child(2), .pl-table td:nth-child(2) { text-align: left; }
+        .pl-table tr:hover td { background: var(--pl-surface); }
+        
+        .rank-reward { font-size: 1.4rem; font-weight: 700; color: var(--pl-text); }
+        .rank-normal { font-size: 1.05rem; font-weight: 500; color: var(--pl-text-muted); }
+        .user-cell { display: flex; align-items: center; gap: 12px; }
+        .user-cell img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
+        .user-cell .username { font-weight: 600; font-size: 0.95rem; }
+        
+        .reward-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; background: rgba(255,255,255,0.08); border: 1px solid var(--pl-border); }
+        .shared-badge { font-size: 0.65rem; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; margin-left: 4px; color: var(--pl-text-muted);}
+
+        @media (max-width: 768px) {
+            .match-main { max-width: 100%; justify-content: flex-start; }
+            .match-item { flex-direction: column; align-items: stretch; gap: 15px; }
+            .match-actions { position: static; justify-content: center; width: 100%; border-top: 1px dashed var(--pl-border); padding-top: 10px;}
+            .team-name { max-width: 100px; font-size: 0.85rem;}
+            .nav-menu { gap: 10px; }
+            .nav-item { font-size: 0.85rem; }
+        }
+        
+        tr.flash-success { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <% 
-            const countryFlags = {
-                'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
-                'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
-                'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
-                'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
-                'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
-                'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
-                'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
-                'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
-                'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
-                'Tunisia': 'tn', 'USA': 'us', 'United States': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
-                'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
-                'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
-                'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
-                'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
-                'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
-                'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-                'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo', 'Czechia': 'cz'
-            };
-            const getFlag = (teamName) => {
-                if(!teamName) return '';
-                const searchName = teamName.trim().toLowerCase();
-                for (const [name, code] of Object.entries(countryFlags)) {
-                    if (name.toLowerCase() === searchName) {
-                        return `<img src="https://flagcdn.com/32x24/${code}.png" class="flag-icon" alt="${teamName}">`;
-                    }
+    <% 
+        const countryFlags = {
+            'Argentina': 'ar', 'Australia': 'au', 'Austria': 'at', 'Belgium': 'be',
+            'Brazil': 'br', 'Cameroon': 'cm', 'Canada': 'ca', 'Colombia': 'co',
+            'Costa Rica': 'cr', 'Croatia': 'hr', 'Czech Republic': 'cz', 'Denmark': 'dk',
+            'Ecuador': 'ec', 'Egypt': 'eg', 'England': 'gb-eng', 'France': 'fr',
+            'Germany': 'de', 'Ghana': 'gh', 'Iran': 'ir', 'Italy': 'it',
+            'Japan': 'jp', 'Mexico': 'mx', 'Morocco': 'ma', 'Netherlands': 'nl',
+            'Nigeria': 'ng', 'Panama': 'pa', 'Peru': 'pe', 'Poland': 'pl',
+            'Portugal': 'pt', 'Saudi Arabia': 'sa', 'Senegal': 'sn', 'Serbia': 'rs',
+            'South Korea': 'kr', 'Spain': 'es', 'Sweden': 'se', 'Switzerland': 'ch',
+            'Tunisia': 'tn', 'USA': 'us', 'United States': 'us', 'Uruguay': 'uy', 'Wales': 'gb-wls',
+            'South Africa': 'za', 'Bosnia and Herzegovina': 'ba', 'Chile': 'cl',
+            'Paraguay': 'py', 'Venezuela': 've', 'New Zealand': 'nz', 'Qatar': 'qa',
+            'Scotland': 'gb-sct', 'Haiti': 'ht', 'Turkey': 'tr', 'Ivory Coast': 'ci',
+            'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
+            'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
+            'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
+            'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
+        };
+        const getFlag = (teamName) => {
+            if(!teamName) return '';
+            const searchName = teamName.trim().toLowerCase();
+            for (const [name, code] of Object.entries(countryFlags)) {
+                if (name.toLowerCase() === searchName) {
+                    return `<img src="https://flagcdn.com/w40/${code}.png" class="flag-icon" alt="${teamName}">`;
                 }
-                return ''; 
+            }
+            return ''; 
+        };
+
+        const formatShortDateStr = (d) => {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+        };
+
+        // 1. เรียงแมตช์และสร้าง Match Day Info
+        const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+        sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
+
+        const getMatchDayInfo = (kickoffStr) => {
+            const [datePart, timePart] = kickoffStr.split(' ');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hour] = timePart.split(':').map(Number);
+            let startDay = new Date(year, month - 1, day, 12, 0, 0);
+            if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+            const pad = n => n.toString().padStart(2, '0');
+            return { sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}` };
+        };
+
+        const groupedMatches = {};
+        sortedMatches.forEach(m => {
+            const info = getMatchDayInfo(m.kickoff_time);
+            if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
+            groupedMatches[info.sortKey].push(m);
+        });
+
+        const sortedKeys = Object.keys(groupedMatches).sort();
+        const dateToDayMap = {};
+        sortedKeys.forEach((key, idx) => { dateToDayMap[key] = idx + 1; });
+
+        // 2. หาวันที่ Active
+        let activeGroupKey = null;
+        for (let date of sortedKeys) {
+            if (groupedMatches[date].some(m => m.status !== 'FINISHED')) {
+                activeGroupKey = date; break;
+            }
+        }
+        if (!activeGroupKey && sortedKeys.length > 0) activeGroupKey = sortedKeys[sortedKeys.length - 1]; 
+
+        // 3. เตรียมข้อมูล Array ส่งให้ JS (Matches Tab)
+        const matchDaysList = sortedKeys.map(date => {
+            const matchesInDay = groupedMatches[date];
+            const stageName = matchesInDay[0].stage_name;
+            let minTime = new Date(matchesInDay[0].kickoff_time.replace(' ', 'T'));
+            let maxTime = new Date(matchesInDay[0].kickoff_time.replace(' ', 'T'));
+            matchesInDay.forEach(m => {
+                const t = new Date(m.kickoff_time.replace(' ', 'T'));
+                if(t < minTime) minTime = t;
+                if(t > maxTime) maxTime = t;
+            });
+            const p1 = formatShortDateStr(minTime);
+            const p2 = formatShortDateStr(maxTime);
+            return {
+                id: date,
+                title: `Match Day ${dateToDayMap[date]} : ${stageName}`,
+                period: (p1 === p2) ? p1 : `${p1} - ${p2}`
             };
+        });
+    %>
 
-            const formatDayDate = (dStr) => {
-                const dObj = new Date(dStr.replace(' ', 'T'));
-                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
-            };
-        %>
-
-        <div style="width: 100%; text-align: center; margin-bottom: 20px;">
-            <img src="https://c7.alamy.com/comp/3DATF7E/2026-soccer-world-cup-blue-modern-banner-3DATF7E.jpg" alt="Banner" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-        </div>
-
-        <div class="header-card">
-            <div class="user-info">
-                <img src="<%= user.avatar %>" alt="Avatar" onclick="document.getElementById('avatarUpload').click()" style="cursor: pointer; position: relative;" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-                <form id="avatarForm" action="/update-avatar" method="POST" enctype="multipart/form-data" style="display: none;">
-                    <input type="file" id="avatarUpload" name="avatar" accept="image/*" onchange="document.getElementById('avatarForm').submit()">
-                </form>
-                <div>
-                    <p>ยินดีต้อนรับ</p>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <h3><%= user.username %></h3>
-                        <span style="font-size: 0.75rem; background: var(--border); padding: 2px 6px; border-radius: 8px; color: var(--text-muted); cursor: pointer;" onclick="document.getElementById('avatarUpload').click()">✏️ เปลี่ยนรูป</span>
+    <!-- Top Navbar -->
+    <header class="pl-header">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" onclick="switchTab('matches')" id="nav-matches">Matches</a>
+                <a href="#" class="nav-item" onclick="switchTab('fixtures')" id="nav-fixtures">Fixtures</a>
+                <a href="#" class="nav-item" onclick="switchTab('table')" id="nav-table">Table</a>
+                <% if(user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
+            </div>
+            <div class="nav-profile">
+                <div class="profile-dropdown">
+                    <img src="<%= user.avatar %>" alt="Avatar" class="avatar-img" onclick="document.getElementById('avatarUpload').click()" title="เปลี่ยนรูปโปรไฟล์">
+                    <form id="avatarForm" action="/update-avatar" method="POST" enctype="multipart/form-data" style="display: none;">
+                        <input type="file" id="avatarUpload" name="avatar" accept="image/*" onchange="document.getElementById('avatarForm').submit()">
+                    </form>
+                    <div class="profile-info">
+                        <span class="profile-name"><%= user.username %></span>
+                        <a href="/logout" class="logout-text">Sign Out</a>
                     </div>
-                    <% if (typeof userRank !== 'undefined') { %>
-                    <div style="margin-top: 5px;">
-                        <span style="font-size: 0.85rem; font-weight: 600; color: #d97706; background: #fef3c7; padding: 2px 10px; border-radius: 12px; border: 1px solid #fde68a; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">🏆 อันดับที่: <%= userRank %></span>
-                    </div>
-                    <% } %>
                 </div>
             </div>
-            <div class="nav-links">
-                <a href="/leaderboard">📊 ตารางคะแนนรวม</a>
-                <% if(user.is_admin) { %> <a href="/admin" class="admin-link">⚙️ แผงควบคุม</a> <% } %>
-                <a href="/logout" class="logout-link">ออกจากระบบ</a>
-            </div>
         </div>
+    </header>
 
-        <div class="card-title">
-            <h2 style="margin: 0;">🏆 ตารางแข่งขันและการทายผล</h2>
-            <small>⏱️ ล็อกผลอัตโนมัติเมื่อเริ่มแข่ง</small>
+    <!-- Dynamic Banner -->
+    <div class="page-banner" id="page-banner">
+        <div class="banner-content">
+            <h1 id="banner-title">Matches</h1>
         </div>
-
-        <% 
-            // 1. เรียงแมตช์ตามเวลาเก่า->ใหม่ (เพื่อ Run Match No.)
-            const sortedMatches = [...matches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
-            sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
-
-            const getMatchDayInfo = (kickoffStr) => {
-                const [datePart, timePart] = kickoffStr.split(' ');
-                const [year, month, day] = datePart.split('-').map(Number);
-                const [hour] = timePart.split(':').map(Number);
-                
-                let startDay = new Date(year, month - 1, day, 12, 0, 0);
-                if (hour < 12) startDay.setDate(startDay.getDate() - 1);
-                
-                const pad = n => n.toString().padStart(2, '0');
-                return {
-                    sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}`
-                };
-            };
-
-            const groupedMatches = {};
-            sortedMatches.forEach(m => {
-                const info = getMatchDayInfo(m.kickoff_time);
-                if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
-                groupedMatches[info.sortKey].push(m);
-            });
-
-            // 2. สร้าง Day X
-            const sortedKeys = Object.keys(groupedMatches).sort();
-            const dateToDayMap = {};
-            sortedKeys.forEach((key, idx) => { dateToDayMap[key] = idx + 1; });
-
-            // 3. หาวันที่เป็น "Today Matches" (วันแรกที่ยังมีแมตช์ที่ยังแข่งไม่จบ)
-            let activeGroupKey = null;
-            for (let date of sortedKeys) {
-                const hasUnfinished = groupedMatches[date].some(m => m.status !== 'FINISHED');
-                if (hasUnfinished) {
-                    activeGroupKey = date;
-                    break;
-                }
-            }
-            if (!activeGroupKey && sortedKeys.length > 0) {
-                activeGroupKey = sortedKeys[sortedKeys.length - 1]; // ถ้าจบหมดแล้ว ให้ตกที่วันสุดท้าย
-            }
-
-            // 4. เอาวันใหม่สุดขึ้นบน
-            const datesToDisplay = [...sortedKeys].reverse();
-        %>
-
-        <% if(datesToDisplay.length === 0) { %>
-            <div style="text-align: center; padding: 30px; color: var(--text-muted); background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">ยังไม่มีตารางการแข่งขันที่เปิดให้ทายผลในขณะนี้</div>
-        <% } else { %>
-            <% datesToDisplay.forEach(date => { 
-                const stageName = groupedMatches[date][0].stage_name;
-                const isTodayGroup = (date === activeGroupKey);
-            %>
-                <details class="date-group <%= isTodayGroup ? 'today-group' : '' %>" <%= isTodayGroup ? 'open' : '' %>>
-                    <summary class="date-header">
-                        📅 Day <%= dateToDayMap[date] %> : <%= stageName %>
-                        <% if(isTodayGroup) { %>
-                            <span class="today-badge">⭐ Today Matches</span>
-                        <% } %>
-                    </summary>
-                    <div class="date-content">
-                        <table>
-                            <thead><tr><th width="15%">แมตช์ / รอบ</th><th width="45%">คู่แข่งขัน (ผลการแข่งขัน)</th><th width="25%" style="text-align: center;">การทายผล</th><th width="15%" style="text-align: center;">ดูโพยเพื่อน</th></tr></thead>
-                            <tbody>
-                                <% 
-                                    let currentActualDate = '';
-                                    groupedMatches[date].sort((a, b) => new Date(b.kickoff_time.replace(' ', 'T')) - new Date(a.kickoff_time.replace(' ', 'T'))).forEach(match => { 
-                                        const hasPredicted = match.home_predict !== null && match.home_predict !== undefined;
-                                        const matchActualDate = formatDayDate(match.kickoff_time);
-                                        if (matchActualDate !== currentActualDate) {
-                                            currentActualDate = matchActualDate;
-                                %>
-                                            <tr><td colspan="4" class="date-separator"><%= matchActualDate %></td></tr>
-                                <% 
-                                        }
-
-                                        // คำนวณสถานะ Live
-                                        const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
-                                        const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-                                        const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
-                                        const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
-                                        const timeStr = match.kickoff_time.substring(11, 16);
-                                %>
-                                    <tr id="row-match-<%= match.id %>">
-                                        <td width="15%">
-                                            <strong style="color: var(--primary);">Match <%= match.match_number %></strong><br>
-                                            <span style="color: var(--text-muted); font-size: 0.8rem;"><%= match.stage_name %></span>
-                                        </td>
-                                        
-                                        <td width="45%">
-                                            <% 
-                                                let homeColor = 'text-black'; let awayColor = 'text-black';
-                                                if(match.status === 'FINISHED') {
-                                                    if(match.home_score > match.away_score) { homeColor = 'text-black'; awayColor = 'text-gray'; }
-                                                    else if(match.away_score > match.home_score) { homeColor = 'text-gray'; awayColor = 'text-black'; }
-                                                }
-                                            %>
-                                            <div class="match-layout">
-                                                <div class="home-name <%= homeColor %>" title="<%= match.home_team %>"><%= match.home_team %></div>
-                                                <div class="home-flag"><%- getFlag(match.home_team) %></div>
-                                                <div class="score-vs" style="flex-direction: column;">
-                                                    <% if(match.status === 'FINISHED') { %>
-                                                        <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
-                                                        <span style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">FT</span>
-                                                    <% } else if(isLive) { %>
-                                                        <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;">? - ?</span>
-                                                        <span class="live-minute-badge" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
-                                                    <% } else { %>
-                                                        <span style="font-size: 1.35rem; font-weight: 500; color: var(--text); line-height: 1;"><%= timeStr %></span>
-                                                    <% } %>
-                                                </div>
-                                                <div class="away-flag"><%- getFlag(match.away_team) %></div>
-                                                <div class="away-name <%= awayColor %>" title="<%= match.away_team %>"><%= match.away_team %></div>
-                                            </div>
-                                        </td>
-                                        
-                                        <td width="25%" style="text-align: center;">
-                                            <div id="pred-display-<%= match.id %>" style="display: <%= (!hasPredicted && !match.is_locked) ? 'none' : 'block' %>;">
-                                                <% if (hasPredicted) { %>
-                                                    <div style="font-family: monospace; font-size: 1.15rem; font-weight: 700; color: #334155; letter-spacing: 1px;"><%= match.home_predict %> - <%= match.away_predict %></div>
-                                                    
-                                                    <% if (!match.is_locked) { %>
-                                                        <button type="button" class="btn" style="background: #f1f5f9; color: #475569; padding: 4px 12px; font-size: 0.8rem; margin-top: 4px;" onclick="enableEdit(<%= match.id %>)">✏️ แก้ผล</button>
-                                                    <% } else if(match.status === 'FINISHED') { %>
-                                                        <div style="margin-top: 4px; font-size: 0.75rem; font-weight: 700; color: <%= match.score_earned > 0 ? '#10b981' : '#64748b' %>; background: <%= match.score_earned > 0 ? '#dcfce7' : '#f1f5f9' %>; padding: 2px 8px; border-radius: 6px; display: inline-block;">
-                                                            <%= match.score_earned > 0 ? `+${match.score_earned} แต้ม` : '0 แต้ม' %>
-                                                        </div>
-                                                    <% } else { %>
-                                                        <div style="margin-top: 4px; font-size: 0.75rem; color: #94a3b8;">🔒 รอลุ้นผล</div>
-                                                    <% } %>
-                                                    
-                                                <% } else { %>
-                                                    <span style="color: var(--text-muted); font-size: 0.85rem;">- ไม่ได้ทายผล -</span>
-                                                <% } %>
-                                            </div>
-
-                                            <% if (!match.is_locked) { %>
-                                                <% if (!hasPredicted) { %>
-                                                    <div id="btn-init-<%= match.id %>">
-                                                        <button type="button" class="btn btn-view" style="padding: 6px 14px; font-size: 0.85rem;" onclick="enableEdit(<%= match.id %>)">✏️ กรอกผล</button>
-                                                    </div>
-                                                <% } %>
-                                                <form action="/predict" method="POST" id="pred-form-<%= match.id %>" style="display: none; flex-direction: column; align-items: center; gap: 8px;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
-                                                    <input type="hidden" name="match_id" value="<%= match.id %>">
-                                                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                                                        <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" style="width: 42px; text-align: center; padding: 4px; font-size: 1.05rem; font-weight: 600;" required>
-                                                        <span style="font-weight: 700;">-</span>
-                                                        <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" style="width: 42px; text-align: center; padding: 4px; font-size: 1.05rem; font-weight: 600;" required>
-                                                    </div>
-                                                    <div style="display: flex; gap: 6px;">
-                                                        <button type="submit" class="btn btn-success" style="padding: 4px 10px; font-size: 0.8rem;" id="btn-save-<%= match.id %>">💾 บันทึก</button>
-                                                        <button type="button" class="btn" style="background: #e2e8f0; color: #475569; padding: 4px 10px; font-size: 0.8rem;" onclick="cancelEdit(<%= match.id %>, <%= hasPredicted %>)">ยกเลิก</button>
-                                                    </div>
-                                                </form>
-                                            <% } %>
-                                        </td>
-                                        <td width="15%" style="text-align: center;">
-                                            <% if(match.is_published) { %>
-                                                <a href="/match/<%= match.id %>/predictions" class="btn" style="background: #38bdf8; color: #fff; font-size: 0.8rem; padding: 6px 10px;">👁️ ดูของเพื่อน</a>
-                                            <% } else { %>
-                                                <span style="color: var(--text-muted); font-size: 0.8rem; background: #f1f5f9; padding: 4px 8px; border-radius: 6px;">🔒 รอเวลาเตะ</span>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            </tbody>
-                        </table>
-                    </div>
-                </details>
-            <% }) %>
-        <% } %>
     </div>
 
-    <div id="customModal" class="modal-overlay">
-        <div class="modal-box">
-            <span class="modal-icon">⏳</span>
-            <h3 style="margin-top:0; color: var(--text); font-size: 1.2rem;">แจ้งเตือน</h3>
-            <p id="modalMessage" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem;"></p>
-            <button class="btn" style="width: 100%; padding: 8px;" onclick="closeModal()">ตกลง</button>
+    <!-- Submenu for Table -->
+    <div class="page-submenu" id="page-submenu" style="display:none;">
+        <div class="submenu-content">
+            <a href="#" class="submenu-item active">Table</a>
+            <a href="/leaderboard/detailed" class="submenu-item">View details</a>
         </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <!-- TAB 1: MATCHES (ทายผล) -->
+        <div id="tab-matches" class="tab-content active">
+            <% if(matchDaysList.length === 0) { %>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
+            <% } else { %>
+                <!-- Match Day Filter / Caption -->
+                <div class="matchday-selector">
+                    <button class="arrow-btn" onclick="changeMatchDay(-1)">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                    </button>
+                    <div class="matchday-info">
+                        <select class="md-dropdown" onchange="jumpToMatchDay(this.value)">
+                            <% matchDaysList.forEach((md, idx) => { %>
+                                <option value="<%= idx %>"><%= md.title %></option>
+                            <% }) %>
+                        </select>
+                        <h2 id="md-title"></h2>
+                        <p id="md-period"></p>
+                    </div>
+                    <button class="arrow-btn" onclick="changeMatchDay(1)">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                    </button>
+                </div>
+
+                <!-- Match Containers -->
+                <div id="matches-containers-wrapper">
+                    <% sortedKeys.forEach((date, idx) => { %>
+                        <div class="matchday-container" id="md-container-<%= idx %>" style="display: none;">
+                            <% 
+                                let currentActualDate = '';
+                                groupedMatches[date].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T'))).forEach(match => { 
+                                    const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                    const matchActualDate = formatShortDateStr(matchDateObj);
+                                    if (matchActualDate !== currentActualDate) {
+                                        currentActualDate = matchActualDate;
+                            %>
+                                        <div class="date-separator"><%= matchActualDate %></div>
+                            <%      } 
+                                    
+                                    const hasPredicted = match.home_predict !== null && match.home_predict !== undefined;
+                                    const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+                                    const isLive = matchDateObj <= nowObj && match.status !== 'FINISHED';
+                                    const timeStr = match.kickoff_time.substring(11, 16);
+
+                                    let homeColor = '#ffffff'; let awayColor = '#ffffff';
+                                    if(match.status === 'FINISHED') {
+                                        if(match.home_score > match.away_score) { awayColor = '#cbd5e1'; }
+                                        else if(match.away_score > match.home_score) { homeColor = '#cbd5e1'; }
+                                    }
+                            %>
+                                <div class="match-item" id="row-match-<%= match.id %>">
+                                    <div class="match-main">
+                                        <div class="team home">
+                                            <span class="team-name" style="color: <%= homeColor %>;" title="<%= match.home_team %>"><%= match.home_team %></span>
+                                            <%- getFlag(match.home_team) %>
+                                        </div>
+                                        
+                                        <div class="real-score-time <%= match.status === 'FINISHED' ? 'is-ft' : '' %>">
+                                            <% if(match.status === 'FINISHED') { %>
+                                                <span class="val"><%= match.home_score %> - <%= match.away_score %></span>
+                                                <span class="status">FT</span>
+                                            <% } else if(isLive) { %>
+                                                <span class="val">? - ?</span>
+                                                <span class="status text-danger">LIVE</span>
+                                            <% } else { %>
+                                                <span class="val"><%= timeStr %></span>
+                                            <% } %>
+                                        </div>
+                                        
+                                        <div class="team away">
+                                            <%- getFlag(match.away_team) %>
+                                            <span class="team-name" style="color: <%= awayColor %>;" title="<%= match.away_team %>"><%= match.away_team %></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Right -->
+                                    <div class="match-actions">
+                                        <!-- Form Edit -->
+                                        <form action="/predict" method="POST" id="pred-form-<%= match.id %>" class="pred-form" style="display: none;" onsubmit="submitPrediction(event, this, <%= match.id %>)">
+                                            <input type="hidden" name="match_id" value="<%= match.id %>">
+                                            <input type="number" id="home-<%= match.id %>" name="home_predict" value="<%= match.home_predict %>" class="score-input" required>
+                                            <span style="color: white; font-weight: bold;">-</span>
+                                            <input type="number" id="away-<%= match.id %>" name="away_predict" value="<%= match.away_predict %>" class="score-input" required>
+                                            <button type="submit" class="btn-icon btn-success" id="btn-save-<%= match.id %>">💾</button>
+                                            <button type="button" class="btn-icon btn-outline" onclick="cancelEdit(<%= match.id %>, <%= hasPredicted %>)">❌</button>
+                                        </form>
+
+                                        <!-- Display Prediction -->
+                                        <div class="pred-display" id="pred-display-<%= match.id %>" style="display: flex; gap: 8px; align-items: center;">
+                                            <% if(hasPredicted) { %>
+                                                <div class="pred-badge" onclick="<% if(!match.is_locked){ %>enableEdit(<%= match.id %>)<% } %>">
+                                                    <span class="nums"><%= match.home_predict %> - <%= match.away_predict %></span>
+                                                    <% if(match.status === 'FINISHED') { %>
+                                                        <span class="pts <%= match.score_earned > 0 ? 'pts-success' : 'pts-zero' %>"><%= match.score_earned > 0 ? `+${match.score_earned} pts` : '0 pts' %></span>
+                                                    <% } else if(!match.is_locked) { %>
+                                                        <span class="pts" style="color: var(--pl-primary);">Edit</span>
+                                                    <% } else { %>
+                                                        <span class="pts pts-zero">Locked</span>
+                                                    <% } %>
+                                                </div>
+                                            <% } else if(!match.is_locked) { %>
+                                                <button type="button" class="btn-predict" id="btn-init-<%= match.id %>" onclick="enableEdit(<%= match.id %>)">Predict</button>
+                                            <% } else { %>
+                                                <span style="color: var(--pl-text-muted); font-size: 0.85rem; margin-right: 10px;">-</span>
+                                            <% } %>
+
+                                            <% if(match.is_published) { %>
+                                                <a href="/match/<%= match.id %>/predictions" class="btn-view-friends" title="ดูโพยเพื่อน">👁️</a>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- TAB 2: FIXTURES (ดูตารางแข่งรวมทั้งหมด) -->
+        <div id="tab-fixtures" class="tab-content" style="display:none;">
+            <% if(matchDaysList.length === 0) { %>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
+            <% } else { %>
+                <div class="fixtures-list">
+                    <% matchDaysList.forEach((md) => { %>
+                        <div class="fixture-matchday <%= md.id === activeGroupKey ? 'today-fixture' : '' %>" id="fixture-<%= md.id %>">
+                            <div class="fixture-header">
+                                <h3><%= md.title %></h3>
+                                <p><%= md.period %></p>
+                            </div>
+                            
+                            <% 
+                                let currentActualDate = '';
+                                groupedMatches[md.id].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T'))).forEach(match => { 
+                                    const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                    const matchActualDate = formatShortDateStr(matchDateObj);
+                                    if (matchActualDate !== currentActualDate) {
+                                        currentActualDate = matchActualDate;
+                            %>
+                                        <div class="date-separator"><%= matchActualDate %></div>
+                            <%      } 
+                                    
+                                    const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+                                    const isLive = matchDateObj <= nowObj && match.status !== 'FINISHED';
+                                    const timeStr = match.kickoff_time.substring(11, 16);
+
+                                    let homeColor = '#ffffff'; let awayColor = '#ffffff';
+                                    if(match.status === 'FINISHED') {
+                                        if(match.home_score > match.away_score) { awayColor = '#cbd5e1'; }
+                                        else if(match.away_score > match.home_score) { homeColor = '#cbd5e1'; }
+                                    }
+                            %>
+                                <div class="match-item">
+                                    <div class="match-main">
+                                        <div class="team home">
+                                            <span class="team-name" style="color: <%= homeColor %>;" title="<%= match.home_team %>"><%= match.home_team %></span>
+                                            <%- getFlag(match.home_team) %>
+                                        </div>
+                                        
+                                        <div class="real-score-time <%= match.status === 'FINISHED' ? 'is-ft' : '' %>">
+                                            <% if(match.status === 'FINISHED') { %>
+                                                <span class="val"><%= match.home_score %> - <%= match.away_score %></span>
+                                                <span class="status">FT</span>
+                                            <% } else if(isLive) { %>
+                                                <span class="val">? - ?</span>
+                                                <span class="status text-danger">LIVE</span>
+                                            <% } else { %>
+                                                <span class="val"><%= timeStr %></span>
+                                            <% } %>
+                                        </div>
+                                        
+                                        <div class="team away">
+                                            <%- getFlag(match.away_team) %>
+                                            <span class="team-name" style="color: <%= awayColor %>;" title="<%= match.away_team %>"><%= match.away_team %></span>
+                                        </div>
+                                    </div>
+                                    <div class="match-actions">
+                                        <% if(match.is_published) { %>
+                                            <a href="/match/<%= match.id %>/predictions" class="btn-view-friends">👁️ โพย</a>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- TAB 3: TABLE (Leaderboard) -->
+        <div id="tab-table" class="tab-content" style="display:none;">
+            <% if(leaderboard.length === 0) { %>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
+            <% } else { %>
+                <div style="overflow-x: auto;">
+                    <table class="pl-table">
+                        <thead>
+                            <tr>
+                                <th width="8%">Pos</th>
+                                <th width="30%">Club / Player</th>
+                                <th width="10%">MP</th>
+                                <th width="12%">Exact</th>
+                                <th width="12%">Result</th>
+                                <th width="15%">Pts</th>
+                                <th width="13%">Reward</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% leaderboard.forEach((row) => { 
+                                const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
+                                const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
+                            %>
+                                <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
+                                    <td style="<%= hasColor ? 'border-left: none;' : '' %>">
+                                        <% if(row.reward) { %>
+                                            <span class="rank-reward"><%= row.displayRank %></span>
+                                        <% } else { %>
+                                            <span class="rank-normal"><%= row.displayRank %></span>
+                                        <% } %>
+                                        <% if(row.isTied) { %><br><span style="font-size: 0.65rem; color: var(--pl-text-muted);">(ร่วม)</span><% } %>
+                                    </td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <img src="<%= row.avatar %>" alt="avatar">
+                                            <span class="username"><%= row.username %></span>
+                                        </div>
+                                    </td>
+                                    <td><%= row.mp %></td>
+                                    <td><%= row.exact_score_count %></td>
+                                    <td><%= row.correct_result_count %></td>
+                                    <td><strong style="font-size: 1.15rem;"><%= row.total_score || 0 %></strong></td>
+                                    
+                                    <!-- Rowspan for Rewards -->
+                                    <% if (row.isFirstInGroup) { %>
+                                        <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
+                                            <% if(row.reward) { %>
+                                                <div class="reward-badge" style="border-color: <%= hasColor ? row.reward.color : 'var(--pl-border)' %>;">
+                                                    <%= row.reward.icon %> <%= row.reward.description %>
+                                                    <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
+                                                </div>
+                                            <% } else { %>
+                                                <span style="color: var(--pl-border);">-</span>
+                                            <% } %>
+                                        </td>
+                                    <% } %>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        </div>
+
     </div>
 
     <script>
+        // --- Tab Management ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).style.display = 'block';
+            document.getElementById('nav-' + tabId).classList.add('active');
+            
+            // เปลี่ยนสี Banner
+            const banner = document.getElementById('page-banner');
+            const title = document.getElementById('banner-title');
+            banner.className = 'page-banner banner-' + tabId;
+            
+            const submenu = document.getElementById('page-submenu');
+            
+            if (tabId === 'matches') {
+                title.innerText = 'Matches';
+                submenu.style.display = 'none';
+            } else if (tabId === 'fixtures') {
+                title.innerText = 'Fixtures';
+                submenu.style.display = 'none';
+                setTimeout(() => {
+                    const todayGroup = document.querySelector('.today-fixture');
+                    if (todayGroup) {
+                        todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            } else if (tabId === 'table') {
+                title.innerText = 'Table';
+                submenu.style.display = 'block';
+            }
+            
+            // อัปเดต URL Param โดยไม่รีเฟรชหน้า
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.pushState({}, '', url);
+        }
+
+        // --- Match Day Filter Logic (Matches Tab) ---
+        const matchDaysData = <%- JSON.stringify(matchDaysList || []) %>;
+        let currentMdIndex = 0;
+
+        function initMatchDay() {
+            if(matchDaysData.length === 0) return;
+            const activeKey = "<%= activeGroupKey %>";
+            currentMdIndex = matchDaysData.findIndex(md => md.id === activeKey);
+            if(currentMdIndex === -1) currentMdIndex = 0;
+            renderMatchDay();
+            document.querySelector('.md-dropdown').value = currentMdIndex;
+        }
+
+        function renderMatchDay() {
+            if(matchDaysData.length === 0) return;
+            document.getElementById('md-title').innerHTML = `${matchDaysData[currentMdIndex].title}`;
+            document.getElementById('md-period').innerText = matchDaysData[currentMdIndex].period;
+            
+            document.querySelectorAll('.matchday-container').forEach((el, idx) => {
+                el.style.display = (idx === currentMdIndex) ? 'block' : 'none';
+            });
+        }
+
+        function changeMatchDay(dir) {
+            if(matchDaysData.length === 0) return;
+            currentMdIndex += dir;
+            if(currentMdIndex < 0) currentMdIndex = 0;
+            if(currentMdIndex >= matchDaysData.length) currentMdIndex = matchDaysData.length - 1;
+            document.querySelector('.md-dropdown').value = currentMdIndex;
+            renderMatchDay();
+        }
+        
+        function jumpToMatchDay(idx) {
+            currentMdIndex = parseInt(idx);
+            renderMatchDay();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            // เลื่อนหน้าจอไปที่กลุ่ม Today Matches อัตโนมัติ (หน่วงเวลาเล็กน้อยเพื่อให้เรนเดอร์เสร็จ)
-            setTimeout(() => {
-                const todayGroup = document.querySelector('.today-group');
-                if (todayGroup) {
-                    todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }, 300);
+            initMatchDay();
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam) switchTab(tabParam);
+            else switchTab('matches');
         });
 
-        // ------------------ ระบบ Form กรอกผล ------------------
+        // --- Prediction Form ---
         function enableEdit(matchId) {
             const displayBox = document.getElementById('pred-display-' + matchId);
-            const initBtn = document.getElementById('btn-init-' + matchId);
             const formBox = document.getElementById('pred-form-' + matchId);
-            
             if (displayBox) displayBox.style.display = 'none';
-            if (initBtn) initBtn.style.display = 'none';
             formBox.style.display = 'flex';
-            
             document.getElementById('home-' + matchId).focus(); 
         }
 
         function cancelEdit(matchId, hasPredicted) {
             const displayBox = document.getElementById('pred-display-' + matchId);
-            const initBtn = document.getElementById('btn-init-' + matchId);
             const formBox = document.getElementById('pred-form-' + matchId);
-
             formBox.style.display = 'none';
-            if (hasPredicted && displayBox) {
-                displayBox.style.display = 'block';
-            } else if (!hasPredicted && initBtn) {
-                initBtn.style.display = 'block';
-            }
+            if (displayBox) displayBox.style.display = 'flex';
         }
 
         async function submitPrediction(event, form, matchId) {
             event.preventDefault(); 
             const data = new URLSearchParams(new FormData(form));
             const saveBtn = document.getElementById('btn-save-' + matchId);
-            const origText = saveBtn.innerText;
-            saveBtn.innerText = 'กำลังเซฟ...';
+            saveBtn.innerText = '⏳';
             saveBtn.disabled = true;
 
             try {
@@ -395,18 +652,14 @@
                             row.classList.add('flash-success');
                             setTimeout(() => {
                                 row.classList.remove('flash-success');
-                                window.location.reload(); // รีเฟรชเพื่อแสดง UI ใหม่ที่เซฟแล้ว
+                                window.location.reload(); 
                             }, 500);
                         }
                     }
-                } else if (response.status === 400) { showModal(await response.text());
-                } else if (response.redirected) { window.location.href = response.url;
-                } else { showModal('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
-            } catch (err) { showModal('เกิดข้อผิดพลาดในการเชื่อมต่อ'); } finally { saveBtn.innerText = origText; saveBtn.disabled = false; }
+                } else { alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล'); }
+            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); } 
+            finally { saveBtn.innerText = '💾'; saveBtn.disabled = false; }
         }
-
-        function showModal(msg) { document.getElementById('modalMessage').innerText = msg; document.getElementById('customModal').classList.add('active'); }
-        function closeModal() { document.getElementById('customModal').classList.remove('active'); window.location.reload(); }
     </script>
 </body>
 </html>
