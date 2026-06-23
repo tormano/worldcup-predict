@@ -231,8 +231,30 @@ app.post('/predict', checkAuth, async (req, res) => {
     res.redirect('/');
 });
 
-// เก็บ Route เดิมไว้กรณีเข้าถึงตรง
-app.get('/leaderboard', checkAuth, (req, res) => res.redirect('/'));
+app.get('/leaderboard', checkAuth, async (req, res) => {
+    const userQuery = `
+        SELECT u.id, u.username, u.avatar, 
+               COALESCE(SUM(p.score_earned), 0) as total_score,
+               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+               COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
+        FROM users u 
+        LEFT JOIN predictions p ON u.id = p.user_id 
+        LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+        LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+        WHERE u.is_admin = 0 AND u.is_hidden = 0 
+        GROUP BY u.id, u.username, u.avatar 
+        ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
+    `;
+    const { rows: users } = await pool.query(userQuery);
+    const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
+    const { rows: matches } = await pool.query(matchQuery);
+    const { rows: predictions } = await pool.query(`SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned FROM predictions p JOIN matches m ON p.match_id = m.id WHERE m.status = 'FINISHED'`);
+    const predMap = {};
+    predictions.forEach(p => { if (!predMap[p.match_id]) predMap[p.match_id] = {}; predMap[p.match_id][p.user_id] = p; });
+    
+    // สำคัญ: เรายังคงเรียกไฟล์ leaderboard-detailed.ejs เหมือนเดิม
+    res.render('leaderboard-detailed', { user: req.session.user, users, matches, predMap });
+});
 
 app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
     const userQuery = `
