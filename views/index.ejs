@@ -463,7 +463,14 @@
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-fixture');
                     if (todayGroup) {
-                        todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // คำนวณระยะห่างของจอ ลบด้วยความสูงของ Header (ประมาณ 130px)
+                        const headerOffset = 130; 
+                        const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
+                        
+                        window.scrollTo({
+                            top: elementPosition - headerOffset,
+                            behavior: 'smooth'
+                        });
                     }
                 }, 100);
             }
