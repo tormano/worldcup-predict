@@ -18,7 +18,8 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; }
+        /* Navbar & Header Group */
+        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
@@ -36,10 +37,16 @@
         .profile-name { font-size: 0.85rem; font-weight: 600; }
         .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        .page-banner { padding: 35px 20px; color: white; background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); }
+        /* Banners with Shrink Transitions */
+        .page-banner { padding: 35px 20px; color: white; background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); transition: all 0.3s ease; overflow: hidden; }
         .banner-content { max-width: 1000px; margin: 0 auto; }
-        .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; transition: all 0.3s ease; }
 
+        /* Scrolled State for Banner */
+        .pl-header.scrolled .page-banner { padding: 10px 20px; }
+        .pl-header.scrolled .banner-content h1 { font-size: 1.25rem; }
+
+        /* Submenu */
         .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
         .submenu-content { max-width: 1000px; margin: 0 auto; display: flex; gap: 25px; padding: 0 15px; }
         .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s;}
@@ -48,6 +55,7 @@
 
         .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
+        /* Table Styles */
         .card { background: var(--pl-surface); border-radius: 12px; padding: 10px 0; border: 1px solid var(--pl-border); overflow-x: auto; }
         .pl-table { width: 100%; border-collapse: collapse; color: var(--pl-text); min-width: 700px;}
         .pl-table th { background: rgba(255,255,255,0.03); color: var(--pl-text-muted); font-weight: 500; padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); font-size: 0.85rem;}
@@ -68,12 +76,13 @@
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
+            .pl-header.scrolled .page-banner { padding: 8px 15px; }
         }
     </style>
 </head>
 <body>
 
-    <header class="pl-header">
+    <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
                 <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
@@ -98,87 +107,106 @@
                 <% } %>
             </div>
         </div>
+
+        <div class="page-banner" id="page-banner">
+            <div class="banner-content">
+                <h1>Table</h1>
+            </div>
+        </div>
+
+        <div class="page-submenu">
+            <div class="submenu-content">
+                <a href="/leaderboard" class="submenu-item active">Table</a>
+                <a href="/leaderboard/detailed" class="submenu-item">View details</a>
+            </div>
+        </div>
     </header>
 
-    <div class="page-banner">
-        <div class="banner-content">
-            <h1>Table</h1>
-        </div>
-    </div>
-
-    <div class="page-submenu">
-        <div class="submenu-content">
-            <a href="/leaderboard" class="submenu-item active">Table</a>
-            <a href="/leaderboard/detailed" class="submenu-item">View details</a>
-        </div>
-    </div>
-
     <div class="main-content">
-        <% const safeLeaderboard = (typeof leaderboard !== 'undefined' && Array.isArray(leaderboard)) ? leaderboard : []; %>
-        <% if(safeLeaderboard.length === 0) { %>
-            <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
-        <% } else { %>
-            <div class="card">
-                <table class="pl-table">
-                    <thead>
-                        <tr>
-                            <th width="8%">Pos</th>
-                            <th width="30%">Club / Player</th>
-                            <th width="10%">MP</th>
-                            <th width="12%">Exact</th>
-                            <th width="12%">Result</th>
-                            <th width="15%">Pts</th>
-                            <th width="13%">Reward</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% safeLeaderboard.forEach((row) => { 
-                            const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
-                            const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
-                            const tdStyle = hasColor ? 'border-left: none;' : '';
-                            const borderColor = hasColor ? row.reward.color : 'var(--pl-border)';
-                            const displayScore = row.total_score || 0;
-                        %>
-                            <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
-                                <td style="<%= tdStyle %>">
-                                    <% if(row.reward) { %>
-                                        <span class="rank-reward"><%= row.displayRank %></span>
-                                    <% } else { %>
-                                        <span class="rank-normal"><%= row.displayRank %></span>
-                                    <% } %>
-                                    <% if(row.isTied) { %><br><span style="font-size: 0.65rem; color: var(--pl-text-muted);">(ร่วม)</span><% } %>
-                                </td>
-                                <td>
-                                    <div class="user-cell">
-                                        <img src="<%= row.avatar %>" alt="avatar">
-                                        <span class="username"><%= row.username %></span>
-                                    </div>
-                                </td>
-                                <td><%= row.mp %></td>
-                                <td><%= row.exact_score_count %></td>
-                                <td><%= row.correct_result_count %></td>
-                                <td><strong style="font-size: 1.15rem; color: var(--pl-primary);"><%= displayScore %></strong></td>
-                                
-                                <% if (row.isFirstInGroup) { %>
-                                    <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
-                                        <% if(row.reward) { %>
-                                            <div class="reward-badge" style="border-color: <%= borderColor %>;">
-                                                <span style="font-size: 1.2rem;"><%= row.reward.icon %></span>
-                                                <span><%= row.reward.description %></span>
-                                                <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
-                                            </div>
-                                        <% } else { %>
-                                            <span style="color: var(--pl-border);">-</span>
-                                        <% } %>
-                                    </td>
-                                <% } %>
+        <% try { %>
+            <% const safeLeaderboard = (typeof leaderboard !== 'undefined' && Array.isArray(leaderboard)) ? leaderboard : []; %>
+            <% if(safeLeaderboard.length === 0) { %>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
+            <% } else { %>
+                <div class="card">
+                    <table class="pl-table">
+                        <thead>
+                            <tr>
+                                <th width="8%">Pos</th>
+                                <th width="30%">Club / Player</th>
+                                <th width="10%">MP</th>
+                                <th width="12%">Exact</th>
+                                <th width="12%">Result</th>
+                                <th width="15%">Pts</th>
+                                <th width="13%">Reward</th>
                             </tr>
-                        <% }) %>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <% safeLeaderboard.forEach((row) => { %>
+                                <% 
+                                    const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
+                                    const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
+                                %>
+                                <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
+                                    <td style="<%= hasColor ? 'border-left: none;' : '' %>">
+                                        <% if(row.reward) { %>
+                                            <span class="rank-reward"><%= row.displayRank %></span>
+                                        <% } else { %>
+                                            <span class="rank-normal"><%= row.displayRank %></span>
+                                        <% } %>
+                                        <% if(row.isTied) { %><br><span style="font-size: 0.65rem; color: var(--pl-text-muted);">(ร่วม)</span><% } %>
+                                    </td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <img src="<%= row.avatar %>" alt="avatar">
+                                            <span class="username"><%= row.username %></span>
+                                        </div>
+                                    </td>
+                                    <td><%= row.mp %></td>
+                                    <td><%= row.exact_score_count %></td>
+                                    <td><%= row.correct_result_count %></td>
+                                    <td><strong style="font-size: 1.15rem; color: var(--pl-primary);"><%= row.total_score || 0 %></strong></td>
+                                    
+                                    <% if (row.isFirstInGroup) { %>
+                                        <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
+                                            <% if(row.reward) { %>
+                                                <div class="reward-badge" style="border-color: <%= hasColor ? row.reward.color : 'var(--pl-border)' %>;">
+                                                    <span style="font-size: 1.2rem;"><%= row.reward.icon %></span>
+                                                    <span><%= row.reward.description %></span>
+                                                    <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
+                                                </div>
+                                            <% } else { %>
+                                                <span style="color: var(--pl-border);">-</span>
+                                            <% } %>
+                                        </td>
+                                    <% } %>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        <% } catch (error) { %>
+            <div style="background: rgba(2ef, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-top: 0;">⚠️ พบข้อผิดพลาดในการแสดงผล EJS</h3>
+                <pre style="white-space: pre-wrap; font-size: 0.85rem;"><%= error.message %></pre>
             </div>
         <% } %>
     </div>
 
+    <script>
+        // --- สคริปต์ตรวจจับการ Scroll เพื่อย่อ Banner ---
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('mainHeader');
+            if (header) {
+                // ถ้าเลื่อนจอลงมาเกิน 20px ให้เพิ่มคลาส scrolled
+                if (window.scrollY > 20) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+        });
+    </script>
 </body>
 </html>

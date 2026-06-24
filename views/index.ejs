@@ -18,8 +18,8 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* Navbar */
-        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; }
+        /* Navbar & Header Group */
+        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
@@ -37,13 +37,17 @@
         .profile-name { font-size: 0.85rem; font-weight: 600; }
         .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        /* Banners */
-        .page-banner { padding: 35px 20px; color: white; transition: background 0.3s ease; }
+        /* Banners with Shrink Transitions */
+        .page-banner { padding: 35px 20px; color: white; transition: all 0.3s ease; overflow: hidden; }
         .banner-matches { background: linear-gradient(90deg, #02e1a2 0%, #00b4d8 100%); }
         .banner-fixtures { background: linear-gradient(90deg, #ff0046 0%, #963cff 100%); }
         
         .banner-content { max-width: 1000px; margin: 0 auto; }
-        .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; transition: all 0.3s ease; }
+
+        /* Scrolled State for Banner */
+        .pl-header.scrolled .page-banner { padding: 10px 20px; }
+        .pl-header.scrolled .banner-content h1 { font-size: 1.25rem; }
 
         .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
@@ -108,6 +112,7 @@
             .team-name { max-width: 100px; font-size: 0.85rem;}
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
+            .pl-header.scrolled .page-banner { padding: 8px 15px; }
         }
         
         tr.flash-success { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
@@ -208,7 +213,7 @@
         });
     %>
 
-    <header class="pl-header">
+    <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
                 <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
@@ -234,13 +239,13 @@
                 <% } %>
             </div>
         </div>
-    </header>
 
-    <div class="page-banner" id="page-banner">
-        <div class="banner-content">
-            <h1 id="banner-title">Matches</h1>
+        <div class="page-banner banner-matches" id="page-banner">
+            <div class="banner-content">
+                <h1 id="banner-title">Matches</h1>
+            </div>
         </div>
-    </div>
+    </header>
 
     <div class="main-content">
 
@@ -430,9 +435,20 @@
     </div>
 
     <script>
+        // --- Scroll Effect สำหรับย่อ Banner ---
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('mainHeader');
+            if (header) {
+                if (window.scrollY > 20) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+        });
+
         // --- Tab Management ---
         function switchTab(tabId) {
-            // ป้องกันเอฟเฟกต์ค้างกรณีมีคนส่งค่า table เข้ามาทำงานในหน้านี้
             if (tabId === 'table') {
                 window.location.href = '/leaderboard';
                 return;
