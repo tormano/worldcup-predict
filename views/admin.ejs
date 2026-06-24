@@ -18,12 +18,12 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        .pl-header { background-color: var(--pl-nav); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--pl-border); transition: all 0.3s ease; }
+        /* 🎯 เติม overflow-anchor: none; เพื่อป้องกันจอเด้งตอนแบนเนอร์ย่อ */
+        .pl-header { background-color: var(--pl-nav); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--pl-border); transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         
-        /* 🎯 อัปเดต CSS โลโก้: เอา filter ออกเพื่อโชว์สี Original */
-        .brand-logo { height: 40px; } 
+        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
         
         .admin-badge { margin-left: 15px; font-weight: 700; color: var(--pl-primary); letter-spacing: 1px; font-size: 1.1rem; }
         
@@ -560,11 +560,16 @@
     </div>
 
     <script>
-        // Scroll Effect for Banner
+        // 🎯 สคริปต์ตรวจจับเลื่อนจอที่แก้ไขระยะ (Hysteresis) ไม่ให้จอเต้นแล้ว
         window.addEventListener('scroll', () => {
             const header = document.getElementById('adminHeader');
-            if (window.scrollY > 20) { header.classList.add('scrolled'); } 
-            else { header.classList.remove('scrolled'); }
+            if (header) {
+                if (window.scrollY > 100) { 
+                    header.classList.add('scrolled'); 
+                } else if (window.scrollY <= 10) { 
+                    header.classList.remove('scrolled'); 
+                }
+            }
         });
 
         // Tab System
@@ -585,20 +590,20 @@
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-group');
                     if (todayGroup) {
-                        //todayGroup.setAttribute('open', 'true');
-                        //todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			// คำนวณระยะห่างของจอ ลบด้วยความสูงของ Header (ประมาณ 130px)
-                        const headerOffset = 130; 
+                        todayGroup.setAttribute('open', 'true');
+                        
+                        // 🎯 คำนวณระยะห่าง เผื่อความสูงของ Navbar + Banner + Submenu ของหน้า Admin
+                        const headerOffset = 160; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
                         
                         window.scrollTo({
                             top: elementPosition - headerOffset,
                             behavior: 'smooth'
                         });
-
                     }
                 }, 100);
             }
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
