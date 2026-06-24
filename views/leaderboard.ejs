@@ -18,7 +18,6 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* Navbar */
         .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
@@ -37,12 +36,10 @@
         .profile-name { font-size: 0.85rem; font-weight: 600; }
         .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        /* Banners */
         .page-banner { padding: 35px 20px; color: white; background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); }
         .banner-content { max-width: 1000px; margin: 0 auto; }
         .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; }
 
-        /* Submenu */
         .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
         .submenu-content { max-width: 1000px; margin: 0 auto; display: flex; gap: 25px; padding: 0 15px; }
         .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s;}
@@ -51,7 +48,6 @@
 
         .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
-        /* Table Styles */
         .card { background: var(--pl-surface); border-radius: 12px; padding: 10px 0; border: 1px solid var(--pl-border); overflow-x: auto; }
         .pl-table { width: 100%; border-collapse: collapse; color: var(--pl-text); min-width: 700px;}
         .pl-table th { background: rgba(255,255,255,0.03); color: var(--pl-text-muted); font-weight: 500; padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); font-size: 0.85rem;}
@@ -86,10 +82,12 @@
                 <a href="/?tab=matches" class="nav-item">Matches</a>
                 <a href="/?tab=fixtures" class="nav-item">Fixtures</a>
                 <a href="/leaderboard" class="nav-item active">Table</a>
-                <% if(typeof user !== 'undefined' && user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
+                <% if(typeof user !== 'undefined' && user && user.is_admin === 1) { %> 
+                    <a href="/admin" class="nav-item admin-link">Admin</a> 
+                <% } %>
             </div>
             <div class="nav-profile">
-                <% if(typeof user !== 'undefined') { %>
+                <% if(typeof user !== 'undefined' && user) { %>
                 <div class="profile-dropdown">
                     <img src="<%= user.avatar %>" alt="Avatar" class="avatar-img">
                     <div class="profile-info">
@@ -116,7 +114,8 @@
     </div>
 
     <div class="main-content">
-        <% if(leaderboard.length === 0) { %>
+        <% const safeLeaderboard = (typeof leaderboard !== 'undefined' && Array.isArray(leaderboard)) ? leaderboard : []; %>
+        <% if(safeLeaderboard.length === 0) { %>
             <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
         <% } else { %>
             <div class="card">
@@ -133,12 +132,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% leaderboard.forEach((row) => { 
+                        <% safeLeaderboard.forEach((row) => { 
                             const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
                             const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
+                            const tdStyle = hasColor ? 'border-left: none;' : '';
+                            const borderColor = hasColor ? row.reward.color : 'var(--pl-border)';
+                            const displayScore = row.total_score || 0;
                         %>
                             <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
-                                <td style="<%= hasColor ? 'border-left: none;' : '' %>">
+                                <td style="<%= tdStyle %>">
                                     <% if(row.reward) { %>
                                         <span class="rank-reward"><%= row.displayRank %></span>
                                     <% } else { %>
@@ -155,4 +157,28 @@
                                 <td><%= row.mp %></td>
                                 <td><%= row.exact_score_count %></td>
                                 <td><%= row.correct_result_count %></td>
-                                <td><strong style="font-size: 1.15rem; color: var(--pl-primary);"><%= row.
+                                <td><strong style="font-size: 1.15rem; color: var(--pl-primary);"><%= displayScore %></strong></td>
+                                
+                                <% if (row.isFirstInGroup) { %>
+                                    <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
+                                        <% if(row.reward) { %>
+                                            <div class="reward-badge" style="border-color: <%= borderColor %>;">
+                                                <span style="font-size: 1.2rem;"><%= row.reward.icon %></span>
+                                                <span><%= row.reward.description %></span>
+                                                <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
+                                            </div>
+                                        <% } else { %>
+                                            <span style="color: var(--pl-border);">-</span>
+                                        <% } %>
+                                    </td>
+                                <% } %>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+
+</body>
+</html>
