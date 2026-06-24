@@ -18,11 +18,13 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* Navbar & Header */
-        .pl-header { background-color: var(--pl-nav); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--pl-border); transition: all 0.3s ease; }
+        /* 🎯 เติม overflow-anchor: none; เพื่อป้องกันจอเด้งตอนแบนเนอร์ย่อ */
+        .pl-header { background-color: var(--pl-nav); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--pl-border); transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
-        .brand-logo { height: 40px; filter: brightness(0) invert(1); }
+        
+        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
+        
         .admin-badge { margin-left: 15px; font-weight: 700; color: var(--pl-primary); letter-spacing: 1px; font-size: 1.1rem; }
         
         .nav-profile { display: flex; align-items: center; }
@@ -32,7 +34,6 @@
         .profile-name { font-size: 0.85rem; font-weight: 600; color: var(--pl-text); }
         .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        /* Dynamic Shrinking Banner */
         .admin-banner { background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); padding: 30px 20px; transition: all 0.3s ease; overflow: hidden; }
         .admin-banner h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; transition: all 0.3s ease; color: white; max-width: 1200px; margin: 0 auto;}
         .admin-banner p { margin: 5px auto 0; font-size: 0.95rem; opacity: 0.9; transition: all 0.3s ease; color: white; max-width: 1200px;}
@@ -41,7 +42,6 @@
         .pl-header.scrolled .admin-banner h1 { font-size: 1.25rem; }
         .pl-header.scrolled .admin-banner p { display: none; }
 
-        /* Submenu Tabs */
         .page-submenu { background-color: #2e0033; }
         .submenu-content { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; padding: 0 15px; overflow-x: auto; white-space: nowrap; }
         .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s; cursor: pointer; }
@@ -53,7 +53,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Cards & Tables */
         .card { background: var(--pl-surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--pl-border); }
         .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--pl-border); padding-bottom: 10px; }
         .card-header h3 { margin: 0; font-size: 1.2rem; color: var(--pl-text); }
@@ -81,7 +80,6 @@
         .user-cell { display: flex; align-items: center; gap: 10px; font-weight: 500; }
         .user-cell img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--pl-border); }
         
-        /* Date Group & Match Layout */
         .date-group { background: transparent; border: 1px solid var(--pl-border); border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
         .date-header { padding: 12px 15px; background: rgba(255,255,255,0.03); font-weight: 600; cursor: pointer; user-select: none; font-size: 1rem; color: var(--pl-text-muted); transition: background 0.2s; position: relative; }
         .date-header:hover { background: rgba(255,255,255,0.06); color: var(--pl-text); }
@@ -107,7 +105,6 @@
         .flag-icon { width: 32px; height: 24px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); object-fit: cover; display: block; }
         .date-separator { text-align: center; font-size: 0.85rem; color: var(--pl-text-muted); padding: 6px; background: rgba(255,255,255,0.02); border-top: 1px dashed var(--pl-border); border-bottom: 1px dashed var(--pl-border); font-weight: 500;}
 
-        /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-box { background: var(--pl-nav); border: 1px solid var(--pl-border); padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); transform: translateY(20px); transition: 0.3s; color: var(--pl-text); }
@@ -119,9 +116,6 @@
 </head>
 <body>
     <% 
-        // ----------------------------------------------------
-        // SAFEGUARDS: ป้องกัน Error 500 หาก Backend ส่งตัวแปรมาไม่ครบ
-        // ----------------------------------------------------
         const sMatches = typeof matches !== 'undefined' ? matches : [];
         const sRules = typeof rules !== 'undefined' ? rules : [];
         const sUserStats = typeof userStats !== 'undefined' ? userStats : [];
@@ -160,7 +154,6 @@
             return ''; 
         };
 
-        // ฟังก์ชันช่วยจัดการเรื่องเวลาป้องกัน Error Date() 
         const formatShortDate = (val) => {
             const dObj = new Date(typeof val === 'string' ? val.replace(' ', 'T') : val);
             if(isNaN(dObj.getTime())) return '-';
@@ -171,7 +164,6 @@
     %>
 
     <header class="pl-header" id="adminHeader">
-        <!-- Top Navbar -->
         <div class="nav-container">
             <div class="nav-brand">
                 <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="Logo" class="brand-logo">
@@ -188,13 +180,11 @@
             </div>
         </div>
 
-        <!-- Collapsible Banner -->
         <div class="admin-banner" id="adminBanner">
             <h1>Administrator</h1>
             <p>ระบบจัดการหลังบ้าน ทายผล World Cup 2026</p>
         </div>
 
-        <!-- Admin Submenu -->
         <div class="page-submenu">
             <div class="submenu-content">
                 <a href="#" class="submenu-item active" onclick="openTab('tab-users')" id="nav-users">Users</a>
@@ -208,7 +198,6 @@
 
     <div class="main-content">
         
-        <!-- TAB 1: Users -->
         <div id="tab-users" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">📊</span><h3>สถานะผู้เล่น (ประจำวัน)</h3></div>
@@ -260,7 +249,7 @@
                                         <form action="/admin/toggle-visibility" method="POST" style="margin:0;">
                                             <input type="hidden" name="user_id" value="<%= u.id %>">
                                             <input type="hidden" name="is_hidden" value="<%= u.is_hidden ? 0 : 1 %>">
-                                            <button type="submit" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background-color: <%= u.is_hidden ? 'var(--pl-primary)' : 'rgba(255,255,255,0.1)'%>; color: <%= u.is_hidden ? '#0f172a' : 'white' %>;"><%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อน' %></button>
+                                            <button type="submit" class="btn" style="padding: 4px 8px; font-size: 0.8rem; background-color: <%= u.is_hidden ? 'var(--pl-primary)' : 'rgba(255,255,255,0.1)' %>; color: <%= u.is_hidden ? '#0f172a' : 'white' %>;"><%= u.is_hidden ? '👁️ แสดงบนบอร์ด' : '🙈 ซ่อน' %></button>
                                         </form>
                                         <form action="/admin/reset-password" method="POST" style="margin:0;" onsubmit="return confirm('รีเซ็ตรหัสผ่านของ <%= u.username %> เป็น 123456 ใช่หรือไม่?');">
                                             <input type="hidden" name="user_id" value="<%= u.id %>">
@@ -279,7 +268,6 @@
             </div>
         </div>
 
-        <!-- TAB 2: Matches -->
         <div id="tab-matches" class="tab-content">
             <datalist id="team-list">
                 <option value="Argentina"><option value="Australia"><option value="Austria"><option value="Belgium">
@@ -412,7 +400,6 @@
                                                         <div class="home-name <%= homeColor %>" id="home-name-<%= match.id %>" title="<%= match.home_team %>"><%= match.home_team %></div>
                                                         <div class="home-flag"><%- getFlag(match.home_team) %></div>
                                                         <div class="score-vs" id="score-container-<%= match.id %>">
-                                                            <!-- Display Mode -->
                                                             <div id="display-mode-<%= match.id %>" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                                                                 <% if(match.status === 'FINISHED') { %>
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
@@ -424,7 +411,6 @@
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;"><%= timeStr %></span>
                                                                 <% } %>
                                                             </div>
-                                                            <!-- Edit Mode -->
                                                             <div id="edit-mode-<%= match.id %>" style="display: none; align-items: center; justify-content: center; gap: 4px; width: 100%;">
                                                                 <input type="number" id="home-score-<%= match.id %>" value="<%= match.home_score !== null ? match.home_score : '' %>" style="width: 40px; text-align: center; padding: 4px; font-size: 1rem; color: #000; background: #fff;">
                                                                 <span style="font-weight: 700; color: white;">-</span>
@@ -457,7 +443,6 @@
             </div>
         </div>
 
-        <!-- TAB 3: Scores and Import -->
         <div id="tab-settings" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">🎯</span><h3>ตั้งค่าคะแนนการทายผล</h3></div>
@@ -499,7 +484,6 @@
             </div>
         </div>
 
-        <!-- TAB 4: Prizes -->
         <div id="tab-rewards" class="tab-content">
             <div class="card">
                 <div class="card-header"><span style="font-size: 1.2rem;">🎁</span><h3>ตั้งค่าของรางวัลตามอันดับ</h3></div>
@@ -543,7 +527,6 @@
 
     </div>
 
-    <!-- Modal เพิ่ม/แก้ไขแมตช์ -->
     <div id="addMatchModal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="margin-top: 0;">➕ เพิ่มแมตช์ใหม่</h3>
@@ -577,11 +560,16 @@
     </div>
 
     <script>
-        // Scroll Effect for Banner
+        // 🎯 สคริปต์ตรวจจับเลื่อนจอที่แก้ไขระยะ (Hysteresis) ไม่ให้จอเต้นแล้ว
         window.addEventListener('scroll', () => {
             const header = document.getElementById('adminHeader');
-            if (window.scrollY > 20) { header.classList.add('scrolled'); } 
-            else { header.classList.remove('scrolled'); }
+            if (header) {
+                if (window.scrollY > 100) { 
+                    header.classList.add('scrolled'); 
+                } else if (window.scrollY <= 10) { 
+                    header.classList.remove('scrolled'); 
+                }
+            }
         });
 
         // Tab System
@@ -603,7 +591,15 @@
                     const todayGroup = document.querySelector('.today-group');
                     if (todayGroup) {
                         todayGroup.setAttribute('open', 'true');
-                        todayGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        
+                        // 🎯 คำนวณระยะห่าง เผื่อความสูงของ Navbar + Banner + Submenu ของหน้า Admin
+                        const headerOffset = 210; 
+                        const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
+                        
+                        window.scrollTo({
+                            top: elementPosition - headerOffset,
+                            behavior: 'smooth'
+                        });
                     }
                 }, 100);
             }
