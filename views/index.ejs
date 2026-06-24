@@ -22,7 +22,9 @@
         .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
-        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
+        
+        /* 🎯 อัปเดต CSS โลโก้ตรงนี้: ขยายความสูงเป็น 48px และเอา filter สีขาวออก */
+        .brand-logo { height: 48px; } 
         
         .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
         .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
@@ -216,7 +218,7 @@
     <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
+                <img src="https://upload.wikimedia.org/wikipedia/en/2/29/2026_FIFA_World_Cup_emblem.svg" alt="World Cup 2026 Logo" class="brand-logo">
             </div>
             <div class="nav-menu">
                 <a href="#" class="nav-item active" onclick="switchTab('matches')" id="nav-matches">Matches</a>
