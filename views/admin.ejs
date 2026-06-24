@@ -18,7 +18,6 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* 🎯 เติม overflow-anchor: none; เพื่อป้องกันจอเด้งตอนแบนเนอร์ย่อ */
         .pl-header { background-color: var(--pl-nav); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--pl-border); transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
@@ -112,6 +111,39 @@
 
         @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         tr.flash-success td { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
+
+        /* 🎯 CSS สำหรับปุ่ม Bubble Scroll to Today */
+        .btn-jump-today {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, var(--pl-primary), #00d46a);
+            color: #0f172a;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 255, 133, 0.4);
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px) scale(0.8);
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+        .btn-jump-today.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+        .btn-jump-today:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -159,7 +191,7 @@
             if(isNaN(dObj.getTime())) return '-';
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
+            return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]}`;
         };
     %>
 
@@ -526,6 +558,10 @@
 
     </div>
 
+    <button class="btn-jump-today" id="btnJumpToday" onclick="jumpToToday()" title="กลับไปคู่ของวันนี้">
+        ⭐
+    </button>
+
     <div id="addMatchModal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="margin-top: 0;">➕ เพิ่มแมตช์ใหม่</h3>
@@ -559,7 +595,6 @@
     </div>
 
     <script>
-        // 🎯 สคริปต์ตรวจจับเลื่อนจอที่แก้ไขระยะ (Hysteresis) ไม่ให้จอเต้นแล้ว
         window.addEventListener('scroll', () => {
             const header = document.getElementById('adminHeader');
             if (header) {
@@ -569,9 +604,38 @@
                     header.classList.remove('scrolled'); 
                 }
             }
+
+            // 🎯 สคริปต์ควบคุมการโชว์/ซ่อน ปุ่ม Bubble
+            const jumpBtn = document.getElementById('btnJumpToday');
+            if (jumpBtn) {
+                const activeTab = localStorage.getItem('adminActiveTab');
+                // โชว์ปุ่มเฉพาะเวลาเลื่อนจอลงเกิน 300px และอยู่ในหน้า Matches
+                if (window.scrollY > 300 && activeTab === 'tab-matches') {
+                    jumpBtn.classList.add('show');
+                } else {
+                    jumpBtn.classList.remove('show');
+                }
+            }
         });
 
-        // Tab System
+        // 🎯 ฟังก์ชันสำหรับกดปุ่มลอยแล้วเด้งกลับไปที่คู่ของวันนี้
+        function jumpToToday() {
+            const todayGroup = document.querySelector('.today-group');
+            if (todayGroup) {
+                todayGroup.setAttribute('open', 'true');
+                const headerOffset = 160; 
+                const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
+                
+                window.scrollTo({
+                    top: elementPosition - headerOffset,
+                    behavior: 'smooth'
+                });
+            } else {
+                // ถ้าไม่มีแมตช์วันนี้ ให้เลื่อนกลับบนสุดแทน
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
         function openTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.submenu-item').forEach(btn => btn.classList.remove('active'));
@@ -585,13 +649,16 @@
             
             localStorage.setItem('adminActiveTab', tabId);
 
+            // ซ่อนปุ่มลอยเวลาเปลี่ยนแท็บ
+            const jumpBtn = document.getElementById('btnJumpToday');
+            if(jumpBtn) jumpBtn.classList.remove('show');
+
             if (tabId === 'tab-matches') {
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-group');
                     if (todayGroup) {
                         todayGroup.setAttribute('open', 'true');
                         
-                        // 🎯 คำนวณระยะห่าง เผื่อความสูงของ Navbar + Banner + Submenu ของหน้า Admin
                         const headerOffset = 230; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
                         
@@ -609,7 +676,6 @@
             openTab(activeTab);
         });
 
-        // ------------------ ระบบ แก้ไขข้อมูลแมตช์ ------------------
         function openEditMatchModal(id, home, away, time) {
             document.getElementById('edit_match_id').value = id;
             document.getElementById('edit_home_team').value = home;
@@ -621,7 +687,6 @@
             document.getElementById('editMatchModal').classList.remove('active');
         }
 
-        // ------------------ ระบบ แก้ไข/บันทึกผลคะแนน ------------------
         function enableSettleEdit(matchId) {
             document.getElementById('display-mode-' + matchId).style.display = 'none';
             document.getElementById('edit-mode-' + matchId).style.display = 'flex';
@@ -710,7 +775,6 @@
             }
         }
 
-        // ------------------ ระบบของรางวัล ------------------
         function editReward(id, rank, desc, icon, color) {
             document.getElementById('rewardForm').action = '/admin/edit-reward';
             document.getElementById('reward_id').value = id;
