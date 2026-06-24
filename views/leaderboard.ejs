@@ -18,10 +18,11 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; }
+        /* 🎯 เติม overflow-anchor: none; เพื่อป้องกันจอเด้งกลับตอนแบนเนอร์ย่อ */
+        .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
-        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
+        .brand-logo { height: 48px; } /* ปรับความสูงโลโก้ */
         
         .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
         .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
@@ -50,42 +51,42 @@
 
         .main-content { max-width: 1000px; margin: 20px auto; padding: 0 15px 50px; }
 
-        /* --- ปรับแต่งตารางให้เลื่อนในกล่องและแถวแคบลง --- */
+        /* ตารางปรับแถวแคบ และกล่องเลื่อน */
         .card.table-wrapper { 
             background: var(--pl-surface); 
             border-radius: 12px; 
             border: 1px solid var(--pl-border); 
-            max-height: 70vh; /* กำหนดความสูงเพื่อให้เลื่อนได้ในกล่อง */
+            max-height: 70vh; 
             overflow-y: auto; 
             padding: 0; 
         }
         
         .pl-table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--pl-text); min-width: 700px;}
         
-        /* Freeze Header (ล็อคหัวตาราง) */
+        /* Freeze Header */
         .pl-table th { 
             position: sticky;
             top: 0;
             z-index: 20;
-            background: #240028; /* ต้องใช้สีทึบเพื่อบังแถวที่เลื่อนขึ้นมา */
+            background: #240028; 
             color: var(--pl-text-muted); 
             font-weight: 500; 
-            padding: 8px 10px; /* บีบหัวตารางให้แคบลง */
+            padding: 8px 10px; 
             text-align: center; 
             border-bottom: 2px solid rgba(255,255,255,0.2); 
             font-size: 0.85rem;
-            height: 44px; /* ล็อคความสูงเป๊ะๆ เพื่อคำนวณตำแหน่งแถวอันดับ 1 */
+            height: 44px; 
             box-sizing: border-box;
         }
         
-        /* Narrower Rows (บีบแถวข้อมูลให้แคบลง) */
+        /* Narrower Rows */
         .pl-table td { 
-            padding: 6px 10px; /* ลด Padding บน-ล่าง จาก 15px เหลือ 6px */
+            padding: 6px 10px; 
             text-align: center; 
             border-bottom: 1px solid var(--pl-border); 
             transition: 0.2s; 
             vertical-align: middle;
-            height: 48px; /* บังคับความสูงแถวไม่ให้ยืดเกินไป */
+            height: 48px; 
             box-sizing: border-box;
         }
         
@@ -93,7 +94,6 @@
         .pl-table th:nth-child(2), .pl-table td:nth-child(2) { text-align: left; }
         .pl-table tr:hover td { background: rgba(255, 255, 255, 0.05); }
 
-        /* ปรับขนาดฟอนต์และรูปให้เล็กลงรับกับแถวที่แคบลง */
         .rank-reward { font-size: 1.15rem; font-weight: 700; color: var(--pl-text); }
         .rank-normal { font-size: 0.95rem; font-weight: 500; color: var(--pl-text-muted); }
         .user-cell { display: flex; align-items: center; gap: 10px; }
@@ -103,22 +103,23 @@
         .reward-badge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); }
         .shared-badge { font-size: 0.6rem; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; color: var(--pl-text-muted); font-weight: 500; margin-left: 4px;}
 
-        /* --- Freeze Rank 1 (ล็อคแถวอันดับ 1) --- */
+        /* Freeze Rank 1 */
         .sticky-rank-1 td {
             position: sticky;
-            top: var(--sticky-top); /* ถูกคำนวณและสั่งผ่าน HTML */
+            top: var(--sticky-top); 
             z-index: 15;
-            background-color: #3b0040 !important; /* พื้นหลังสีม่วงทึบให้โดดเด่นและบังแถวล่าง */
+            background-color: #3b0040 !important; 
             border-bottom: 2px solid var(--pl-primary) !important;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
         .pl-table tr.sticky-rank-1:hover td {
-            background-color: #51005c !important; /* สีตอนเอาเมาส์ชี้แถวอันดับ 1 */
+            background-color: #51005c !important; 
         }
 
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
+            .pl-header.scrolled .page-banner { padding: 8px 15px; }
         }
     </style>
 </head>
@@ -127,7 +128,7 @@
     <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
+                <img src="<img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">" alt="World Cup 2026 Logo" class="brand-logo">
             </div>
             <div class="nav-menu">
                 <a href="/?tab=matches" class="nav-item">Matches</a>
@@ -185,19 +186,17 @@
                         </thead>
                         <tbody>
                             <% 
-                                // ตัวแปรสำหรับคำนวณตำแหน่งล็อค (Top) ของอันดับ 1
-                                let currentStickyTop = 44; // เริ่มต่อจาก Header ที่มีความสูง 44px
+                                let currentStickyTop = 44; 
                             %>
                             <% safeLeaderboard.forEach((row) => { %>
                                 <% 
                                     const isRank1 = row.displayRank === 1;
                                     const rank1Class = isRank1 ? 'sticky-rank-1' : '';
                                     
-                                    // หากเป็นอันดับ 1 ให้คำนวณตำแหน่ง Top แล้วบวกเพิ่มเผื่อกรณีมีคนได้ที่ 1 ร่วมกัน
                                     let myStickyTop = 0;
                                     if (isRank1) {
                                         myStickyTop = currentStickyTop;
-                                        currentStickyTop += 48; // บวกเพิ่ม 48px (ความสูงของ 1 แถว) สำหรับที่ 1 คนถัดไป
+                                        currentStickyTop += 48; 
                                     }
 
                                     const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
@@ -251,12 +250,13 @@
     </div>
 
     <script>
+        // 🎯 สคริปต์ตรวจจับเลื่อนจอที่แก้ไขระยะ (Hysteresis) ไม่ให้จอเต้นแล้ว
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
             if (header) {
-                if (window.scrollY > 20) {
+                if (window.scrollY > 100) {
                     header.classList.add('scrolled');
-                } else {
+                } else if (window.scrollY <= 10) {
                     header.classList.remove('scrolled');
                 }
             }
