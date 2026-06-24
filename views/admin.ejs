@@ -23,7 +23,7 @@
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         
-        .brand-logo { height: 40px; filter: brightness(0) invert(1); } 
+        .brand-logo { height: 40px; } 
         
         .admin-badge { margin-left: 15px; font-weight: 700; color: var(--pl-primary); letter-spacing: 1px; font-size: 1.1rem; }
         
@@ -592,7 +592,7 @@
                         todayGroup.setAttribute('open', 'true');
                         
                         // 🎯 คำนวณระยะห่าง เผื่อความสูงของ Navbar + Banner + Submenu ของหน้า Admin
-                        const headerOffset = 250; 
+                        const headerOffset = 230; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
                         
                         window.scrollTo({
