@@ -18,7 +18,6 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* Navbar & Header Group */
         .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
@@ -37,46 +36,89 @@
         .profile-name { font-size: 0.85rem; font-weight: 600; }
         .logout-text { font-size: 0.75rem; color: #fca5a5; text-decoration: none; }
 
-        /* Banners with Shrink Transitions */
         .page-banner { padding: 35px 20px; color: white; background: linear-gradient(90deg, #963cff 0%, #04f5ff 100%); transition: all 0.3s ease; overflow: hidden; }
         .banner-content { max-width: 1000px; margin: 0 auto; }
         .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; transition: all 0.3s ease; }
-
-        /* Scrolled State for Banner */
         .pl-header.scrolled .page-banner { padding: 10px 20px; }
         .pl-header.scrolled .banner-content h1 { font-size: 1.25rem; }
 
-        /* Submenu */
         .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
         .submenu-content { max-width: 1000px; margin: 0 auto; display: flex; gap: 25px; padding: 0 15px; }
         .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s;}
         .submenu-item:hover { color: var(--pl-text); }
         .submenu-item.active { color: var(--pl-text); border-bottom-color: var(--pl-accent); font-weight: 600; }
 
-        .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
+        .main-content { max-width: 1000px; margin: 20px auto; padding: 0 15px 50px; }
 
-        /* Table Styles */
-        .card { background: var(--pl-surface); border-radius: 12px; padding: 10px 0; border: 1px solid var(--pl-border); overflow-x: auto; }
-        .pl-table { width: 100%; border-collapse: collapse; color: var(--pl-text); min-width: 700px;}
-        .pl-table th { background: rgba(255,255,255,0.03); color: var(--pl-text-muted); font-weight: 500; padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); font-size: 0.85rem;}
-        .pl-table td { padding: 15px 10px; text-align: center; border-bottom: 1px solid var(--pl-border); transition: 0.2s; vertical-align: middle;}
+        /* --- ปรับแต่งตารางให้เลื่อนในกล่องและแถวแคบลง --- */
+        .card.table-wrapper { 
+            background: var(--pl-surface); 
+            border-radius: 12px; 
+            border: 1px solid var(--pl-border); 
+            max-height: 70vh; /* กำหนดความสูงเพื่อให้เลื่อนได้ในกล่อง */
+            overflow-y: auto; 
+            padding: 0; 
+        }
+        
+        .pl-table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--pl-text); min-width: 700px;}
+        
+        /* Freeze Header (ล็อคหัวตาราง) */
+        .pl-table th { 
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #240028; /* ต้องใช้สีทึบเพื่อบังแถวที่เลื่อนขึ้นมา */
+            color: var(--pl-text-muted); 
+            font-weight: 500; 
+            padding: 8px 10px; /* บีบหัวตารางให้แคบลง */
+            text-align: center; 
+            border-bottom: 2px solid rgba(255,255,255,0.2); 
+            font-size: 0.85rem;
+            height: 44px; /* ล็อคความสูงเป๊ะๆ เพื่อคำนวณตำแหน่งแถวอันดับ 1 */
+            box-sizing: border-box;
+        }
+        
+        /* Narrower Rows (บีบแถวข้อมูลให้แคบลง) */
+        .pl-table td { 
+            padding: 6px 10px; /* ลด Padding บน-ล่าง จาก 15px เหลือ 6px */
+            text-align: center; 
+            border-bottom: 1px solid var(--pl-border); 
+            transition: 0.2s; 
+            vertical-align: middle;
+            height: 48px; /* บังคับความสูงแถวไม่ให้ยืดเกินไป */
+            box-sizing: border-box;
+        }
+        
         .pl-table th:nth-child(1), .pl-table td:nth-child(1) { text-align: left; padding-left: 25px;}
         .pl-table th:nth-child(2), .pl-table td:nth-child(2) { text-align: left; }
         .pl-table tr:hover td { background: rgba(255, 255, 255, 0.05); }
+
+        /* ปรับขนาดฟอนต์และรูปให้เล็กลงรับกับแถวที่แคบลง */
+        .rank-reward { font-size: 1.15rem; font-weight: 700; color: var(--pl-text); }
+        .rank-normal { font-size: 0.95rem; font-weight: 500; color: var(--pl-text-muted); }
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-cell img { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
+        .user-cell .username { font-weight: 600; font-size: 0.9rem; }
         
-        .rank-reward { font-size: 1.4rem; font-weight: 700; color: var(--pl-text); }
-        .rank-normal { font-size: 1.05rem; font-weight: 500; color: var(--pl-text-muted); }
-        .user-cell { display: flex; align-items: center; gap: 12px; }
-        .user-cell img { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
-        .user-cell .username { font-weight: 600; font-size: 0.95rem; }
-        
-        .reward-badge { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); text-align: center;}
-        .shared-badge { font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: var(--pl-text-muted); font-weight: 500;}
+        .reward-badge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); }
+        .shared-badge { font-size: 0.6rem; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; color: var(--pl-text-muted); font-weight: 500; margin-left: 4px;}
+
+        /* --- Freeze Rank 1 (ล็อคแถวอันดับ 1) --- */
+        .sticky-rank-1 td {
+            position: sticky;
+            top: var(--sticky-top); /* ถูกคำนวณและสั่งผ่าน HTML */
+            z-index: 15;
+            background-color: #3b0040 !important; /* พื้นหลังสีม่วงทึบให้โดดเด่นและบังแถวล่าง */
+            border-bottom: 2px solid var(--pl-primary) !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .pl-table tr.sticky-rank-1:hover td {
+            background-color: #51005c !important; /* สีตอนเอาเมาส์ชี้แถวอันดับ 1 */
+        }
 
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
-            .pl-header.scrolled .page-banner { padding: 8px 15px; }
         }
     </style>
 </head>
@@ -108,7 +150,7 @@
             </div>
         </div>
 
-        <div class="page-banner" id="page-banner">
+        <div class="page-banner">
             <div class="banner-content">
                 <h1>Table</h1>
             </div>
@@ -128,7 +170,7 @@
             <% if(safeLeaderboard.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
             <% } else { %>
-                <div class="card">
+                <div class="card table-wrapper">
                     <table class="pl-table">
                         <thead>
                             <tr>
@@ -142,12 +184,26 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <% 
+                                // ตัวแปรสำหรับคำนวณตำแหน่งล็อค (Top) ของอันดับ 1
+                                let currentStickyTop = 44; // เริ่มต่อจาก Header ที่มีความสูง 44px
+                            %>
                             <% safeLeaderboard.forEach((row) => { %>
                                 <% 
+                                    const isRank1 = row.displayRank === 1;
+                                    const rank1Class = isRank1 ? 'sticky-rank-1' : '';
+                                    
+                                    // หากเป็นอันดับ 1 ให้คำนวณตำแหน่ง Top แล้วบวกเพิ่มเผื่อกรณีมีคนได้ที่ 1 ร่วมกัน
+                                    let myStickyTop = 0;
+                                    if (isRank1) {
+                                        myStickyTop = currentStickyTop;
+                                        currentStickyTop += 48; // บวกเพิ่ม 48px (ความสูงของ 1 แถว) สำหรับที่ 1 คนถัดไป
+                                    }
+
                                     const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
-                                    const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
+                                    const rowBg = (!isRank1 && hasColor) ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : (hasColor ? `border-left: 4px solid ${row.reward.color};` : '');
                                 %>
-                                <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
+                                <tr class="<%= rank1Class %>" style="cursor: pointer; --sticky-top: <%= myStickyTop %>px; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
                                     <td style="<%= hasColor ? 'border-left: none;' : '' %>">
                                         <% if(row.reward) { %>
                                             <span class="rank-reward"><%= row.displayRank %></span>
@@ -171,7 +227,7 @@
                                         <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
                                             <% if(row.reward) { %>
                                                 <div class="reward-badge" style="border-color: <%= hasColor ? row.reward.color : 'var(--pl-border)' %>;">
-                                                    <span style="font-size: 1.2rem;"><%= row.reward.icon %></span>
+                                                    <span style="font-size: 1rem;"><%= row.reward.icon %></span>
                                                     <span><%= row.reward.description %></span>
                                                     <% if(row.rowspan > 1) { %><span class="shared-badge">แชร์ <%= row.rowspan %></span><% } %>
                                                 </div>
@@ -187,7 +243,7 @@
                 </div>
             <% } %>
         <% } catch (error) { %>
-            <div style="background: rgba(2ef, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 20px; border-radius: 8px;">
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 20px; border-radius: 8px;">
                 <h3 style="margin-top: 0;">⚠️ พบข้อผิดพลาดในการแสดงผล EJS</h3>
                 <pre style="white-space: pre-wrap; font-size: 0.85rem;"><%= error.message %></pre>
             </div>
@@ -195,11 +251,9 @@
     </div>
 
     <script>
-        // --- สคริปต์ตรวจจับการ Scroll เพื่อย่อ Banner ---
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
             if (header) {
-                // ถ้าเลื่อนจอลงมาเกิน 20px ให้เพิ่มคลาส scrolled
                 if (window.scrollY > 20) {
                     header.classList.add('scrolled');
                 } else {
