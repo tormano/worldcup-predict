@@ -18,11 +18,13 @@
         }
         body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
-        /* 🎯 เติม overflow-anchor: none; เพื่อป้องกันจอเด้งกลับตอนแบนเนอร์ย่อ */
         .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
-        .brand-logo { height: 48px; } /* ปรับความสูงโลโก้ */
+        
+        /* 🎯 โลโก้และข้อความ */
+        .brand-logo { height: 40px; } 
+        .brand-text { margin-left: 12px; font-weight: 700; color: var(--pl-primary); font-size: 1.1rem; letter-spacing: 0.5px; }
         
         .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
         .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
@@ -51,75 +53,53 @@
 
         .main-content { max-width: 1000px; margin: 20px auto; padding: 0 15px 50px; }
 
-        /* ตารางปรับแถวแคบ และกล่องเลื่อน */
-        .card.table-wrapper { 
-            background: var(--pl-surface); 
-            border-radius: 12px; 
-            border: 1px solid var(--pl-border); 
-            max-height: 70vh; 
-            overflow-y: auto; 
-            padding: 0; 
-        }
+        /* 🎯 ปลดล็อคความสูง ให้ตารางยาวเต็มจอ ไม่มี Scroll ซ้อน */
+        .card { background: var(--pl-surface); border-radius: 12px; padding: 10px 0; border: 1px solid var(--pl-border); overflow-x: auto; }
+        .pl-table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--pl-text); min-width: 850px;}
         
-        .pl-table { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--pl-text); min-width: 700px;}
-        
-        /* Freeze Header */
+        /* สไตล์ตารางใหม่ */
         .pl-table th { 
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            background: #240028; 
+            background: rgba(255,255,255,0.05); 
             color: var(--pl-text-muted); 
             font-weight: 500; 
-            padding: 8px 10px; 
+            padding: 10px; 
             text-align: center; 
-            border-bottom: 2px solid rgba(255,255,255,0.2); 
+            border-bottom: 1px solid rgba(255,255,255,0.2); 
             font-size: 0.85rem;
-            height: 44px; 
-            box-sizing: border-box;
+            line-height: 1.3;
         }
         
-        /* Narrower Rows */
         .pl-table td { 
-            padding: 6px 10px; 
+            padding: 8px 10px; 
             text-align: center; 
             border-bottom: 1px solid var(--pl-border); 
             transition: 0.2s; 
             vertical-align: middle;
-            height: 48px; 
             box-sizing: border-box;
         }
         
-        .pl-table th:nth-child(1), .pl-table td:nth-child(1) { text-align: left; padding-left: 25px;}
+        .pl-table th:nth-child(1), .pl-table td:nth-child(1) { text-align: center; }
         .pl-table th:nth-child(2), .pl-table td:nth-child(2) { text-align: left; }
         .pl-table tr:hover td { background: rgba(255, 255, 255, 0.05); }
 
-        .rank-reward { font-size: 1.15rem; font-weight: 700; color: var(--pl-text); }
-        .rank-normal { font-size: 0.95rem; font-weight: 500; color: var(--pl-text-muted); }
+        .rank-reward { font-size: 1.25rem; font-weight: 700; color: var(--pl-text); }
+        .rank-normal { font-size: 1.05rem; font-weight: 500; color: var(--pl-text-muted); }
         .user-cell { display: flex; align-items: center; gap: 10px; }
-        .user-cell img { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
-        .user-cell .username { font-weight: 600; font-size: 0.9rem; }
+        .user-cell img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
+        .user-cell .username { font-weight: 600; font-size: 0.95rem; }
         
         .reward-badge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); }
         .shared-badge { font-size: 0.6rem; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; color: var(--pl-text-muted); font-weight: 500; margin-left: 4px;}
-
-        /* Freeze Rank 1 */
-        .sticky-rank-1 td {
-            position: sticky;
-            top: var(--sticky-top); 
-            z-index: 15;
-            background-color: #3b0040 !important; 
-            border-bottom: 2px solid var(--pl-primary) !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-        .pl-table tr.sticky-rank-1:hover td {
-            background-color: #51005c !important; 
-        }
+        
+        .col-pts { font-weight: 600; font-size: 0.95rem; }
+        .col-pts-exact { color: var(--pl-accent); }
+        .col-pts-result { color: var(--pl-primary); }
 
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .pl-header.scrolled .page-banner { padding: 8px 15px; }
+            .brand-text { display: none; } /* ซ่อนข้อความบนมือถือเพื่อให้ที่เมนูพอ */
         }
     </style>
 </head>
@@ -128,7 +108,8 @@
     <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="<img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">" alt="World Cup 2026 Logo" class="brand-logo">
+                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
+                <span class="brand-text">FIFA World Cup 2026</span>
             </div>
             <div class="nav-menu">
                 <a href="/?tab=matches" class="nav-item">Matches</a>
@@ -171,38 +152,28 @@
             <% if(safeLeaderboard.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลคะแนนในระบบ</div>
             <% } else { %>
-                <div class="card table-wrapper">
+                <div class="card">
                     <table class="pl-table">
                         <thead>
                             <tr>
-                                <th width="8%">Pos</th>
-                                <th width="30%">Club / Player</th>
-                                <th width="10%">MP</th>
-                                <th width="12%">Exact</th>
-                                <th width="12%">Result</th>
-                                <th width="15%">Pts</th>
-                                <th width="13%">Reward</th>
+                                <th width="6%">Pos</th>
+                                <th width="24%">Club / Player</th>
+                                <th width="6%">MP</th>
+                                <th width="10%">Exact<br><span style="font-size: 0.7rem; color: var(--pl-text-muted);">(ทายถูก/คู่)</span></th>
+                                <th width="10%">Exact<br><span style="font-size: 0.7rem; color: var(--pl-accent);">(คะแนน)</span></th>
+                                <th width="10%">Result<br><span style="font-size: 0.7rem; color: var(--pl-text-muted);">(ทายถูก/คู่)</span></th>
+                                <th width="10%">Result<br><span style="font-size: 0.7rem; color: var(--pl-primary);">(คะแนน)</span></th>
+                                <th width="10%">Total<br>Pts</th>
+                                <th width="14%">Reward</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <% 
-                                let currentStickyTop = 44; 
-                            %>
                             <% safeLeaderboard.forEach((row) => { %>
                                 <% 
-                                    const isRank1 = row.displayRank === 1;
-                                    const rank1Class = isRank1 ? 'sticky-rank-1' : '';
-                                    
-                                    let myStickyTop = 0;
-                                    if (isRank1) {
-                                        myStickyTop = currentStickyTop;
-                                        currentStickyTop += 48; 
-                                    }
-
                                     const hasColor = row.reward && row.reward.color && row.reward.color !== '#ffffff';
-                                    const rowBg = (!isRank1 && hasColor) ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : (hasColor ? `border-left: 4px solid ${row.reward.color};` : '');
+                                    const rowBg = hasColor ? `background-color: ${row.reward.color}15; border-left: 4px solid ${row.reward.color};` : '';
                                 %>
-                                <tr class="<%= rank1Class %>" style="cursor: pointer; --sticky-top: <%= myStickyTop %>px; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
+                                <tr style="cursor: pointer; <%= rowBg %>" onclick="window.location.href='/user/<%= row.id %>/predictions'">
                                     <td style="<%= hasColor ? 'border-left: none;' : '' %>">
                                         <% if(row.reward) { %>
                                             <span class="rank-reward"><%= row.displayRank %></span>
@@ -218,9 +189,14 @@
                                         </div>
                                     </td>
                                     <td><%= row.mp %></td>
+                                    
                                     <td><%= row.exact_score_count %></td>
+                                    <td class="col-pts col-pts-exact">+<%= row.exact_score_score || 0 %></td>
+                                    
                                     <td><%= row.correct_result_count %></td>
-                                    <td><strong style="font-size: 1.15rem; color: var(--pl-primary);"><%= row.total_score || 0 %></strong></td>
+                                    <td class="col-pts col-pts-result">+<%= row.correct_result_score || 0 %></td>
+                                    
+                                    <td><strong style="font-size: 1.15rem; color: #ffffff;"><%= row.total_score || 0 %></strong></td>
                                     
                                     <% if (row.isFirstInGroup) { %>
                                         <td rowspan="<%= row.rowspan %>" style="vertical-align: middle; border-left: 1px solid var(--pl-border); background-color: inherit;">
@@ -250,7 +226,6 @@
     </div>
 
     <script>
-        // 🎯 สคริปต์ตรวจจับเลื่อนจอที่แก้ไขระยะ (Hysteresis) ไม่ให้จอเต้นแล้ว
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
             if (header) {
