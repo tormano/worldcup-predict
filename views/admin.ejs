@@ -26,6 +26,13 @@
         
         .admin-badge { margin-left: 15px; font-weight: 700; color: var(--pl-primary); letter-spacing: 1px; font-size: 1.1rem; }
         
+        /* 🎯 CSS สำหรับ Main Menu ที่เพิ่มเข้ามาใหม่ */
+        .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
+        .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .nav-item:hover { color: var(--pl-primary); }
+        .nav-item.active { border-bottom-color: var(--pl-primary); }
+        .admin-link { color: #86efac; }
+        
         .nav-profile { display: flex; align-items: center; }
         .profile-dropdown { display: flex; align-items: center; gap: 10px; }
         .avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--pl-border); }
@@ -112,37 +119,17 @@
         @keyframes pulse-live { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         tr.flash-success td { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
 
-        /* 🎯 CSS สำหรับปุ่ม Bubble Scroll to Today */
         .btn-jump-today {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: linear-gradient(135deg, var(--pl-primary), #00d46a);
-            color: #0f172a;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 255, 133, 0.4);
-            cursor: pointer;
-            z-index: 999;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(20px) scale(0.8);
-            border: 2px solid rgba(255,255,255,0.5);
+            position: fixed; bottom: 25px; right: 25px; background: linear-gradient(135deg, var(--pl-primary), #00d46a); color: #0f172a; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(0, 255, 133, 0.4); cursor: pointer; z-index: 999; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; visibility: hidden; transform: translateY(20px) scale(0.8); border: 2px solid rgba(255,255,255,0.5);
         }
-        .btn-jump-today.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0) scale(1);
-        }
-        .btn-jump-today:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6);
+        .btn-jump-today.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+        .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
+
+        /* 🎯 กฎสำหรับหน้าจอมือถือ */
+        @media (max-width: 768px) {
+            .nav-menu { gap: 10px; }
+            .nav-item { font-size: 0.85rem; }
+            .admin-badge { display: none; } /* ซ่อนคำว่า ADMIN PANEL บนมือถือเพื่อเว้นที่ให้เมนู */
         }
     </style>
 </head>
@@ -201,6 +188,12 @@
                 <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="Logo" class="brand-logo">
                 <span class="admin-badge">FIFA World Cup 2026</span>
             </div>
+            
+            <div class="nav-menu">
+                <a href="/leaderboard" class="nav-item">Table</a>
+                <a href="/admin" class="nav-item active admin-link">Admin</a>
+            </div>
+
             <div class="nav-profile">
                 <div class="profile-dropdown">
                     <img src="<%= typeof user !== 'undefined' && user ? user.avatar : '' %>" alt="Avatar" class="avatar-img">
@@ -220,7 +213,6 @@
             <div class="submenu-content">
                 <a href="#" class="submenu-item active" onclick="openTab('tab-users')" id="nav-users">Users</a>
                 <a href="#" class="submenu-item" onclick="openTab('tab-matches')" id="nav-matches">Matches</a>
-                <a href="/leaderboard" class="submenu-item">Table</a>
                 <a href="#" class="submenu-item" onclick="openTab('tab-settings')" id="nav-settings">Scores and Import</a>
                 <a href="#" class="submenu-item" onclick="openTab('tab-rewards')" id="nav-rewards">Prizes</a>
             </div>
@@ -605,11 +597,9 @@
                 }
             }
 
-            // 🎯 สคริปต์ควบคุมการโชว์/ซ่อน ปุ่ม Bubble
             const jumpBtn = document.getElementById('btnJumpToday');
             if (jumpBtn) {
                 const activeTab = localStorage.getItem('adminActiveTab');
-                // โชว์ปุ่มเฉพาะเวลาเลื่อนจอลงเกิน 300px และอยู่ในหน้า Matches
                 if (window.scrollY > 300 && activeTab === 'tab-matches') {
                     jumpBtn.classList.add('show');
                 } else {
@@ -618,7 +608,6 @@
             }
         });
 
-        // 🎯 ฟังก์ชันสำหรับกดปุ่มลอยแล้วเด้งกลับไปที่คู่ของวันนี้
         function jumpToToday() {
             const todayGroup = document.querySelector('.today-group');
             if (todayGroup) {
@@ -631,7 +620,6 @@
                     behavior: 'smooth'
                 });
             } else {
-                // ถ้าไม่มีแมตช์วันนี้ ให้เลื่อนกลับบนสุดแทน
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -649,7 +637,6 @@
             
             localStorage.setItem('adminActiveTab', tabId);
 
-            // ซ่อนปุ่มลอยเวลาเปลี่ยนแท็บ
             const jumpBtn = document.getElementById('btnJumpToday');
             if(jumpBtn) jumpBtn.classList.remove('show');
 
@@ -659,7 +646,7 @@
                     if (todayGroup) {
                         todayGroup.setAttribute('open', 'true');
                         
-                        const headerOffset = 230; 
+                        const headerOffset = 160; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
                         
                         window.scrollTo({
