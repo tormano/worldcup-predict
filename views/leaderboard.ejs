@@ -112,8 +112,10 @@
                 <span class="brand-text">FIFA World Cup 2026</span>
             </div>
             <div class="nav-menu">
-                <a href="/?tab=matches" class="nav-item">Matches</a>
-                <a href="/?tab=fixtures" class="nav-item">Fixtures</a>
+                <% if(typeof user === 'undefined' || !user || user.is_admin !== 1) { %>
+                    <a href="/?tab=matches" class="nav-item">Matches</a>
+                    <a href="/?tab=fixtures" class="nav-item">Fixtures</a>
+                <% } %>
                 <a href="/leaderboard" class="nav-item active">Table</a>
                 <% if(typeof user !== 'undefined' && user && user.is_admin === 1) { %> 
                     <a href="/admin" class="nav-item admin-link">Admin</a> 

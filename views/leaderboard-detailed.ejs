@@ -184,12 +184,14 @@
     <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
+                <img src="https://upload.wikimedia.org/wikipedia/en/2/29/2026_FIFA_World_Cup_emblem.svg" alt="World Cup 2026 Logo" class="brand-logo">
                 <span class="brand-text">FIFA World Cup 2026</span>
             </div>
             <div class="nav-menu">
-                <a href="/?tab=matches" class="nav-item">Matches</a>
-                <a href="/?tab=fixtures" class="nav-item">Fixtures</a>
+                <% if(typeof user === 'undefined' || !user || user.is_admin !== 1) { %>
+                    <a href="/?tab=matches" class="nav-item">Matches</a>
+                    <a href="/?tab=fixtures" class="nav-item">Fixtures</a>
+                <% } %>
                 <a href="/leaderboard" class="nav-item active">Table</a>
                 <% if(typeof user !== 'undefined' && user && user.is_admin === 1) { %> 
                     <a href="/admin" class="nav-item admin-link">Admin</a> 
