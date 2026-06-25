@@ -22,7 +22,6 @@
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         
-        /* 🎯 โลโก้แบบสี Original + ข้อความ */
         .brand-logo { height: 40px; } 
         .brand-text { margin-left: 12px; font-weight: 700; color: var(--pl-primary); font-size: 1.1rem; letter-spacing: 0.5px; }
         
@@ -51,13 +50,25 @@
         .submenu-item:hover { color: var(--pl-text); }
         .submenu-item.active { color: var(--pl-text); border-bottom-color: var(--pl-accent); font-weight: 600; }
 
-        /* 🎯 การตั้งค่าโครงสร้างตารางแนวนอนที่ปลดล็อค Scroll ซ้อน */
         .main-content { max-width: 100%; margin: 20px auto; padding: 0 15px 50px; overflow-x: hidden; }
-        .card { background: var(--pl-surface); border-radius: 12px; border: 1px solid var(--pl-border); overflow-x: auto; padding: 0;}
+        
+        /* 🎯 จำกัดความสูงและเปิด Scroll ให้กล่องตาราง */
+        .card.table-wrapper { 
+            background: var(--pl-surface); 
+            border-radius: 12px; 
+            border: 1px solid var(--pl-border); 
+            max-height: 75vh; /* ควบคุมให้ตารางไม่ทะลุขอบจอ */
+            overflow: auto; /* ทำให้ไถซ้ายขวา/บนล่าง ได้ในตัวกล่องเลย */
+            padding: 0;
+        }
         
         .pl-table { border-collapse: separate; border-spacing: 0; color: var(--pl-text); width: 100%; }
         
+        /* 🎯 ล็อคหัวตาราง (Freeze Top) */
         .pl-table th { 
+            position: sticky;
+            top: 0;
+            z-index: 20;
             background: #240028; 
             color: var(--pl-text-muted); 
             font-weight: 500; 
@@ -80,13 +91,13 @@
             white-space: nowrap; 
         }
 
-        /* 🎯 ระบบ Freeze ล็อคคอลัมน์ให้อยู่กับที่ทางซ้าย (Pos, Player, Total Pts) */
+        /* 🎯 ระบบ Freeze คอลัมน์ให้อยู่กับที่ทางซ้าย */
         .col-pos { position: sticky; left: 0; z-index: 15; background: #2f0033; min-width: 40px; max-width: 40px; }
         .col-player { position: sticky; left: 61px; z-index: 15; background: #2f0033; min-width: 180px; max-width: 180px; text-align: left !important; }
         .col-total { position: sticky; left: 262px; z-index: 15; background: #2f0033; border-right: 3px solid var(--pl-primary) !important; min-width: 50px; max-width: 50px; }
         
-        /* สลับสีหัวตารางที่ถูกล็อคให้ลอยเด่นกว่าตารางล่าง */
-        .pl-table th.col-pos, .pl-table th.col-player, .pl-table th.col-total { z-index: 20; background: #19001c; }
+        /* 🎯 จุดตัดกันของ Header กับ Column ที่ล็อคไว้ (มุมซ้ายบน) ต้องมี Z-index สูงที่สุดเพื่อไม่ให้โดนทับ */
+        .pl-table th.col-pos, .pl-table th.col-player, .pl-table th.col-total { z-index: 30; background: #19001c; }
         
         /* Effect ตอนเอาเมาส์ชี้แถว */
         .pl-table tr:hover td { background: rgba(255, 255, 255, 0.05); }
@@ -96,13 +107,11 @@
         .user-cell img { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--pl-border); object-fit: cover;}
         .user-cell span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 130px;}
         
-        /* สไตล์ Match Headers */
         .match-header { display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .flags { display: flex; gap: 4px; align-items: center; }
         .flags img { width: 22px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); object-fit: cover;}
         .actual-score { font-weight: 700; color: #ffffff; font-size: 1rem; margin-top: 2px;}
 
-        /* สไตล์คะแนนการทายผล */
         .pred-box { display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .pred-score { font-size: 1rem; font-weight: 600; letter-spacing: 1px; color: var(--pl-text); }
         .pred-pts { font-size: 0.75rem; font-weight: 700; margin-top: 2px;}
@@ -125,10 +134,8 @@
         const safeMatches = typeof matches !== 'undefined' ? matches : [];
         const safePredMap = typeof predMap !== 'undefined' ? predMap : {};
         
-        // สลับให้แมตช์ที่แข่งเสร็จก่อนอยู่ทางซ้ายมือ
         const displayMatches = [...safeMatches].reverse();
         
-        // 🎯 ลอจิกการคำนวณอันดับร่วมกัน (Tie-breaker)
         for (let i = 0; i < safeUsers.length; i++) {
             if (i > 0) {
                 const prev = safeUsers[i-1];
@@ -141,7 +148,7 @@
                     curr.displayRank = i + 1;
                 }
             } else {
-                safeUsers[0].displayRank = 1;
+                if(safeUsers.length > 0) safeUsers[0].displayRank = 1;
             }
         }
 
@@ -177,7 +184,7 @@
     <header class="pl-header" id="mainHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://upload.wikimedia.org/wikipedia/en/2/29/2026_FIFA_World_Cup_emblem.svg" alt="World Cup 2026 Logo" class="brand-logo">
+                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="World Cup 2026 Logo" class="brand-logo">
                 <span class="brand-text">FIFA World Cup 2026</span>
             </div>
             <div class="nav-menu">
@@ -220,7 +227,7 @@
             <% if(safeUsers.length === 0 || displayMatches.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีข้อมูลผลการแข่งขันที่จบลงแล้ว</div>
             <% } else { %>
-                <div class="card">
+                <div class="card table-wrapper">
                     <table class="pl-table detailed-table">
                         <thead>
                             <tr>
@@ -286,7 +293,6 @@
     </div>
 
     <script>
-        // 🎯 Effect ย่อ Banner เวลาเลื่อนหน้าจอ
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
             if (header) {
