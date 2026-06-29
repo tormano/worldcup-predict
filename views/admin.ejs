@@ -581,7 +581,7 @@
                 <div class="form-group" style="margin-bottom: 12px;"><label>รอบ</label><select name="stage" required><% sRules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
-                <div class="form-group" style="margin-bottom: 12px;"><label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label><input type="datetime-local" name="kickoff_time" required style="background: white; color: black;"></div>
+                <div class="form-group" style="margin-bottom: 20px;"><label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label><input type="datetime-local" name="kickoff_time" required style="background: white; color: black;"></div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div class="form-group" style="flex: 1;"><label>Next Match ID</label><input type="number" name="next_match_id" placeholder="รหัสแมตช์ถัดไป"></div>
@@ -608,7 +608,7 @@
                 <input type="hidden" name="match_id" id="edit_match_id">
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" id="edit_home_team" list="team-list" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" id="edit_away_team" list="team-list" required></div>
-                <div class="form-group" style="margin-bottom: 12px;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" id="edit_kickoff_time" required style="background: white; color: black;"></div>
+                <div class="form-group" style="margin-bottom: 20px;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" id="edit_kickoff_time" required style="background: white; color: black;"></div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div class="form-group" style="flex: 1;"><label>Next Match ID</label><input type="number" name="next_match_id" id="edit_next_match_id" placeholder="รหัสแมตช์ถัดไป"></div>
@@ -656,6 +656,7 @@
                 todayGroup.setAttribute('open', 'true');
                 const headerOffset = 229; 
                 const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
+                
                 window.scrollTo({
                     top: elementPosition - headerOffset,
                     behavior: 'smooth'
@@ -748,7 +749,6 @@
             data.append('home_score', homeScore);
             data.append('away_score', awayScore);
             
-            // 🎯 ดึงค่าคะแนนจุดโทษเพื่อส่งไปประมวลผลการเข้ารอบ
             const hpEl = document.getElementById('home-penalty-' + matchId);
             const apEl = document.getElementById('away-penalty-' + matchId);
             if(hpEl) data.append('home_penalty', hpEl.value);
