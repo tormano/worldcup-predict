@@ -98,11 +98,11 @@
         .btn-outline { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--pl-border); }
 
         /* =========================================================
-           🎯 Google World Cup Style Interactive Bracket CSS
+           🎯 COMPACT GOOGLE STYLE INTERACTIVE BRACKET CSS
            ========================================================= */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 5px 0 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; scrollbar-width: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; scrollbar-width: none; position: sticky; top: 60px; background: var(--pl-bg); z-index: 50;
         }
         .ko-nav-bar::-webkit-scrollbar { display: none; }
         
@@ -119,52 +119,47 @@
         }
 
         .ko-canvas {
-            display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-            padding: 10px 0 40px; width: 100%; -webkit-overflow-scrolling: touch;
+            display: flex; overflow: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+            padding: 10px 0 60px; width: 100%; max-height: 72vh;
         }
-        .ko-tree { 
-            display: flex; gap: 50px; min-width: max-content; padding: 0 20px; 
-        }
+        .ko-tree { display: flex; gap: 40px; min-width: max-content; padding: 0 10px; }
 
         .ko-round-col {
-            width: 280px; flex-shrink: 0; scroll-snap-align: center;
+            width: 270px; flex-shrink: 0; scroll-snap-align: start;
             display: flex; flex-direction: column;
         }
         .ko-round-title {
-            font-size: 0.8rem; font-weight: 700; color: var(--pl-text-muted);
+            font-size: 0.78rem; font-weight: 700; color: var(--pl-accent);
             text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; text-align: center;
         }
         
-        /* แกนหลักสำหรับการวางกล่องเรขาคณิตแบบ Absolute */
         .ko-matches-stack { position: relative; width: 100%; }
-        
-        .ko-match-wrapper {
-            position: absolute; width: 100%; box-sizing: border-box;
-        }
+        .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; }
 
+        /* กล่องแมตช์ที่ย่อขนาดลงให้กะทัดรัด (Compact) */
         .ko-match { 
-            background: #26002b; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; box-sizing: border-box;
+            background: #26002b; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: 0.2s; cursor: pointer; box-sizing: border-box; justify-content: center;
         }
-        .ko-match:hover { border-color: var(--pl-primary); transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,255,133,0.15);}
+        .ko-match:hover { border-color: var(--pl-primary); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,255,133,0.2);}
         
-        .ko-match-top { padding: 6px 12px; font-size: 0.72rem; color: #a1a1aa; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-radius: 10px 10px 0 0;}
-        .ko-status { background: rgba(255,255,255,0.1); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.65rem;}
+        .ko-match-top { padding: 4px 10px; font-size: 0.68rem; color: #a1a1aa; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); border-radius: 8px 8px 0 0;}
+        .ko-status { background: rgba(255,255,255,0.1); color: white; padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 0.6rem;}
         .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
         
-        .ko-team { padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid transparent; }
-        .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .ko-team img { width: 22px; height: 15px; border-radius: 2px; object-fit: cover;}
-        .ko-team span.name { flex: 1; color: var(--pl-text); font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .ko-score { color: white; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 4px;}
-        .ko-pen { color: #f59e0b; font-size: 0.75rem; font-weight: 700;}
+        .ko-team { padding: 6px 10px; display: flex; align-items: center; gap: 8px; }
+        .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .ko-team img { width: 20px; height: 14px; border-radius: 2px; object-fit: cover;}
+        .ko-team span.name { flex: 1; color: var(--pl-text); font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .ko-score { color: white; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 4px;}
+        .ko-pen { color: #f59e0b; font-size: 0.7rem; font-weight: 700;}
 
-        /* เส้นโยงสายการแข่งขันแบบเรขาคณิตเป๊ะๆ */
+        /* เส้นโยงสายการแข่งขัน */
         .ko-connector {
-            position: absolute; right: -25px; width: 25px;
-            border-top: 2px solid rgba(255,255,255,0.15); border-bottom: 2px solid rgba(255,255,255,0.15); border-right: 2px solid rgba(255,255,255,0.15); border-radius: 0 6px 6px 0; z-index: 1; pointer-events: none;
+            position: absolute; right: -20px; width: 20px;
+            border-top: 2px solid rgba(255,255,255,0.15); border-bottom: 2px solid rgba(255,255,255,0.15); border-right: 2px solid rgba(255,255,255,0.15); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none;
         }
         .ko-match-wrapper.has-parent::before {
-            content: ''; position: absolute; left: -25px; top: 50%; width: 25px; border-top: 2px solid rgba(255,255,255,0.15); z-index: 1; pointer-events: none;
+            content: ''; position: absolute; left: -20px; top: 50%; width: 20px; border-top: 2px solid rgba(255,255,255,0.15); z-index: 1; pointer-events: none;
         }
 
         @keyframes pulse-live { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -173,11 +168,10 @@
             .match-main { max-width: 100%; justify-content: flex-start; }
             .match-item { flex-direction: column; align-items: stretch; gap: 15px; }
             .match-actions { position: static; justify-content: center; width: 100%; border-top: 1px dashed var(--pl-border); padding-top: 10px;}
-            .team-name { max-width: 100px; font-size: 0.85rem;}
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .pl-header.scrolled .page-banner { padding: 8px 15px; }
-            .ko-round-col { width: 280px; }
+            .ko-round-col { width: 260px; }
         }
         tr.flash-success { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
     </style>
@@ -273,22 +267,22 @@
         });
 
         // =========================================================================
-        // 🎯 LATEST ALGORITHM: Tree Traversal (จับคู่สายจาก next_match_id)
+        // 🎯 SMART COMPACT TREE ALGORITHM (แก้บั๊กถ่างกล่อง + จัดเรขาคณิตชิดกัน)
         // =========================================================================
-        const koStages = ['32', '16', '8', 'semi', 'final'];
-        let hasKnockout = false;
-        let koMatches = sortedMatches.filter(m => m.stage && koStages.includes(m.stage.toString().toLowerCase()));
-        
-        if (koMatches.length > 0) hasKnockout = true;
+        const koStagesAll = ['32', '16', '8', 'semi', 'final'];
+        let koMatches = sortedMatches.filter(m => m.stage && koStagesAll.includes(m.stage.toString().toLowerCase()));
+        let hasKnockout = koMatches.length > 0;
+
+        // 1. หาว่ารอบแรกสุดที่มีในตารางคือรอบไหน (เช่น ถ้ามีแค่รอบ 16 จะได้ตัด 32 ทิ้ง)
+        const existingStages = koStagesAll.filter(stg => koMatches.some(m => m.stage.toString().toLowerCase() === stg));
 
         const matchById = {};
         koMatches.forEach(m => matchById[m.id] = m);
 
-        // หาจุดบนสุดของสายการแข่ง (นัดชิง)
         const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
         roots.sort((a,b) => a.id - b.id);
 
-        roots.forEach((root, idx) => {
+        roots.forEach((root, rootIdx) => {
             const traverse = (mId, slotIndex, roundIndex) => {
                 const match = matchById[mId];
                 if (!match) return;
@@ -303,31 +297,23 @@
                 if (awayChild) traverse(awayChild.id, slotIndex * 2 + 1, roundIndex - 1);
             };
             
-            let rIdx = 4; 
-            if(root.stage === 'semi') rIdx = 3;
-            if(root.stage === '8') rIdx = 2;
-            if(root.stage === '16') rIdx = 1;
-            if(root.stage === '32') rIdx = 0;
-            
-            traverse(root.id, idx, rIdx);
+            // ให้รหัสนัดชิงอิงตามความลึกจริงของทัวร์นาเมนต์นี้
+            let maxDepth = existingStages.length - 1;
+            traverse(root.id, rootIdx, maxDepth);
         });
 
-        // เผื่อ Admin ลืมผูกสาย (Fallback ป้องกันบั๊ก)
-        let unlinkedSlots = { 0:0, 1:0, 2:0, 3:0, 4:0 };
-        koMatches.forEach(m => { if (m.slot !== undefined) unlinkedSlots[m.rIndex] = Math.max(unlinkedSlots[m.rIndex], m.slot + 1); });
+        // Fallback ป้องกันบั๊กถ้าแอดมินลืมโยงสาย
+        let slotCounts = { 0:0, 1:0, 2:0, 3:0, 4:0 };
+        koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
         koMatches.forEach(m => {
             if (m.slot === undefined) {
-                let rIdx = 4; 
-                if(m.stage === 'semi') rIdx = 3;
-                if(m.stage === '8') rIdx = 2;
-                if(m.stage === '16') rIdx = 1;
-                if(m.stage === '32') rIdx = 0;
-                m.slot = unlinkedSlots[rIdx]++;
-                m.rIndex = rIdx;
+                let stgIdx = existingStages.indexOf(m.stage.toString().toLowerCase());
+                m.rIndex = stgIdx !== -1 ? stgIdx : 0;
+                m.slot = slotCounts[m.rIndex]++;
             }
         });
 
-        const knockoutData = koStages.map((stage, rIndex) => {
+        const knockoutData = existingStages.map((stage, rIndex) => {
             let sTitle = stage;
             if(stage === '32') sTitle = 'Round of 32';
             else if(stage === '16') sTitle = 'Round of 16';
@@ -336,14 +322,14 @@
             else if(stage === 'final') sTitle = 'Final';
 
             const mList = koMatches.filter(m => m.rIndex === rIndex);
-            mList.sort((a,b) => a.slot - b.slot); // 🎯 เรียงตามตำแหน่ง Slot ไม่ใช่ตามเวลา!
+            mList.sort((a,b) => a.slot - b.slot);
             return { stage, stageTitle: sTitle, matches: mList };
         });
 
-        // 🎯 ตัวแปรเรขาคณิตสำหรับวาดตาราง
-        const KO_H = 110; // ระยะห่างระหว่างกล่อง 
-        const KO_MATCH_HEIGHT = 84; // ความสูงของกล่อง 1 แมตช์
-        const KO_TOTAL_HEIGHT = 1760; // 16 * 110px
+        // 🎯 ตัวแปรเรขาคณิตฉบับย่อส่วน (Compact Geometry)
+        const KO_MATCH_HEIGHT = 68; // ย่อกล่องเหลือ 68px ให้เห็นครบทั้งสายในหน้าจอเดียว
+        const KO_GAP = 12; // ระยะห่างชั้นแรก 12px
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; // 80px
 
         const renderKoMatch = (m) => {
             if(!m) return '';
@@ -422,6 +408,7 @@
 
     <div class="main-content">
 
+        <!-- TAB MATCHES -->
         <div id="tab-matches" class="tab-content active">
             <% if(matchDaysList.length === 0) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
@@ -500,6 +487,7 @@
             <% } %>
         </div>
 
+        <!-- TAB FIXTURES -->
         <div id="tab-fixtures" class="tab-content" style="display:none;">
             <% if(matchDaysList.length === 0) { %> <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">ยังไม่มีตารางการแข่งขัน</div>
             <% } else { %>
@@ -523,11 +511,13 @@
             <% } %>
         </div>
 
+        <!-- 🎯 TAB KNOCKOUT BRACKET (Google Style Interactive Snap) -->
         <div id="tab-knockout" class="tab-content" style="display:none;">
             <% if(!hasKnockout) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น</div>
             <% } else { %>
                 
+                <!-- แถบเลือก Tab แต่ละรอบ -->
                 <div class="ko-nav-bar">
                     <% knockoutData.forEach((kd, rIdx) => { 
                         if(kd.matches.length > 0) { 
@@ -539,23 +529,29 @@
                 </div>
 
                 <div class="ko-canvas" id="koCanvas">
-                    <div class="ko-tree">
+                    <div class="ko-tree" id="koTree">
                         <% knockoutData.forEach((kd, rIdx) => { 
                             if(kd.matches.length > 0) { 
+                                // คำนวณความสูงรวมของคอลัมน์นี้ตามจำนวน Slot ล่างสุด
+                                let maxSlot = Math.max(...kd.matches.map(m => m.slot));
+                                let colHeight = (maxSlot + 1) * Math.pow(2, rIdx) * KO_UNIT;
                         %>
                             <div class="ko-round-col" id="ko-col-<%= rIdx %>">
                                 <div class="ko-round-title"><%= kd.stageTitle %></div>
                                 
-                                <div class="ko-matches-stack" style="height: <%= KO_TOTAL_HEIGHT %>px;">
+                                <div class="ko-matches-stack" style="height: <%= Math.max(colHeight, 400) %>px;">
                                     <% kd.matches.forEach(match => { 
-                                        const yCenter = KO_H * Math.pow(2, match.rIndex) * match.slot + KO_H * Math.pow(2, match.rIndex - 1);
+                                        const yCenter = (match.slot * Math.pow(2, rIdx) + Math.pow(2, rIdx - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
                                         const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
+                                        const isNotFinal = rIdx < knockoutData.length - 1;
                                     %>
-                                        <% if (match.slot % 2 === 0 && match.rIndex < 4) { %>
-                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= KO_H * Math.pow(2, match.rIndex) %>px;"></div>
+                                        <!-- เส้นโยงสายการแข่งขัน -->
+                                        <% if (match.slot % 2 === 0 && isNotFinal) { %>
+                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, rIdx) * KO_UNIT %>px;"></div>
                                         <% } %>
                                         
-                                        <div class="ko-match-wrapper <%= match.rIndex > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
+                                        <!-- กล่องแมตช์การแข่งขัน -->
+                                        <div class="ko-match-wrapper <%= rIdx > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
                                             <%- renderKoMatch(match) %>
                                         </div>
 
@@ -611,40 +607,38 @@
             window.history.pushState({}, '', url);
         }
 
-        // 🎯 ฟังก์ชันกด Tab Pill แล้วเลื่อนตาราง Knockout ให้ตรงกลาง
+        // 🎯 ฟังก์ชันกด Tab Pill แล้วเลื่อนล็อกคอลัมน์ และ Auto-focus ขึ้นหาแมตช์บนสุดของรอบนั้น!
         function scrollToRound(roundIndex) {
             const targetCol = document.getElementById('ko-col-' + roundIndex);
             const canvas = document.getElementById('koCanvas');
             if (targetCol && canvas) {
-                // เลื่อนให้อยู่ตรงกลางพอดี
-                const offset = targetCol.offsetLeft - (canvas.clientWidth / 2) + (targetCol.clientWidth / 2);
-                canvas.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+                const firstMatch = targetCol.querySelector('.ko-match-wrapper');
+                const targetY = firstMatch ? firstMatch.offsetTop - 10 : 0;
+
+                canvas.scrollTo({ 
+                    left: targetCol.offsetLeft - 10, 
+                    top: targetY, 
+                    behavior: 'smooth' 
+                });
             }
-            document.querySelectorAll('.ko-pill').forEach((btn, idx) => {
+            document.querySelectorAll('.ko-pill').forEach((btn) => {
                 btn.classList.toggle('active', btn.id === 'pill-' + roundIndex);
             });
         }
 
-        // 🎯 ตรวจจับตอนเอานิ้วไถตาราง Knockout แล้วเปลี่ยนสี Tab Pill ตามคอลัมน์ที่อยู่กลางจอ
         function setupCanvasListener() {
             const canvas = document.getElementById('koCanvas');
             if(!canvas) return;
             canvas.addEventListener('scroll', () => {
                 const cols = document.querySelectorAll('.ko-round-col');
-                const canvasCenter = canvas.getBoundingClientRect().left + (canvas.clientWidth / 2);
+                const canvasLeft = canvas.getBoundingClientRect().left + 40;
                 
                 let minDist = Infinity; let activeIdx = 0;
                 cols.forEach((col) => {
-                    const colCenter = col.getBoundingClientRect().left + (col.clientWidth / 2);
-                    const dist = Math.abs(colCenter - canvasCenter);
-                    if(dist < minDist) { 
-                        minDist = dist; 
-                        activeIdx = col.id.replace('ko-col-', ''); 
-                    }
+                    const dist = Math.abs(col.getBoundingClientRect().left - canvasLeft);
+                    if(dist < minDist) { minDist = dist; activeIdx = col.id.replace('ko-col-', ''); }
                 });
-                document.querySelectorAll('.ko-pill').forEach((btn) => {
-                    btn.classList.toggle('active', btn.id === 'pill-' + activeIdx);
-                });
+                document.querySelectorAll('.ko-pill').forEach((btn) => btn.classList.toggle('active', btn.id === 'pill-' + activeIdx));
             });
         }
 
@@ -678,7 +672,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             try { initMatchDay(); } catch (e) {}
-            setupCanvasListener(); // เริ่มตรวจจับสไลด์ตาราง
+            setupCanvasListener(); 
 
             const tabParam = new URLSearchParams(window.location.search).get('tab');
             if (tabParam === 'table') window.location.href = '/leaderboard';
