@@ -26,7 +26,6 @@
         
         .admin-badge { margin-left: 15px; font-weight: 700; color: var(--pl-primary); letter-spacing: 1px; font-size: 1.1rem; }
         
-        /* 🎯 CSS สำหรับ Main Menu ที่เพิ่มเข้ามาใหม่ */
         .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
         .nav-item { color: var(--pl-text); text-decoration: none; font-weight: 600; font-size: 0.95rem; height: 100%; display: flex; align-items: center; border-bottom: 3px solid transparent; transition: 0.2s; }
         .nav-item:hover { color: var(--pl-primary); }
@@ -102,7 +101,7 @@
         .match-layout { display: grid; grid-template-columns: 1fr 32px 100px 32px 1fr; align-items: center; justify-content: center; width: 100%; gap: 8px; }
         .match-layout .home-name { text-align: right; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: end; transition: color 0.3s;}
         .match-layout .home-flag { display: flex; justify-content: flex-end; }
-        .match-layout .score-vs { text-align: center; color: var(--pl-text-muted); font-size: 0.85rem; min-height: 38px; display: flex; align-items: center; justify-content: center; }
+        .match-layout .score-vs { text-align: center; color: var(--pl-text-muted); font-size: 0.85rem; min-height: 38px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
         .match-layout .away-flag { display: flex; justify-content: flex-start; }
         .match-layout .away-name { text-align: left; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; justify-self: start; transition: color 0.3s;}
         
@@ -125,11 +124,10 @@
         .btn-jump-today.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
-        /* 🎯 กฎสำหรับหน้าจอมือถือ */
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
-            .admin-badge { display: none; } /* ซ่อนคำว่า ADMIN PANEL บนมือถือเพื่อเว้นที่ให้เมนู */
+            .admin-badge { display: none; } 
         }
     </style>
 </head>
@@ -185,8 +183,8 @@
     <header class="pl-header" id="adminHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="Logo" class="brand-logo">
-                <span class="admin-badge">FIFA World Cup 2026</span>
+                <img src="https://upload.wikimedia.org/wikipedia/en/2/29/2026_FIFA_World_Cup_emblem.svg" alt="Logo" class="brand-logo">
+                <span class="admin-badge">ADMIN PANEL</span>
             </div>
             
             <div class="nav-menu">
@@ -207,6 +205,7 @@
 
         <div class="admin-banner" id="adminBanner">
             <h1>Administrator</h1>
+            <p>ระบบจัดการหลังบ้าน ทายผล World Cup 2026</p>
         </div>
 
         <div class="page-submenu">
@@ -406,7 +405,7 @@
                                                 <td width="15%">
                                                     <div style="display: flex; align-items: center; gap: 6px;">
                                                         <strong style="color: var(--pl-primary);">Match <%= match.match_number %></strong>
-                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= koStrSafe %>')">EDIT</span>
+                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= koStrSafe %>', '<%= match.next_match_id || '' %>', '<%= match.is_next_home !== null ? match.is_next_home : 1 %>')">EDIT</span>
                                                     </div>
                                                     <span style="color: var(--pl-text-muted); font-size: 0.8rem;"><%= match.stage_name %></span>
                                                 </td>
@@ -415,18 +414,29 @@
                                                     <% 
                                                         let homeColor = 'text-white'; let awayColor = 'text-white';
                                                         if(match.status === 'FINISHED') {
-                                                            if(match.home_score > match.away_score) { awayColor = 'text-gray'; }
-                                                            else if(match.away_score > match.home_score) { homeColor = 'text-gray'; }
+                                                            let finalHome = match.home_score; let finalAway = match.away_score;
+                                                            if (match.home_score === match.away_score && match.home_penalty !== null) {
+                                                                finalHome = match.home_penalty; finalAway = match.away_penalty;
+                                                            }
+                                                            if(finalHome > finalAway) { awayColor = 'text-gray'; }
+                                                            else if(finalAway > finalHome) { homeColor = 'text-gray'; }
                                                         }
                                                     %>
                                                     <div class="match-layout">
                                                         <div class="home-name <%= homeColor %>" id="home-name-<%= match.id %>" title="<%= match.home_team %>"><%= match.home_team %></div>
                                                         <div class="home-flag"><%- getFlag(match.home_team) %></div>
                                                         <div class="score-vs" id="score-container-<%= match.id %>">
+                                                            
                                                             <div id="display-mode-<%= match.id %>" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
                                                                 <% if(match.status === 'FINISHED') { %>
-                                                                    <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;"><%= match.home_score %> - <%= match.away_score %></span>
-                                                                    <span style="font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 4px;">FT</span>
+                                                                    <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;">
+                                                                        <%= match.home_score %> 
+                                                                        <% if(match.home_penalty !== null) { %><span style="font-size: 0.75rem; color: #f59e0b;">(<%= match.home_penalty %>)</span><% } %>
+                                                                        - 
+                                                                        <% if(match.away_penalty !== null) { %><span style="font-size: 0.75rem; color: #f59e0b;">(<%= match.away_penalty %>)</span><% } %>
+                                                                        <%= match.away_score %>
+                                                                    </span>
+                                                                    <span style="font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 4px;">FT <% if(match.home_penalty !== null) { %> (PEN) <% } %></span>
                                                                 <% } else if(isLive) { %>
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;">? - ?</span>
                                                                     <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; animation: pulse-live 1.5s infinite; margin-top: 4px;">LIVE</span>
@@ -434,11 +444,21 @@
                                                                     <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;"><%= timeStr %></span>
                                                                 <% } %>
                                                             </div>
-                                                            <div id="edit-mode-<%= match.id %>" style="display: none; align-items: center; justify-content: center; gap: 4px; width: 100%;">
-                                                                <input type="number" id="home-score-<%= match.id %>" value="<%= match.home_score !== null ? match.home_score : '' %>" style="width: 40px; text-align: center; padding: 4px; font-size: 1rem; color: #000; background: #fff;">
-                                                                <span style="font-weight: 700; color: white;">-</span>
-                                                                <input type="number" id="away-score-<%= match.id %>" value="<%= match.away_score !== null ? match.away_score : '' %>" style="width: 40px; text-align: center; padding: 4px; font-size: 1rem; color: #000; background: #fff;">
+                                                            
+                                                            <div id="edit-mode-<%= match.id %>" style="display: none; flex-direction: column; align-items: center; gap: 4px; width: 100%;">
+                                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                                    <input type="number" id="home-score-<%= match.id %>" value="<%= match.home_score !== null ? match.home_score : '' %>" style="width: 40px; text-align: center; padding: 4px; font-size: 1rem; color: #000; background: #fff;">
+                                                                    <span style="font-weight: 700; color: white;">-</span>
+                                                                    <input type="number" id="away-score-<%= match.id %>" value="<%= match.away_score !== null ? match.away_score : '' %>" style="width: 40px; text-align: center; padding: 4px; font-size: 1rem; color: #000; background: #fff;">
+                                                                </div>
+                                                                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                                                                    <span style="color: #f59e0b;">จุดโทษ:</span>
+                                                                    <input type="number" id="home-penalty-<%= match.id %>" value="<%= match.home_penalty !== null ? match.home_penalty : '' %>" style="width: 30px; text-align: center; padding: 2px; font-size: 0.8rem; color: #000; background: #fff;">
+                                                                    <span style="font-weight: 700; color: white;">-</span>
+                                                                    <input type="number" id="away-penalty-<%= match.id %>" value="<%= match.away_penalty !== null ? match.away_penalty : '' %>" style="width: 30px; text-align: center; padding: 2px; font-size: 0.8rem; color: #000; background: #fff;">
+                                                                </div>
                                                             </div>
+                                                            
                                                         </div>
                                                         <div class="away-flag"><%- getFlag(match.away_team) %></div>
                                                         <div class="away-name <%= awayColor %>" id="away-name-<%= match.id %>" title="<%= match.away_team %>"><%= match.away_team %></div>
@@ -561,7 +581,18 @@
                 <div class="form-group" style="margin-bottom: 12px;"><label>รอบ</label><select name="stage" required><% sRules.forEach(r => { %><option value="<%= r.stage_id %>"><%= r.stage_name %></option><% }) %></select></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" list="team-list" autocomplete="off" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" list="team-list" autocomplete="off" required></div>
-                <div class="form-group" style="margin-bottom: 20px;"><label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label><input type="datetime-local" name="kickoff_time" required style="background: white; color: black;"></div>
+                <div class="form-group" style="margin-bottom: 12px;"><label>วัน/เวลาเตะ (YYYY-MM-DD HH:mm)</label><input type="datetime-local" name="kickoff_time" required style="background: white; color: black;"></div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1;"><label>Next Match ID</label><input type="number" name="next_match_id" placeholder="รหัสแมตช์ถัดไป"></div>
+                    <div class="form-group" style="flex: 1;"><label>สถานะรอบถัดไป</label>
+                        <select name="is_next_home">
+                            <option value="1">ไปเป็นทีมเหย้า</option>
+                            <option value="0">ไปเป็นทีมเยือน</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn" style="flex: 1;">เพิ่ม</button>
                     <button type="button" class="btn" style="flex: 1; background: rgba(255,255,255,0.1); color: var(--pl-text-muted);" onclick="document.getElementById('addMatchModal').classList.remove('active')">ยกเลิก</button>
@@ -577,7 +608,18 @@
                 <input type="hidden" name="match_id" id="edit_match_id">
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" id="edit_home_team" list="team-list" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" id="edit_away_team" list="team-list" required></div>
-                <div class="form-group" style="margin-bottom: 20px;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" id="edit_kickoff_time" required style="background: white; color: black;"></div>
+                <div class="form-group" style="margin-bottom: 12px;"><label>วัน/เวลาเตะ</label><input type="datetime-local" name="kickoff_time" id="edit_kickoff_time" required style="background: white; color: black;"></div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1;"><label>Next Match ID</label><input type="number" name="next_match_id" id="edit_next_match_id" placeholder="รหัสแมตช์ถัดไป"></div>
+                    <div class="form-group" style="flex: 1;"><label>สถานะรอบถัดไป</label>
+                        <select name="is_next_home" id="edit_is_next_home">
+                            <option value="1">ไปเป็นทีมเหย้า</option>
+                            <option value="0">ไปเป็นทีมเยือน</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn btn-info" style="flex: 1;">บันทึกการแก้ไข</button>
                     <button type="button" class="btn" style="flex: 1; background: rgba(255,255,255,0.1); color: var(--pl-text-muted);" onclick="closeEditMatchModal()">ยกเลิก</button>
@@ -614,7 +656,6 @@
                 todayGroup.setAttribute('open', 'true');
                 const headerOffset = 229; 
                 const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
-                
                 window.scrollTo({
                     top: elementPosition - headerOffset,
                     behavior: 'smooth'
@@ -636,7 +677,6 @@
             }
             
             localStorage.setItem('adminActiveTab', tabId);
-
             const jumpBtn = document.getElementById('btnJumpToday');
             if(jumpBtn) jumpBtn.classList.remove('show');
 
@@ -663,11 +703,13 @@
             openTab(activeTab);
         });
 
-        function openEditMatchModal(id, home, away, time) {
+        function openEditMatchModal(id, home, away, time, next_match, is_next_home) {
             document.getElementById('edit_match_id').value = id;
             document.getElementById('edit_home_team').value = home;
             document.getElementById('edit_away_team').value = away;
             document.getElementById('edit_kickoff_time').value = time;
+            document.getElementById('edit_next_match_id').value = next_match || '';
+            document.getElementById('edit_is_next_home').value = is_next_home || '1';
             document.getElementById('editMatchModal').classList.add('active');
         }
         function closeEditMatchModal() {
@@ -697,44 +739,61 @@
             const awayScore = document.getElementById('away-score-' + matchId).value;
             
             if(homeScore === '' || awayScore === '') {
-                alert('กรุณากรอกคะแนนให้ครบถ้วน'); return;
+                alert('กรุณากรอกคะแนนให้ครบถ้วน');
+                return;
             }
 
             const data = new URLSearchParams();
             data.append('match_id', matchId);
             data.append('home_score', homeScore);
             data.append('away_score', awayScore);
+            
+            // 🎯 ดึงค่าคะแนนจุดโทษเพื่อส่งไปประมวลผลการเข้ารอบ
+            const hpEl = document.getElementById('home-penalty-' + matchId);
+            const apEl = document.getElementById('away-penalty-' + matchId);
+            if(hpEl) data.append('home_penalty', hpEl.value);
+            if(apEl) data.append('away_penalty', apEl.value);
 
             const saveBtn = document.querySelector(`#action-edit-${matchId} .btn`);
             const origText = saveBtn.innerText;
             saveBtn.innerText = 'กำลังเซฟ...';
             saveBtn.disabled = true;
-
             try {
                 const response = await fetch('/admin/settle', {
                     method: 'POST', body: data,
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }
                 });
-
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success) {
                         cancelSettleEdit(matchId);
                         
-                        document.getElementById('display-mode-' + matchId).innerHTML = `
-                            <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;">${result.home_score} - ${result.away_score}</span>
-                            <span style="font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 4px;">FT</span>
+                        let displayHTML = `
+                            <span style="font-size: 1.35rem; font-weight: 500; color: var(--pl-text); line-height: 1;">
+                                ${result.home_score}
+                                ${result.home_penalty !== null && result.home_penalty !== undefined ? `<span style="font-size: 0.75rem; color: #f59e0b;">(${result.home_penalty})</span>` : ''}
+                                - 
+                                ${result.away_penalty !== null && result.away_penalty !== undefined ? `<span style="font-size: 0.75rem; color: #f59e0b;">(${result.away_penalty})</span>` : ''}
+                                ${result.away_score}
+                            </span>
+                            <span style="font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 4px;">FT ${result.home_penalty !== null && result.home_penalty !== undefined ? '(PEN)' : ''}</span>
                         `;
+                        document.getElementById('display-mode-' + matchId).innerHTML = displayHTML;
                         
                         const homeEl = document.getElementById('home-name-' + matchId);
                         const awayEl = document.getElementById('away-name-' + matchId);
                         homeEl.classList.remove('text-white', 'text-gray');
                         awayEl.classList.remove('text-white', 'text-gray');
                         
-                        if(parseInt(result.home_score) > parseInt(result.away_score)) {
+                        let finalH = parseInt(result.home_score); let finalA = parseInt(result.away_score);
+                        if (finalH === finalA && result.home_penalty !== null) {
+                            finalH = parseInt(result.home_penalty); finalA = parseInt(result.away_penalty);
+                        }
+
+                        if(finalH > finalA) {
                             homeEl.classList.add('text-white');
                             awayEl.classList.add('text-gray');
-                        } else if(parseInt(result.away_score) > parseInt(result.home_score)) {
+                        } else if(finalA > finalH) {
                             homeEl.classList.add('text-gray');
                             awayEl.classList.add('text-white');
                         } else {

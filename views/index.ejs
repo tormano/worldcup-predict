@@ -22,7 +22,6 @@
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
         .nav-brand { display: flex; align-items: center; }
         
-        /* 🎯 อัปเดต CSS โลโก้: เอา filter ออกเพื่อโชว์สี Original */
         .brand-logo { height: 40px; } 
         
         .nav-menu { display: flex; gap: 20px; height: 100%; align-items: center; }
@@ -41,6 +40,7 @@
         .page-banner { padding: 35px 20px; color: white; transition: all 0.3s ease; overflow: hidden; }
         .banner-matches { background: linear-gradient(90deg, #02e1a2 0%, #00b4d8 100%); }
         .banner-fixtures { background: linear-gradient(90deg, #ff0046 0%, #963cff 100%); }
+        .banner-knockout { background: linear-gradient(90deg, #ff8a00 0%, #e52e71 100%); } /* 🎯 แบนเนอร์ของรอบ Knockout */
         
         .banner-content { max-width: 1000px; margin: 0 auto; }
         .banner-content h1 { margin: 0; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; transition: all 0.3s ease; }
@@ -50,10 +50,10 @@
 
         .main-content { max-width: 1000px; margin: 0 auto; padding: 20px 15px 50px; }
 
+        /* Match Day Selector */
         .matchday-selector { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 30px; position: relative;}
         .arrow-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--pl-border); color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .arrow-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--pl-primary); color: var(--pl-primary); }
-        
         .matchday-info { position: relative; text-align: center; min-width: 250px; }
         .md-dropdown { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
         .matchday-info h2 { margin: 0; font-size: 1.3rem; color: var(--pl-text); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;}
@@ -77,7 +77,7 @@
         
         .real-score-time { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 65px; background: rgba(255,255,255,0.05); padding: 4px 0; border-radius: 4px; border: 1px solid var(--pl-border); }
         .real-score-time.is-ft { background: transparent; border: none; }
-        .real-score-time .val { font-size: 1.1rem; font-weight: 500; }
+        .real-score-time .val { font-size: 1.1rem; font-weight: 500; text-align: center; }
         .real-score-time .status { font-size: 0.65rem; color: var(--pl-text-muted); margin-top: 2px;}
         .text-danger { color: #ef4444 !important; font-weight: 700; }
 
@@ -99,6 +99,36 @@
         .btn-success { background: var(--pl-primary); color: var(--pl-bg); }
         .btn-outline { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--pl-border); }
 
+        /* 🎯 CSS สำหรับหน้าสายการแข่งขัน (Knockout Bracket) */
+        .ko-wrapper { background: rgba(255,255,255,0.02); border-radius: 12px; padding: 20px; overflow-x: auto; border: 1px solid var(--pl-border);}
+        .ko-header { display: flex; min-width: 1000px; border-bottom: 1px solid var(--pl-border); padding-bottom: 10px; margin-bottom: 20px; }
+        .ko-title { flex: 1; text-align: center; color: var(--pl-text-muted); font-weight: 600; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px;}
+        .ko-bracket { display: flex; min-width: 1000px; gap: 40px; }
+        .ko-round { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 15px; position: relative; }
+        .ko-match-pair { display: flex; flex-direction: column; gap: 20px; position: relative; justify-content: space-around; flex: 1;}
+        
+        .ko-match { background: #2e0033; border: 1px solid var(--pl-border); border-radius: 8px; width: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s;}
+        .ko-match:hover { border-color: var(--pl-primary); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,255,133,0.15);}
+        .ko-match-top { padding: 6px 10px; font-size: 0.7rem; color: var(--pl-text-muted); border-bottom: 1px solid var(--pl-border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); border-radius: 8px 8px 0 0;}
+        .ko-status { background: rgba(255,255,255,0.1); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.65rem;}
+        .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
+        .ko-team { padding: 8px 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid transparent; }
+        .ko-team:first-of-type { border-bottom-color: var(--pl-border); }
+        .ko-team img { width: 20px; height: 14px; border-radius: 2px; }
+        .ko-team span.name { flex: 1; color: var(--pl-text); font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .ko-score { color: white; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 4px;}
+        .ko-pen { color: #f59e0b; font-size: 0.7rem; } /* คะแนนจุดโทษ */
+
+        /* เส้นโยงสายการแข่งขัน */
+        .ko-round:not(:last-child) .ko-match-pair::after {
+            content: ''; position: absolute; right: -20px; top: 25%; bottom: 25%; 
+            width: 20px; border-top: 2px solid var(--pl-border); border-bottom: 2px solid var(--pl-border); border-right: 2px solid var(--pl-border); border-radius: 0 4px 4px 0; z-index: 1;
+        }
+        .ko-round:not(:first-child) .ko-match::before {
+            content: ''; position: absolute; left: -20px; top: 50%; width: 20px; border-top: 2px solid var(--pl-border); z-index: 1;
+        }
+        @keyframes pulse-live { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
         @media (max-width: 768px) {
             .match-main { max-width: 100%; justify-content: flex-start; }
             .match-item { flex-direction: column; align-items: stretch; gap: 15px; }
@@ -108,7 +138,6 @@
             .nav-item { font-size: 0.85rem; }
             .pl-header.scrolled .page-banner { padding: 8px 15px; }
         }
-        
         tr.flash-success { background-color: rgba(0, 255, 133, 0.2) !important; transition: background-color 0.5s ease; }
     </style>
 </head>
@@ -202,6 +231,55 @@
                 period: (p1 === p2) ? p1 : `${p1} - ${p2}`
             };
         });
+
+        // 🎯 เตรียมข้อมูลสำหรับหน้า Knockout Bracket
+        const knockoutStages = ['32', '16', '8', 'semi', 'final'];
+        let hasKnockout = false;
+        const knockoutData = knockoutStages.map(stage => {
+            const mList = sortedMatches.filter(m => m.stage && m.stage.toString().trim() === stage);
+            if(mList.length > 0) hasKnockout = true;
+            return { stage, matches: mList };
+        });
+
+        // 🎯 EJS Function สำหรับวาดกล่องแมตช์ในสายการแข่งขัน
+        const renderKoMatch = (m) => {
+            if(!m) return '<div class="ko-match" style="visibility:hidden;"></div>';
+            const tDate = new Date(m.kickoff_time.replace(' ', 'T'));
+            const dateStr = formatShortDateStr(tDate) + ' ' + m.kickoff_time.substring(11, 16);
+            
+            let homeScore = m.home_score !== null ? m.home_score : '';
+            let awayScore = m.away_score !== null ? m.away_score : '';
+            
+            // ใส่คะแนนจุดโทษ
+            if(m.home_penalty !== null && m.home_penalty !== undefined) homeScore += `<span class="ko-pen">(${m.home_penalty})</span>`;
+            if(m.away_penalty !== null && m.away_penalty !== undefined) awayScore += `<span class="ko-pen">(${m.away_penalty})</span>`;
+            
+            const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+            const isLive = tDate <= nowObj && m.status !== 'FINISHED';
+            
+            let statusBadge = '';
+            if(m.status === 'FINISHED') statusBadge = '<span class="ko-status">FT</span>';
+            else if (isLive) statusBadge = '<span class="ko-status live">LIVE</span>';
+
+            const homeTeamText = m.home_team ? m.home_team : 'TBD';
+            const awayTeamText = m.away_team ? m.away_team : 'TBD';
+            
+            return `
+                <div class="ko-match" onclick="window.location.href='/match/${m.id}/predictions'" style="cursor:pointer;" title="กดเพื่อดูโพยเพื่อน">
+                    <div class="ko-match-top"><span>${dateStr}</span>${statusBadge}</div>
+                    <div class="ko-team">
+                        ${getFlag(m.home_team)}
+                        <span class="name" style="color: ${m.home_team ? 'white' : '#9aa0a6'}">${homeTeamText}</span>
+                        <span class="ko-score">${homeScore}</span>
+                    </div>
+                    <div class="ko-team">
+                        ${getFlag(m.away_team)}
+                        <span class="name" style="color: ${m.away_team ? 'white' : '#9aa0a6'}">${awayTeamText}</span>
+                        <span class="ko-score">${awayScore}</span>
+                    </div>
+                </div>
+            `;
+        };
     %>
 
     <header class="pl-header" id="mainHeader">
@@ -212,6 +290,11 @@
             <div class="nav-menu">
                 <a href="#" class="nav-item active" onclick="switchTab('matches')" id="nav-matches">Matches</a>
                 <a href="#" class="nav-item" onclick="switchTab('fixtures')" id="nav-fixtures">Fixtures</a>
+                
+                <% if(hasKnockout) { %>
+                    <a href="#" class="nav-item" onclick="switchTab('knockout')" id="nav-knockout">Knockout</a>
+                <% } %>
+
                 <a href="/leaderboard" class="nav-item" id="nav-table">Table</a>
                 <% if(typeof user !== 'undefined' && user.is_admin) { %> <a href="/admin" class="nav-item admin-link">Admin</a> <% } %>
             </div>
@@ -283,8 +366,13 @@
 
                                     let homeColor = '#ffffff'; let awayColor = '#ffffff';
                                     if(match.status === 'FINISHED') {
-                                        if(match.home_score > match.away_score) { awayColor = '#cbd5e1'; }
-                                        else if(match.away_score > match.home_score) { homeColor = '#cbd5e1'; }
+                                        // ถ้ามีจุดโทษให้เอาสกอร์จุดโทษมาตัดสินสีชื่อทีม
+                                        let finalHome = match.home_score; let finalAway = match.away_score;
+                                        if (match.home_score === match.away_score && match.home_penalty !== null) {
+                                            finalHome = match.home_penalty; finalAway = match.away_penalty;
+                                        }
+                                        if(finalHome > finalAway) { awayColor = '#cbd5e1'; }
+                                        else if(finalAway > finalHome) { homeColor = '#cbd5e1'; }
                                     }
                             %>
                                 <div class="match-item" id="row-match-<%= match.id %>">
@@ -296,8 +384,14 @@
                                         
                                         <div class="real-score-time <%= match.status === 'FINISHED' ? 'is-ft' : '' %>">
                                             <% if(match.status === 'FINISHED') { %>
-                                                <span class="val"><%= match.home_score %> - <%= match.away_score %></span>
-                                                <span class="status">FT</span>
+                                                <span class="val">
+                                                    <%= match.home_score %>
+                                                    <% if(match.home_penalty !== null) { %><span style="font-size:0.6rem; color:#f59e0b;">(<%= match.home_penalty %>)</span><% } %>
+                                                    - 
+                                                    <% if(match.away_penalty !== null) { %><span style="font-size:0.6rem; color:#f59e0b;">(<%= match.away_penalty %>)</span><% } %>
+                                                    <%= match.away_score %>
+                                                </span>
+                                                <span class="status">FT <% if(match.home_penalty !== null) { %>(PEN)<% } %></span>
                                             <% } else if(isLive) { %>
                                                 <span class="val">? - ?</span>
                                                 <span class="status text-danger">LIVE</span>
@@ -382,8 +476,12 @@
 
                                     let homeColor = '#ffffff'; let awayColor = '#ffffff';
                                     if(match.status === 'FINISHED') {
-                                        if(match.home_score > match.away_score) { awayColor = '#cbd5e1'; }
-                                        else if(match.away_score > match.home_score) { homeColor = '#cbd5e1'; }
+                                        let finalHome = match.home_score; let finalAway = match.away_score;
+                                        if (match.home_score === match.away_score && match.home_penalty !== null) {
+                                            finalHome = match.home_penalty; finalAway = match.away_penalty;
+                                        }
+                                        if(finalHome > finalAway) { awayColor = '#cbd5e1'; }
+                                        else if(finalAway > finalHome) { homeColor = '#cbd5e1'; }
                                     }
                             %>
                                 <div class="match-item">
@@ -395,8 +493,14 @@
                                         
                                         <div class="real-score-time <%= match.status === 'FINISHED' ? 'is-ft' : '' %>">
                                             <% if(match.status === 'FINISHED') { %>
-                                                <span class="val"><%= match.home_score %> - <%= match.away_score %></span>
-                                                <span class="status">FT</span>
+                                                <span class="val">
+                                                    <%= match.home_score %>
+                                                    <% if(match.home_penalty !== null) { %><span style="font-size:0.6rem; color:#f59e0b;">(<%= match.home_penalty %>)</span><% } %>
+                                                    - 
+                                                    <% if(match.away_penalty !== null) { %><span style="font-size:0.6rem; color:#f59e0b;">(<%= match.away_penalty %>)</span><% } %>
+                                                    <%= match.away_score %>
+                                                </span>
+                                                <span class="status">FT <% if(match.home_penalty !== null) { %>(PEN)<% } %></span>
                                             <% } else if(isLive) { %>
                                                 <span class="val">? - ?</span>
                                                 <span class="status text-danger">LIVE</span>
@@ -419,6 +523,48 @@
                             <% }) %>
                         </div>
                     <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <div id="tab-knockout" class="tab-content" style="display:none;">
+            <% if(!hasKnockout) { %>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น</div>
+            <% } else { %>
+                <div class="ko-wrapper">
+                    <div class="ko-header">
+                        <% knockoutData.forEach(kd => { 
+                            if(kd.matches.length > 0) { 
+                                let stageTitle = kd.stage;
+                                if(kd.stage === '32') stageTitle = 'Round of 32';
+                                else if(kd.stage === '16') stageTitle = 'Round of 16';
+                                else if(kd.stage === '8') stageTitle = 'Quarter-finals';
+                                else if(kd.stage === 'semi') stageTitle = 'Semi-finals';
+                                else if(kd.stage === 'final') stageTitle = 'Final';
+                        %>
+                            <div class="ko-title"><%= stageTitle %></div>
+                        <% }}) %>
+                    </div>
+                    
+                    <div class="ko-bracket">
+                        <% knockoutData.forEach((kd, roundIdx) => { 
+                            if(kd.matches.length > 0) { 
+                        %>
+                            <div class="ko-round">
+                                <% 
+                                    // จัดกลุ่มแมตช์เป็นคู่ๆ เพื่อวาดเส้นเชื่อม
+                                    for(let i=0; i<kd.matches.length; i+=2) { 
+                                        const match1 = kd.matches[i];
+                                        const match2 = kd.matches[i+1];
+                                %>
+                                    <div class="ko-match-pair">
+                                        <%- renderKoMatch(match1) %>
+                                        <%- renderKoMatch(match2) %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }}) %>
+                    </div>
                 </div>
             <% } %>
         </div>
@@ -454,6 +600,8 @@
             
             const banner = document.getElementById('page-banner');
             const title = document.getElementById('banner-title');
+            
+            // เปลี่ยนธีม Banner
             if (banner) banner.className = 'page-banner banner-' + tabId;
             
             if (tabId === 'matches') {
@@ -463,16 +611,13 @@
                 setTimeout(() => {
                     const todayGroup = document.querySelector('.today-fixture');
                     if (todayGroup) {
-                        // คำนวณระยะห่างของจอ ลบด้วยความสูงของ Header (ประมาณ 130px)
-                        const headerOffset = 200; 
+                        const headerOffset = 130; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
-                        
-                        window.scrollTo({
-                            top: elementPosition - headerOffset,
-                            behavior: 'smooth'
-                        });
+                        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
                     }
                 }, 100);
+            } else if (tabId === 'knockout') {
+                if (title) title.innerText = 'Knockout Bracket';
             }
             
             const url = new URL(window.location);
