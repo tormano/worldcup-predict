@@ -33,8 +33,13 @@ const initDB = async () => {
             CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT, color VARCHAR(20) DEFAULT '#ffffff');
         `);
 
+        // 🎯 Auto-Patch: อัปเดตคอลัมน์ในตาราง (ระบบจะเช็คและเพิ่มให้เองถ้ายังไม่มี)
         try { await pool.query('ALTER TABLE users ADD COLUMN is_hidden INTEGER DEFAULT 0;'); } catch (e) {}
         try { await pool.query('ALTER TABLE rewards ADD COLUMN color VARCHAR(20) DEFAULT \'#ffffff\';'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN next_match_id INTEGER DEFAULT NULL;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN is_next_home INTEGER DEFAULT 1;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN home_penalty INTEGER DEFAULT NULL;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN away_penalty INTEGER DEFAULT NULL;'); } catch (e) {}
 
         const adminCheck = await pool.query('SELECT COUNT(*) as count FROM users WHERE username = $1', ['admin']);
         if (adminCheck.rows[0].count == 0) {
@@ -81,7 +86,6 @@ app.get('/', checkAuth, async (req, res) => {
             m.kickoff_time = m.kickoff_time.toISOString().replace('T', ' ').substring(0, 16); 
         });
 
-        // ส่งไปแค่ user และ matches เพราะแยก Leaderboard ออกไปแล้ว
         res.render('index', { user: req.session.user, matches });
     } catch (err) {
         console.error("Index Render Error:", err);
@@ -156,7 +160,6 @@ app.get('/leaderboard', checkAuth, async (req, res) => {
             });
         });
 
-        // ส่งตัวแปร leaderboard ไปให้ไฟล์ leaderboard.ejs 
         res.render('leaderboard', { user: req.session.user, leaderboard: finalLeaderboard });
     } catch (e) { 
         console.error('Error fetching Leaderboard:', e); 
@@ -360,7 +363,15 @@ app.post('/admin/update-rules', checkAuth, async (req, res) => {
 
 app.post('/admin/add-match', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query('INSERT INTO matches (stage, home_team, away_team, kickoff_time) VALUES ($1, $2, $3, $4)', [req.body.stage, req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' ')]);
+    
+    // เผื่อให้สามารถรับค่าเข้าระบบผ่าน UI ได้ในอนาคต (ตอนนี้ตั้ง default ปกติไปก่อน)
+    let nextMatchId = req.body.next_match_id ? parseInt(req.body.next_match_id) : null;
+    let isNextHome = req.body.is_next_home !== undefined ? parseInt(req.body.is_next_home) : 1;
+
+    await pool.query(
+        'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home) VALUES ($1, $2, $3, $4, $5, $6)', 
+        [req.body.stage, req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' '), nextMatchId, isNextHome]
+    );
     res.redirect('/admin');
 });
 
@@ -373,22 +384,70 @@ app.post('/admin/delete-match', checkAuth, async (req, res) => {
 
 app.post('/admin/edit-match-info', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
-    await pool.query(
-        'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3 WHERE id = $4',
-        [req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' '), req.body.match_id]
-    );
+    
+    // โค้ดส่วนนี้รองรับการแก้ไขข้อมูลแบบอัปเดต ถ้ามีตัวแปรส่งมา
+    if (req.body.next_match_id !== undefined) {
+        const nextMatchId = req.body.next_match_id ? parseInt(req.body.next_match_id) : null;
+        const isNextHome = req.body.is_next_home !== undefined ? parseInt(req.body.is_next_home) : 1;
+        await pool.query(
+            'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3, next_match_id = $4, is_next_home = $5 WHERE id = $6',
+            [req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' '), nextMatchId, isNextHome, req.body.match_id]
+        );
+    } else {
+        await pool.query(
+            'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3 WHERE id = $4',
+            [req.body.home_team, req.body.away_team, req.body.kickoff_time.replace('T', ' '), req.body.match_id]
+        );
+    }
     res.redirect('/admin');
 });
 
+// 🎯 ฟังก์ชัน Settle ของแอดมิน ที่บวกระบบเลื่อนทีมเข้ารอบอัตโนมัติ 
 app.post('/admin/settle', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
+    
     const matchId = parseInt(req.body.match_id);
     const actualHome = parseInt(req.body.home_score);
     const actualAway = parseInt(req.body.away_score);
-    await pool.query("UPDATE matches SET home_score = $1, away_score = $2, status = 'FINISHED' WHERE id = $3", [actualHome, actualAway, matchId]);
     
-    const { rows: match } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
-    const stageRaw = match[0].stage ? match[0].stage.trim() : '';
+    // รับค่าจุดโทษมาเผื่อไว้ หากไม่มีให้เป็น null
+    const homePenalty = req.body.home_penalty !== undefined && req.body.home_penalty !== '' ? parseInt(req.body.home_penalty) : null;
+    const awayPenalty = req.body.away_penalty !== undefined && req.body.away_penalty !== '' ? parseInt(req.body.away_penalty) : null;
+
+    // 1. บันทึกผลสกอร์ปกติ และคะแนนจุดโทษ
+    await pool.query("UPDATE matches SET home_score = $1, away_score = $2, home_penalty = $3, away_penalty = $4, status = 'FINISHED' WHERE id = $5", [actualHome, actualAway, homePenalty, awayPenalty, matchId]);
+    
+    const { rows: matchRows } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
+    const match = matchRows[0];
+    
+    // 🎯 2. ลอจิกหาผู้ชนะเพื่อเลื่อนขั้นไปรอในแมตช์ถัดไป (Auto-Advance Bracket)
+    if (match.next_match_id) {
+        let winnerTeam = null;
+        
+        // เช็คผู้ชนะจาก 120 นาที
+        if (actualHome > actualAway) {
+            winnerTeam = match.home_team;
+        } else if (actualHome < actualAway) {
+            winnerTeam = match.away_team;
+        } 
+        // หากเสมอ ให้เช็คผู้ชนะจากจุดโทษ
+        else if (actualHome === actualAway && homePenalty !== null && awayPenalty !== null) {
+            if (homePenalty > awayPenalty) winnerTeam = match.home_team;
+            else if (homePenalty < awayPenalty) winnerTeam = match.away_team;
+        }
+
+        // ถ้ารู้ตัวผู้ชนะแล้ว ก็ย้ายชื่อไปไว้ในตารางรอเลย
+        if (winnerTeam) {
+            if (match.is_next_home === 1 || match.is_next_home === true) {
+                await pool.query('UPDATE matches SET home_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
+            } else {
+                await pool.query('UPDATE matches SET away_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
+            }
+        }
+    }
+
+    // 3. คำนวณคะแนนสำหรับผู้เล่นต่อไปตามปกติ
+    const stageRaw = match.stage ? match.stage.trim() : '';
     const { rows: rule } = await pool.query('SELECT base_score, bonus_score FROM scoring_rules WHERE LOWER(TRIM(stage_id)) = LOWER($1) OR LOWER(TRIM(stage_name)) = LOWER($1)', [stageRaw]);
     
     const baseScore = rule.length > 0 ? parseInt(rule[0].base_score) : 1;
@@ -411,7 +470,7 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     }
     
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ success: true, home_score: actualHome, away_score: actualAway });
+        return res.json({ success: true, home_score: actualHome, away_score: actualAway, home_penalty: homePenalty, away_penalty: awayPenalty });
     }
     res.redirect('/admin');
 });
@@ -466,6 +525,7 @@ app.post('/admin/delete-reward', checkAuth, async (req, res) => {
     res.redirect('/admin');
 });
 
+// 🎯 ปรับปรุงส่วน Import ตารางแข่ง ให้รับค่า 2 คอลัมน์ใหม่ได้ (next_match_id, is_next_home) 
 app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     if (!req.file) return res.redirect('/admin');
@@ -493,7 +553,14 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                     formattedTime = `${year}-${month}-${day} ${time}`;
                 }
 
-                await pool.query('INSERT INTO matches (stage, home_team, away_team, kickoff_time) VALUES ($1, $2, $3, $4)', [stage, home, away, formattedTime]);
+                // ดึงข้อมูล Column ที่ 5 (Next Match ID) และ 6 (เป็นทีมเหย้า 1 / ทีมเยือน 0) 
+                let nextMatchId = cols.length > 4 && cols[4].trim() !== '' ? parseInt(cols[4].trim()) : null;
+                let isNextHome = cols.length > 5 && cols[5].trim() !== '' ? parseInt(cols[5].trim()) : 1;
+
+                await pool.query(
+                    'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home) VALUES ($1, $2, $3, $4, $5, $6)', 
+                    [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome]
+                );
             }
         }
         res.redirect('/admin');
