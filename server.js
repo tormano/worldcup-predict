@@ -69,8 +69,16 @@ const getThaiTime = () => {
     return new Date(thaiTimeStr);
 };
 
+// 🎯 ฟังก์ชันช่วยจัดการเวลาอย่างปลอดภัย (ป้องกันแอปหลุด Crash)
+const parseSafeDate = (timeValue) => {
+    if (!timeValue) return null;
+    const d = new Date(timeValue);
+    if (isNaN(d.getTime())) return null;
+    return d;
+};
+
 // ==========================================
-// เส้นทางหน้าหลัก (ทายผล & ดูตารางแข่ง)
+// 1. เส้นทางหน้าหลัก (ทายผล & ดูตารางแข่ง)
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
@@ -80,10 +88,15 @@ app.get('/', checkAuth, async (req, res) => {
         const currentTime = getThaiTime(); 
         
         matches.forEach(m => {
-            const kickOff = m.kickoff_time ? new Date(m.kickoff_time) : new Date('2099-01-01');
+            const kickOff = parseSafeDate(m.kickoff_time) || new Date('2099-01-01');
             m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
             m.is_published = currentTime >= kickOff ? 1 : 0; 
-            m.kickoff_time = m.kickoff_time ? new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16) : ''; 
+            
+            if (kickOff.getTime() !== new Date('2099-01-01').getTime()) {
+                m.kickoff_time = kickOff.toISOString().replace('T', ' ').substring(0, 16);
+            } else {
+                m.kickoff_time = '';
+            }
         });
 
         res.render('index', { user: req.session.user, matches });
@@ -93,99 +106,9 @@ app.get('/', checkAuth, async (req, res) => {
     }
 });
 
-app.get('/login', (req, res) => res.render('login', { msg: null }));
-
-app.post('/register', upload.single('avatar'), async (req, res) => {
-    try {
-        let avatarData = `https://ui-avatars.com/api/?name=${encodeURIComponent(req.body.username)}&background=random&size=150`; 
-        if (req.file) {
-            const base64Image = req.file.buffer.toString('base64');
-            const mimeType = req.file.mimetype;
-            avatarData = `data:${mimeType};base64,${base64Image}`;
-        }
-        await pool.query('INSERT INTO users (username, password, avatar) VALUES ($1, $2, $3)', [req.body.username, bcrypt.hashSync(req.body.password, 10), avatarData]);
-        res.render('login', { msg: 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ' });
-    } catch (err) { res.render('login', { msg: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว หรือเกิดข้อผิดพลาด' }); }
-});
-
-app.post('/login', async (req, res) => {
-    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [req.body.username]);
-    if (rows.length > 0 && bcrypt.compareSync(req.body.password, rows[0].password)) { 
-        req.session.user = rows[0]; 
-        if (rows[0].must_change_password) res.redirect('/change-password'); 
-        else if (rows[0].is_admin === 1) res.redirect('/admin'); 
-        else res.redirect('/'); 
-    } else { res.render('login', { msg: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!' }); }
-});
-
-app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
-
-app.post('/update-avatar', checkAuth, upload.single('avatar'), async (req, res) => {
-    if (req.file) {
-        const base64Image = req.file.buffer.toString('base64');
-        const mimeType = req.file.mimetype;
-        const avatarData = `data:${mimeType};base64,${base64Image}`;
-        await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatarData, req.session.user.id]);
-        req.session.user.avatar = avatarData; 
-    }
-    res.redirect('/');
-});
-
-app.get('/change-password', checkAuth, (req, res) => res.render('change-password', { user: req.session.user, msg: null }));
-app.post('/change-password', checkAuth, async (req, res) => {
-    if (req.body.new_password !== req.body.confirm_password) return res.render('change-password', { user: req.session.user, msg: 'รหัสผ่านใหม่ไม่ตรงกัน' });
-    await pool.query('UPDATE users SET password = $1, must_change_password = 0 WHERE id = $2', [bcrypt.hashSync(req.body.new_password, 10), req.session.user.id]);
-    req.session.user.must_change_password = 0;
-    res.redirect('/');
-});
-
-app.post('/predict', checkAuth, async (req, res) => {
-    if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
-    
-    const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
-    const kickOff = match[0].kickoff_time ? new Date(match[0].kickoff_time) : new Date('2099-01-01');
-    const currentTime = getThaiTime(); 
-    
-    if (currentTime >= kickOff || match[0].status !== 'OPEN') {
-        return res.status(400).send('ระบบปิดรับการทายผลแล้ว (หมดเวลาส่ง หรือแมตช์ถูกล็อกแล้ว)');
-    }
-    
-    await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
-    
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.json({ success: true });
-    }
-    res.redirect('/');
-});
-
-app.get('/user/:id/predictions', checkAuth, async (req, res) => {
-    const { rows: targetUser } = await pool.query('SELECT id, username, avatar FROM users WHERE id = $1 AND is_admin = 0', [req.params.id]);
-    if (targetUser.length === 0) return res.status(404).send('ไม่พบผู้ใช้งานนี้');
-    const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.params.id]);
-    const currentTime = getThaiTime(); 
-    matches.forEach(m => {
-        const kickOff = m.kickoff_time ? new Date(m.kickoff_time) : new Date('2099-01-01');
-        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
-        m.kickoff_time = m.kickoff_time ? new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16) : ''; 
-        if (!m.is_locked) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
-    });
-    res.render('user-predictions', { user: req.session.user, targetUser: targetUser[0], matches });
-});
-
-app.get('/match/:id/predictions', checkAuth, async (req, res) => {
-    const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
-    if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
-    
-    const kickOff = matchInfo[0].kickoff_time ? new Date(matchInfo[0].kickoff_time) : new Date('2099-01-01');
-    const currentTime = getThaiTime(); 
-    if (currentTime < kickOff && !req.session.user.is_admin) {
-        return res.status(403).send('ยังไม่ถึงเวลาแข่งขัน ไม่สามารถเปิดดูโพยเพื่อนได้');
-    }
-    
-    const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0 ORDER BY u.username ASC`, [req.params.id]);
-    res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
-});
-
+// ==========================================
+// 2. เส้นทาง Leaderboard (ตารางสรุปคะแนนรวม)
+// ==========================================
 app.get('/leaderboard', checkAuth, async (req, res) => {
     const rankQuery = `
         WITH Leaderboard AS (
@@ -277,7 +200,8 @@ app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
         const { rows: matches } = await pool.query(matchQuery);
         
         matches.forEach(m => {
-            m.kickoff_time = m.kickoff_time ? new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16) : '';
+            const kickOff = parseSafeDate(m.kickoff_time);
+            m.kickoff_time = kickOff ? kickOff.toISOString().replace('T', ' ').substring(0, 16) : '';
         });
 
         const { rows: predictions } = await pool.query(`SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned FROM predictions p JOIN matches m ON p.match_id = m.id WHERE m.status = 'FINISHED'`);
@@ -291,9 +215,105 @@ app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
 });
 
 
-// ==========================================
-// ระบบจัดการ ADMIN
-// ==========================================
+app.get('/login', (req, res) => res.render('login', { msg: null }));
+
+app.post('/register', upload.single('avatar'), async (req, res) => {
+    try {
+        let avatarData = `https://ui-avatars.com/api/?name=${encodeURIComponent(req.body.username)}&background=random&size=150`; 
+        if (req.file) {
+            const base64Image = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype;
+            avatarData = `data:${mimeType};base64,${base64Image}`;
+        }
+        await pool.query('INSERT INTO users (username, password, avatar) VALUES ($1, $2, $3)', [req.body.username, bcrypt.hashSync(req.body.password, 10), avatarData]);
+        res.render('login', { msg: 'สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ' });
+    } catch (err) { res.render('login', { msg: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว หรือเกิดข้อผิดพลาด' }); }
+});
+
+app.post('/login', async (req, res) => {
+    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [req.body.username]);
+    if (rows.length > 0 && bcrypt.compareSync(req.body.password, rows[0].password)) { 
+        req.session.user = rows[0]; 
+        if (rows[0].must_change_password) res.redirect('/change-password'); 
+        else if (rows[0].is_admin === 1) res.redirect('/admin'); 
+        else res.redirect('/'); 
+    } else { res.render('login', { msg: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!' }); }
+});
+
+app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
+
+app.post('/update-avatar', checkAuth, upload.single('avatar'), async (req, res) => {
+    if (req.file) {
+        const base64Image = req.file.buffer.toString('base64');
+        const mimeType = req.file.mimetype;
+        const avatarData = `data:${mimeType};base64,${base64Image}`;
+        await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatarData, req.session.user.id]);
+        req.session.user.avatar = avatarData; 
+    }
+    res.redirect('/');
+});
+
+app.get('/change-password', checkAuth, (req, res) => res.render('change-password', { user: req.session.user, msg: null }));
+app.post('/change-password', checkAuth, async (req, res) => {
+    if (req.body.new_password !== req.body.confirm_password) return res.render('change-password', { user: req.session.user, msg: 'รหัสผ่านใหม่ไม่ตรงกัน' });
+    await pool.query('UPDATE users SET password = $1, must_change_password = 0 WHERE id = $2', [bcrypt.hashSync(req.body.new_password, 10), req.session.user.id]);
+    req.session.user.must_change_password = 0;
+    res.redirect('/');
+});
+
+app.post('/predict', checkAuth, async (req, res) => {
+    if (req.session.user.is_admin === 1) return res.status(403).send('ผู้ดูแลระบบไม่มีสิทธิ์บันทึกข้อมูลผลการทาย');
+    
+    const { rows: match } = await pool.query('SELECT kickoff_time, status FROM matches WHERE id = $1', [req.body.match_id]);
+    const kickOff = parseSafeDate(match[0].kickoff_time) || new Date('2099-01-01');
+    const currentTime = getThaiTime(); 
+    
+    if (currentTime >= kickOff || match[0].status !== 'OPEN') {
+        return res.status(400).send('ระบบปิดรับการทายผลแล้ว (หมดเวลาส่ง หรือแมตช์ถูกล็อกแล้ว)');
+    }
+    
+    await pool.query(`INSERT INTO predictions (user_id, match_id, home_predict, away_predict) VALUES ($1, $2, $3, $4) ON CONFLICT(user_id, match_id) DO UPDATE SET home_predict = EXCLUDED.home_predict, away_predict = EXCLUDED.away_predict`, [req.session.user.id, req.body.match_id, req.body.home_predict, req.body.away_predict]);
+    
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({ success: true });
+    }
+    res.redirect('/');
+});
+
+app.get('/user/:id/predictions', checkAuth, async (req, res) => {
+    const { rows: targetUser } = await pool.query('SELECT id, username, avatar FROM users WHERE id = $1 AND is_admin = 0', [req.params.id]);
+    if (targetUser.length === 0) return res.status(404).send('ไม่พบผู้ใช้งานนี้');
+    const { rows: matches } = await pool.query(`SELECT m.*, p.home_predict, p.away_predict, p.score_earned, r.stage_name FROM matches m LEFT JOIN predictions p ON m.id = p.match_id AND p.user_id = $1 LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC`, [req.params.id]);
+    const currentTime = getThaiTime(); 
+    matches.forEach(m => {
+        const kickOff = parseSafeDate(m.kickoff_time) || new Date('2099-01-01');
+        m.is_locked = currentTime >= kickOff || m.status !== 'OPEN';
+        
+        if (kickOff.getTime() !== new Date('2099-01-01').getTime()) {
+            m.kickoff_time = kickOff.toISOString().replace('T', ' ').substring(0, 16);
+        } else {
+            m.kickoff_time = '';
+        }
+        
+        if (!m.is_locked) { m.home_predict = null; m.away_predict = null; m.is_hidden = true; }
+    });
+    res.render('user-predictions', { user: req.session.user, targetUser: targetUser[0], matches });
+});
+
+app.get('/match/:id/predictions', checkAuth, async (req, res) => {
+    const { rows: matchInfo } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id WHERE m.id = $1', [req.params.id]);
+    if (matchInfo.length === 0) return res.status(404).send('ไม่พบแมตช์นี้');
+    
+    const kickOff = parseSafeDate(matchInfo[0].kickoff_time) || new Date('2099-01-01');
+    const currentTime = getThaiTime(); 
+    if (currentTime < kickOff && !req.session.user.is_admin) {
+        return res.status(403).send('ยังไม่ถึงเวลาแข่งขัน ไม่สามารถเปิดดูโพยเพื่อนได้');
+    }
+    
+    const { rows: predictions } = await pool.query(`SELECT p.home_predict, p.away_predict, p.score_earned, u.username, u.avatar FROM predictions p JOIN users u ON p.user_id = u.id WHERE p.match_id = $1 AND u.is_admin = 0 AND u.is_hidden = 0 ORDER BY u.username ASC`, [req.params.id]);
+    res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
+});
+
 app.get('/admin', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     
@@ -302,8 +322,9 @@ app.get('/admin', checkAuth, async (req, res) => {
         const { rows: matches } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC');
         
         matches.forEach(m => {
-            if (m.kickoff_time) {
-                m.kickoff_time = new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16);
+            const kickOff = parseSafeDate(m.kickoff_time);
+            if (kickOff) {
+                m.kickoff_time = kickOff.toISOString().replace('T', ' ').substring(0, 16);
             } else {
                 m.kickoff_time = '';
             }
@@ -418,7 +439,6 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     const { rows: matchRows } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
     const match = matchRows[0];
     
-    // Auto-advance logic
     if (match.next_match_id) {
         let winnerTeam = null;
         if (actualHome > actualAway) { winnerTeam = match.home_team; } 
