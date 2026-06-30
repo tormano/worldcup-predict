@@ -33,6 +33,7 @@ const initDB = async () => {
             CREATE TABLE IF NOT EXISTS rewards (id SERIAL PRIMARY KEY, rank INTEGER, description TEXT, icon TEXT, color VARCHAR(20) DEFAULT '#ffffff');
         `);
 
+        // อัปเดตคอลัมน์ใหม่ๆ สำหรับระบบ Knockout อัตโนมัติ (จะข้ามถ้ามีอยู่แล้ว)
         try { await pool.query('ALTER TABLE users ADD COLUMN is_hidden INTEGER DEFAULT 0;'); } catch (e) {}
         try { await pool.query('ALTER TABLE rewards ADD COLUMN color VARCHAR(20) DEFAULT \'#ffffff\';'); } catch (e) {}
         try { await pool.query('ALTER TABLE matches ADD COLUMN next_match_id INTEGER DEFAULT NULL;'); } catch (e) {}
@@ -69,7 +70,7 @@ const getThaiTime = () => {
 };
 
 // ==========================================
-// 1. เส้นทางหน้าหลัก (ทายผล & ดูตารางแข่ง)
+// เส้นทางหน้าหลัก (ทายผล & ดูตารางแข่ง)
 // ==========================================
 app.get('/', checkAuth, async (req, res) => {
     if (req.session.user.is_admin === 1) return res.redirect('/admin');
@@ -91,117 +92,6 @@ app.get('/', checkAuth, async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
-
-// ==========================================
-// 2. เส้นทาง Leaderboard
-// ==========================================
-app.get('/leaderboard', checkAuth, async (req, res) => {
-    const rankQuery = `
-        WITH Leaderboard AS (
-            SELECT u.id, u.username, u.avatar,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN 1 ELSE 0 END), 0) as correct_result_count,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN 1 ELSE 0 END), 0) as exact_score_count,
-                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
-                COALESCE(SUM(p.score_earned), 0) as total_score
-            FROM users u 
-            LEFT JOIN predictions p ON u.id = p.user_id 
-            LEFT JOIN matches m ON p.match_id = m.id
-            LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
-            WHERE u.is_admin = 0 AND u.is_hidden = 0
-            GROUP BY u.id, u.username, u.avatar
-        ),
-        Ranked AS (
-            SELECT *, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC) as user_rank
-            FROM Leaderboard
-        )
-        SELECT * FROM Ranked ORDER BY user_rank ASC, username ASC;
-    `;
-    
-    try {
-        const { rows: leaderboardData } = await pool.query(rankQuery);
-        const { rows: rewardsData } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
-
-        let groupedLeaderboard = [];
-        let currentGroup = [];
-        const isTie = (u1, u2) => {
-            return Number(u1.total_score) === Number(u2.total_score) &&
-                   Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
-                   Number(u1.correct_result_score) === Number(u2.correct_result_score);
-        };
-
-        for (let i = 0; i < leaderboardData.length; i++) {
-            const u = leaderboardData[i];
-            u.originalRank = i + 1;
-            if (currentGroup.length === 0) currentGroup.push(u);
-            else {
-                if (isTie(u, currentGroup[0])) currentGroup.push(u);
-                else { groupedLeaderboard.push(currentGroup); currentGroup = [u]; }
-            }
-        }
-        if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
-
-        let finalLeaderboard = [];
-        groupedLeaderboard.forEach(group => {
-            let groupReward = null;
-            for (let u of group) {
-                const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
-                if (r) { groupReward = r; break; }
-            }
-            group.forEach((u, index) => {
-                u.displayRank = u.originalRank;
-                u.isTied = group.length > 1;
-                u.reward = groupReward;
-                u.rowspan = (index === 0) ? group.length : 0;
-                u.isFirstInGroup = (index === 0);
-                finalLeaderboard.push(u);
-            });
-        });
-
-        res.render('leaderboard', { user: req.session.user, leaderboard: finalLeaderboard });
-    } catch (e) { 
-        console.error('Error fetching Leaderboard:', e); 
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-// ==========================================
-// 3. เส้นทาง Leaderboard Detailed
-// ==========================================
-app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
-    try {
-        const userQuery = `
-            SELECT u.id, u.username, u.avatar, 
-                   COALESCE(SUM(p.score_earned), 0) as total_score,
-                   COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
-                   COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
-            FROM users u 
-            LEFT JOIN predictions p ON u.id = p.user_id 
-            LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
-            LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
-            WHERE u.is_admin = 0 AND u.is_hidden = 0 
-            GROUP BY u.id, u.username, u.avatar 
-            ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
-        `;
-        const { rows: users } = await pool.query(userQuery);
-        const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
-        const { rows: matches } = await pool.query(matchQuery);
-        
-        matches.forEach(m => {
-            m.kickoff_time = m.kickoff_time ? new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16) : '';
-        });
-
-        const { rows: predictions } = await pool.query(`SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned FROM predictions p JOIN matches m ON p.match_id = m.id WHERE m.status = 'FINISHED'`);
-        const predMap = {};
-        predictions.forEach(p => { if (!predMap[p.match_id]) predMap[p.match_id] = {}; predMap[p.match_id][p.user_id] = p; });
-        res.render('leaderboard-detailed', { user: req.session.user, users, matches, predMap });
-    } catch (e) {
-        console.error('Error fetching Detailed Leaderboard:', e);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
 
 app.get('/login', (req, res) => res.render('login', { msg: null }));
 
@@ -296,8 +186,113 @@ app.get('/match/:id/predictions', checkAuth, async (req, res) => {
     res.render('match-predictions', { user: req.session.user, match: matchInfo[0], predictions });
 });
 
+app.get('/leaderboard', checkAuth, async (req, res) => {
+    const rankQuery = `
+        WITH Leaderboard AS (
+            SELECT u.id, u.username, u.avatar,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.match_id IS NOT NULL THEN 1 ELSE 0 END), 0) as mp,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN 1 ELSE 0 END), 0) as correct_result_count,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN 1 ELSE 0 END), 0) as exact_score_count,
+                COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+                COALESCE(SUM(p.score_earned), 0) as total_score
+            FROM users u 
+            LEFT JOIN predictions p ON u.id = p.user_id 
+            LEFT JOIN matches m ON p.match_id = m.id
+            LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+            WHERE u.is_admin = 0 AND u.is_hidden = 0
+            GROUP BY u.id, u.username, u.avatar
+        ),
+        Ranked AS (
+            SELECT *, RANK() OVER (ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC) as user_rank
+            FROM Leaderboard
+        )
+        SELECT * FROM Ranked ORDER BY user_rank ASC, username ASC;
+    `;
+    
+    try {
+        const { rows: leaderboardData } = await pool.query(rankQuery);
+        const { rows: rewardsData } = await pool.query('SELECT * FROM rewards ORDER BY rank ASC');
+
+        let groupedLeaderboard = [];
+        let currentGroup = [];
+        const isTie = (u1, u2) => {
+            return Number(u1.total_score) === Number(u2.total_score) &&
+                   Number(u1.exact_score_score) === Number(u2.exact_score_score) &&
+                   Number(u1.correct_result_score) === Number(u2.correct_result_score);
+        };
+
+        for (let i = 0; i < leaderboardData.length; i++) {
+            const u = leaderboardData[i];
+            u.originalRank = i + 1;
+            if (currentGroup.length === 0) currentGroup.push(u);
+            else {
+                if (isTie(u, currentGroup[0])) currentGroup.push(u);
+                else { groupedLeaderboard.push(currentGroup); currentGroup = [u]; }
+            }
+        }
+        if (currentGroup.length > 0) groupedLeaderboard.push(currentGroup);
+
+        let finalLeaderboard = [];
+        groupedLeaderboard.forEach(group => {
+            let groupReward = null;
+            for (let u of group) {
+                const r = rewardsData.find(rw => parseInt(rw.rank) === u.originalRank);
+                if (r) { groupReward = r; break; }
+            }
+            group.forEach((u, index) => {
+                u.displayRank = u.originalRank;
+                u.isTied = group.length > 1;
+                u.reward = groupReward;
+                u.rowspan = (index === 0) ? group.length : 0;
+                u.isFirstInGroup = (index === 0);
+                finalLeaderboard.push(u);
+            });
+        });
+
+        res.render('leaderboard', { user: req.session.user, leaderboard: finalLeaderboard });
+    } catch (e) { 
+        console.error('Error fetching Leaderboard:', e); 
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+app.get('/leaderboard/detailed', checkAuth, async (req, res) => {
+    try {
+        const userQuery = `
+            SELECT u.id, u.username, u.avatar, 
+                   COALESCE(SUM(p.score_earned), 0) as total_score,
+                   COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND p.home_predict = m.home_score AND p.away_predict = m.away_score THEN COALESCE(r.bonus_score, 2) ELSE 0 END), 0) as exact_score_score,
+                   COALESCE(SUM(CASE WHEN m.status = 'FINISHED' AND ((p.home_predict > p.away_predict AND m.home_score > m.away_score) OR (p.home_predict < p.away_predict AND m.home_score < m.away_score) OR (p.home_predict = p.away_predict AND m.home_score = m.away_score)) THEN COALESCE(r.base_score, 1) ELSE 0 END), 0) as correct_result_score
+            FROM users u 
+            LEFT JOIN predictions p ON u.id = p.user_id 
+            LEFT JOIN matches m ON p.match_id = m.id AND m.status = 'FINISHED'
+            LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name))
+            WHERE u.is_admin = 0 AND u.is_hidden = 0 
+            GROUP BY u.id, u.username, u.avatar 
+            ORDER BY total_score DESC, exact_score_score DESC, correct_result_score DESC, u.username ASC
+        `;
+        const { rows: users } = await pool.query(userQuery);
+        const matchQuery = `SELECT m.id, m.home_team, m.away_team, m.home_score, m.away_score, m.kickoff_time, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_id)) OR LOWER(TRIM(m.stage)) = LOWER(TRIM(r.stage_name)) WHERE m.status = 'FINISHED' ORDER BY m.kickoff_time DESC`;
+        const { rows: matches } = await pool.query(matchQuery);
+        
+        matches.forEach(m => {
+            m.kickoff_time = m.kickoff_time ? new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16) : '';
+        });
+
+        const { rows: predictions } = await pool.query(`SELECT p.user_id, p.match_id, p.home_predict, p.away_predict, p.score_earned FROM predictions p JOIN matches m ON p.match_id = m.id WHERE m.status = 'FINISHED'`);
+        const predMap = {};
+        predictions.forEach(p => { if (!predMap[p.match_id]) predMap[p.match_id] = {}; predMap[p.match_id][p.user_id] = p; });
+        res.render('leaderboard-detailed', { user: req.session.user, users, matches, predMap });
+    } catch (e) {
+        console.error('Error fetching Detailed Leaderboard:', e);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
+
 // ==========================================
-// 🎯 ระบบจัดการ ADMIN
+// ระบบจัดการ ADMIN
 // ==========================================
 app.get('/admin', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
@@ -306,7 +301,6 @@ app.get('/admin', checkAuth, async (req, res) => {
         const { rows: rules } = await pool.query('SELECT * FROM scoring_rules ORDER BY display_order ASC');
         const { rows: matches } = await pool.query('SELECT m.*, r.stage_name FROM matches m LEFT JOIN scoring_rules r ON m.stage = r.stage_id ORDER BY m.kickoff_time ASC');
         
-        // 🎯 ดักจับป้องกันเซิร์ฟเวอร์ล่ม หากข้อมูลเวลาเตะ (kickoff_time) เป็น null
         matches.forEach(m => {
             if (m.kickoff_time) {
                 m.kickoff_time = new Date(m.kickoff_time).toISOString().replace('T', ' ').substring(0, 16);
@@ -424,6 +418,7 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     const { rows: matchRows } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
     const match = matchRows[0];
     
+    // Auto-advance logic
     if (match.next_match_id) {
         let winnerTeam = null;
         if (actualHome > actualAway) { winnerTeam = match.home_team; } 
