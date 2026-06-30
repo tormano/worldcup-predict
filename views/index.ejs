@@ -12,7 +12,7 @@
             --pl-surface: rgba(255, 255, 255, 0.05);
             --pl-text: #ffffff; 
             --pl-text-muted: #cbd5e1; 
-            --pl-border: rgba(255, 255, 255, 0.15); 
+            --pl-border: rgba(255, 255, 255, 0.1); 
             --pl-primary: #00ff85; 
             --pl-accent: #04f5ff;
         }
@@ -122,13 +122,11 @@
         .ko-view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ถอด scroll ออกให้ไหลไปตามหน้าเว็บปกติ */
         .ko-canvas {
             display: flex; overflow-x: auto; overflow-y: visible;
             padding: 10px 0 40px; width: 100%;
         }
         
-        /* ขยายระยะห่างระหว่างรอบ (Gap) และความกว้างคอลัมน์ (Width) */
         .ko-tree { display: flex; gap: 60px; min-width: max-content; padding: 0 10px; }
 
         .ko-round-col {
@@ -143,7 +141,6 @@
         .ko-matches-stack { position: relative; width: 100%; }
         .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; }
 
-        /* ขยายขนาดกล่องให้สวยงาม ข้อความไม่ตกขอบ */
         .ko-match { 
             background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: 0.2s; cursor: pointer; box-sizing: border-box; justify-content: center;
         }
@@ -160,7 +157,6 @@
         .ko-score { color: white; font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 6px;}
         .ko-pen { color: #f59e0b; font-size: 0.75rem; font-weight: 700;}
 
-        /* เส้นโยงที่ขยายความกว้างรับกับช่องว่างที่กว้างขึ้น */
         .ko-connector {
             position: absolute; right: -30px; width: 30px;
             border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 6px 6px 0; z-index: 1; pointer-events: none;
@@ -222,21 +218,28 @@
         };
 
         const safeMatches = typeof matches !== 'undefined' ? matches : [];
-        const sortedMatches = [...safeMatches].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T')));
+        
+        // 🎯 ดักจับ Null ตอนเรียงแมตช์
+        const sortedMatches = [...safeMatches].sort((a,b) => {
+            const da = new Date(a.kickoff_time ? a.kickoff_time.toString().replace(' ', 'T') : 0);
+            const db = new Date(b.kickoff_time ? b.kickoff_time.toString().replace(' ', 'T') : 0);
+            return da - db;
+        });
         sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
 
-        const getMatchDayInfo = (kickoffStr) => {
-            const [datePart, timePart] = kickoffStr.split(' ');
-            const [year, month, day] = datePart.split('-').map(Number);
-            const [hour] = timePart.split(':').map(Number);
-            let startDay = new Date(year, month - 1, day, 12, 0, 0);
-            if (hour < 12) startDay.setDate(startDay.getDate() - 1);
+        // 🎯 ดักจับ Null ตอนหาช่วงเวลา
+        const getMatchDayInfo = (kickoffTime) => {
+            let dObj = new Date(kickoffTime ? kickoffTime.toString().replace(' ', 'T') : 0);
+            if (isNaN(dObj.getTime())) dObj = new Date();
+            let startDay = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate(), 12, 0, 0);
+            if (dObj.getHours() < 12) startDay.setDate(startDay.getDate() - 1);
             const pad = n => n.toString().padStart(2, '0');
             return { sortKey: `${startDay.getFullYear()}-${pad(startDay.getMonth()+1)}-${pad(startDay.getDate())}` };
         };
 
         const groupedMatches = {};
         sortedMatches.forEach(m => {
+            if (!m.kickoff_time) return; // ป้องกันการแครชถ้าแอดมินลืมใส่วันที่
             const info = getMatchDayInfo(m.kickoff_time);
             if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
             groupedMatches[info.sortKey].push(m);
@@ -280,7 +283,6 @@
         let koMatches = sortedMatches.filter(m => m.stage && koStagesAll.includes(m.stage.toString().toLowerCase()));
         let hasKnockout = koMatches.length > 0;
 
-        // ดึงเฉพาะรอบที่มีการสร้างแมตช์ไว้จริงๆ
         const existingStages = koStagesAll.filter(stg => koMatches.some(m => m.stage.toString().toLowerCase() === stg));
 
         const matchById = {};
@@ -289,7 +291,6 @@
         const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
         roots.sort((a,b) => a.id - b.id);
 
-        // ให้ระบบคำนวณ Absolute Index เพื่อจัดสาย
         roots.forEach((root, rootIdx) => {
             const traverse = (mId, slotIndex, roundIndex) => {
                 const match = matchById[mId];
@@ -308,7 +309,6 @@
             traverse(root.id, rootIdx, maxDepth);
         });
 
-        // Fallback ป้องกันบั๊กถ้าแอดมินลืมโยงสาย
         let slotCounts = {};
         for(let i=0; i<10; i++) slotCounts[i] = 0;
         koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
@@ -320,7 +320,6 @@
             }
         });
 
-        // รวบรวมข้อมูลแมตช์เข้าตามรอบ
         const knockoutData = existingStages.map((stage, rIndex) => {
             let sTitle = stage;
             if(stage === '32') sTitle = 'Round of 32';
@@ -334,15 +333,15 @@
             return { stage, stageTitle: sTitle, matches: mList };
         });
 
-        // 🎯 สัดส่วนความงาม (Compact Sizes)
-        const KO_MATCH_HEIGHT = 90; // กล่องสูง 90px (ใหญ่ขึ้น)
-        const KO_GAP = 20; // ระยะห่าง 20px
-        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; // 110px
+        const KO_MATCH_HEIGHT = 90; 
+        const KO_GAP = 20; 
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
 
         const renderKoMatch = (m) => {
             if(!m) return '';
-            const tDate = new Date(m.kickoff_time.replace(' ', 'T'));
-            const dateStr = formatShortDateStr(tDate) + ' ' + m.kickoff_time.substring(11, 16);
+            const tDate = new Date(m.kickoff_time ? m.kickoff_time.replace(' ', 'T') : 0);
+            const timeStr = m.kickoff_time ? m.kickoff_time.substring(11, 16) : '';
+            const dateStr = formatShortDateStr(tDate) + ' ' + timeStr;
             
             let homeScore = m.home_score !== null ? m.home_score : '';
             let awayScore = m.away_score !== null ? m.away_score : '';
@@ -350,7 +349,7 @@
             if(m.away_penalty !== null && m.away_penalty !== undefined) awayScore += `<span class="ko-pen">(${m.away_penalty})</span>`;
             
             const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-            const isLive = tDate <= nowObj && m.status !== 'FINISHED';
+            const isLive = tDate <= nowObj && tDate.getTime() > 0 && m.status !== 'FINISHED';
             
             let statusBadge = '';
             if(m.status === 'FINISHED') statusBadge = '<span class="ko-status">FT</span>';
@@ -437,8 +436,8 @@
                         <div class="matchday-container" id="md-container-<%= idx %>" style="display: none;">
                             <% 
                                 let currentActualDate = '';
-                                groupedMatches[date].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T'))).forEach(match => { 
-                                    const matchDateObj = new Date(match.kickoff_time.replace(' ', 'T'));
+                                groupedMatches[date].sort((a,b) => new Date(a.kickoff_time ? a.kickoff_time.replace(' ', 'T') : 0) - new Date(b.kickoff_time ? b.kickoff_time.replace(' ', 'T') : 0)).forEach(match => { 
+                                    const matchDateObj = new Date(match.kickoff_time ? match.kickoff_time.replace(' ', 'T') : 0);
                                     const matchActualDate = formatShortDateStr(matchDateObj);
                                     if (matchActualDate !== currentActualDate) { currentActualDate = matchActualDate;
                             %>
@@ -446,8 +445,8 @@
                             <%      } 
                                     const hasPredicted = match.home_predict !== null && match.home_predict !== undefined;
                                     const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-                                    const isLive = matchDateObj <= nowObj && match.status !== 'FINISHED';
-                                    const timeStr = match.kickoff_time.substring(11, 16);
+                                    const isLive = matchDateObj <= nowObj && matchDateObj.getTime() > 0 && match.status !== 'FINISHED';
+                                    const timeStr = match.kickoff_time ? match.kickoff_time.substring(11, 16) : '';
 
                                     let homeColor = '#ffffff'; let awayColor = '#ffffff';
                                     if(match.status === 'FINISHED') {
@@ -503,11 +502,11 @@
                     <% matchDaysList.forEach((md) => { %>
                         <div class="fixture-matchday <%= md.id === activeGroupKey ? 'today-fixture' : '' %>">
                             <div class="fixture-header"><h3><%= md.title %></h3><p><%= md.period %></p></div>
-                            <% groupedMatches[md.id].sort((a,b) => new Date(a.kickoff_time.replace(' ', 'T')) - new Date(b.kickoff_time.replace(' ', 'T'))).forEach(match => { %>
+                            <% groupedMatches[md.id].sort((a,b) => new Date(a.kickoff_time ? a.kickoff_time.replace(' ', 'T') : 0) - new Date(b.kickoff_time ? b.kickoff_time.replace(' ', 'T') : 0)).forEach(match => { %>
                                 <div class="match-item">
                                     <div class="match-main">
                                         <div class="team home"><span class="team-name"><%= match.home_team %></span><%- getFlag(match.home_team) %></div>
-                                        <div class="real-score-time"><span class="val"><%= match.kickoff_time.substring(11, 16) %></span></div>
+                                        <div class="real-score-time"><span class="val"><%= match.kickoff_time ? match.kickoff_time.substring(11, 16) : '' %></span></div>
                                         <div class="team away"><%- getFlag(match.away_team) %><span class="team-name"><%= match.away_team %></span></div>
                                     </div>
                                     <div class="match-actions"><% if(match.is_published) { %><a href="/match/<%= match.id %>/predictions" class="btn-view-friends">👁️ โพย</a><% } %></div>
@@ -534,7 +533,6 @@
                 </div>
 
                 <div id="knockout-views-container">
-                    <!-- สร้าง Tree แบบแยกส่วน (วาดใหม่โดยเอารอบที่คลิกไว้ซ้ายสุด) -->
                     <% knockoutData.forEach((baseStage, baseIdx) => { %>
                         <div class="ko-view <%= baseIdx === 0 ? 'active' : '' %>" id="ko-view-<%= baseIdx %>">
                             <div class="ko-canvas">
@@ -542,9 +540,8 @@
                                     <% 
                                         for(let r = baseIdx; r < knockoutData.length; r++) { 
                                             const stageData = knockoutData[r];
-                                            let d = r - baseIdx; // ระยะห่างสัมพัทธ์จากแกนหลัก
+                                            let d = r - baseIdx; 
                                             
-                                            // คำนวณความสูงคอลัมน์จากแกนหลักเพื่อให้ยืดหดพอดีเป๊ะ
                                             const baseMatches = knockoutData[baseIdx].matches;
                                             const maxBaseSlot = baseMatches.length > 0 ? Math.max(...baseMatches.map(m=>m.slot)) : 0;
                                             const colHeight = (maxBaseSlot + 1) * KO_UNIT;
@@ -553,16 +550,13 @@
                                             <div class="ko-round-title"><%= stageData.stageTitle %></div>
                                             <div class="ko-matches-stack" style="height: <%= colHeight %>px;">
                                                 <% stageData.matches.forEach(match => { 
-                                                    // สูตรเรขาคณิตคำนวณระยะกึ่งกลางของสาย
                                                     const yCenter = (match.slot * Math.pow(2, d) + Math.pow(2, d - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
                                                     const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
                                                 %>
-                                                    <!-- เส้นโยงสายการแข่งขัน -->
                                                     <% if (match.slot % 2 === 0 && r < knockoutData.length - 1) { %>
                                                         <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, d) * KO_UNIT %>px;"></div>
                                                     <% } %>
                                                     
-                                                    <!-- กล่องแมตช์การแข่งขัน -->
                                                     <div class="ko-match-wrapper <%= d > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
                                                         <%- renderKoMatch(match) %>
                                                     </div>
