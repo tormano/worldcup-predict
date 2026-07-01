@@ -632,7 +632,9 @@
                 }, 100);
             } else if (tabId === 'knockout') {
                 if (title) title.innerText = 'Knockout Bracket';
-                setTimeout(() => scrollToRound(0), 50); // วางตำแหน่งเมื่อสลับมาหน้า Knockout
+                const activeBtn = document.querySelector('.ko-pill.active');
+                const targetIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
+                setTimeout(() => scrollToRound(targetIdx), 50); 
             }
             
             const url = new URL(window.location);
@@ -640,29 +642,72 @@
             window.history.pushState({}, '', url);
         }
 
-        // 🎯 ฟังก์ชัน Scroll และยุบการ์ดตามสไตล์ Google
-        function scrollToRound(targetIdx) {
-            document.querySelectorAll('.ko-pill').forEach((btn, idx) => {
-                btn.classList.toggle('active', btn.id === 'ko-btn-' + targetIdx);
+        // 🎯 ฟังก์ชัน Scroll และคำนวณระยะการยุบการ์ดแบบ Real-time (Google Style)
+        function updateTreeLayout(targetRIdx) {
+            const U = 96; // ความสูงมาตรฐานต่อ 1 คู่ (เมื่อกางเต็ม)
+            const expandedCardHeight = 84;
+            const collapsedCardHeight = 36;
+            
+            // ป้องกันไม่ให้การ์ดล้นขึ้นไปขอบจอบน
+            const minYCenter = Math.pow(2, 0 - targetRIdx - 1) * U;
+            let offsetY = 10 + (expandedCardHeight / 2) - minYCenter;
+            if (offsetY < 20) offsetY = 20;
+            offsetY += 15; // Padding เผื่อไว้ด้านบน
+
+            document.querySelectorAll('.ko-round-col').forEach(col => {
+                const r = parseInt(col.dataset.ridx);
+                const isCollapsed = r < targetRIdx;
+                
+                if (isCollapsed) col.classList.add('is-collapsed');
+                else col.classList.remove('is-collapsed');
+                
+                const cardHeight = isCollapsed ? collapsedCardHeight : expandedCardHeight;
+                let maxY = 0;
+                
+                // เลื่อนการ์ด
+                const wrappers = col.querySelectorAll('.ko-match-wrapper');
+                wrappers.forEach(wrapper => {
+                    const s = parseInt(wrapper.dataset.slot);
+                    // สูตรคณิตศาสตร์หาจุดกึ่งกลางสัมพัทธ์
+                    const yCenter = (s * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
+                    const topPos = yCenter - (cardHeight / 2);
+                    
+                    wrapper.style.top = topPos + 'px';
+                    wrapper.style.height = cardHeight + 'px';
+                    if (topPos + cardHeight > maxY) maxY = topPos + cardHeight;
+                });
+                
+                // ดึงเส้น Connector ให้เชื่อมพอดีเป๊ะ
+                const connectors = col.querySelectorAll('.ko-connector');
+                connectors.forEach(conn => {
+                    const s = parseInt(conn.dataset.slot);
+                    const yTop = (s * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
+                    const yBottom = ((s + 1) * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
+                    
+                    conn.style.top = yTop + 'px';
+                    conn.style.height = (yBottom - yTop) + 'px';
+                });
+                
+                // ดันความสูงกล่องแม่
+                const stack = col.querySelector('.ko-matches-stack');
+                if (stack) stack.style.height = (maxY + 40) + 'px';
+            });
+        }
+
+        function scrollToRound(targetRIdx) {
+            document.querySelectorAll('.ko-pill').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.ridx) === targetRIdx);
             });
 
-            const cols = document.querySelectorAll('.ko-round-col');
-            cols.forEach((col, idx) => {
-                if (idx < targetIdx) {
-                    col.classList.add('is-collapsed');
-                } else {
-                    col.classList.remove('is-collapsed');
-                }
-            });
+            updateTreeLayout(targetRIdx);
 
             setTimeout(() => {
-                const targetCol = document.getElementById('ko-col-' + targetIdx);
+                const targetCol = document.getElementById('ko-col-' + targetRIdx);
                 const canvas = document.getElementById('koCanvas');
                 if (targetCol && canvas) {
-                    // คำนวณระยะขอบจอให้พอดีเป๊ะหลังจาก CSS Transition ดึงกล่องให้หดตัวแล้ว
-                    canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 15), behavior: 'smooth' });
+                    canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 20), behavior: 'smooth' });
                 }
-            }, 100);
+            }, 300); // รอให้ Transition ทำงานเสร็จก่อนเลื่อน
         }
 
         const matchDaysData = <%- JSON.stringify(typeof matchDaysList !== 'undefined' ? matchDaysList : []) %>;
@@ -699,6 +744,7 @@
             const tabParam = new URLSearchParams(window.location.search).get('tab');
             if (tabParam === 'table') window.location.href = '/leaderboard';
             else if (tabParam) switchTab(tabParam);
+            else if (document.getElementById('koCanvas')) updateTreeLayout(0); // Setup default tree
         });
 
         function enableEdit(mId) {
