@@ -317,8 +317,24 @@
 
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
-            const tDate = m.kickoff_time ? new Date(m.kickoff_time) : new Date(0);
-            const dateStr = formatShortDateStr(tDate) + ' ' + (m.kickoff_time ? m.kickoff_time.substring(11, 16) : '');
+            
+            let tDate = null;
+            let timeStr = '';
+            let safeTime = '';
+            
+            if (m.kickoff_time) {
+                // แปลงเวลาให้ปลอดภัย ไม่ว่าจะมาเป็น String หรือ Date Object
+                tDate = new Date(typeof m.kickoff_time === 'string' ? m.kickoff_time.replace(' ', 'T') : m.kickoff_time);
+                if (!isNaN(tDate.getTime())) {
+                    const pad = n => n.toString().padStart(2, '0');
+                    timeStr = `${pad(tDate.getHours())}:${pad(tDate.getMinutes())}`;
+                    safeTime = `${tDate.getFullYear()}-${pad(tDate.getMonth()+1)}-${pad(tDate.getDate())}T${timeStr}`;
+                } else {
+                    tDate = null;
+                }
+            }
+
+            const dateStr = tDate ? formatShortDateStr(tDate) + (timeStr ? ' ' + timeStr : '') : '-';
             
             let homeScore = m.home_score !== null ? m.home_score : '';
             let awayScore = m.away_score !== null ? m.away_score : '';
@@ -326,7 +342,7 @@
             if(m.away_penalty !== null && m.away_penalty !== undefined) awayScore += `<span class="ko-pen">(${m.away_penalty})</span>`;
             
             const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
-            const isLive = tDate <= nowObj && tDate.getTime() > 0 && m.status !== 'FINISHED';
+            const isLive = tDate && tDate <= nowObj && m.status !== 'FINISHED';
             
             let statusBadge = '';
             if(m.status === 'FINISHED') statusBadge = '<span class="ko-status">FT</span>';
@@ -334,7 +350,6 @@
 
             const hName = m.home_team || 'TBD';
             const aName = m.away_team || 'TBD';
-            const safeTime = m.kickoff_time ? m.kickoff_time.substring(0, 16).replace(' ', 'T') : '';
             
             return `
                 <div class="ko-match" onclick="openEditMatchModal('${m.id}', '${m.home_team || ''}', '${m.away_team || ''}', '${safeTime}', '${m.next_match_id || ''}', '${m.is_next_home !== null ? m.is_next_home : 1}')" title="คลิกเพื่อแก้ไขข้อมูลแมตช์นี้">
