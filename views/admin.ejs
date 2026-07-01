@@ -124,7 +124,7 @@
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
         /* =========================================================
-           🎯 KNOCKOUT BRACKET CSS (Google UI - Dynamic Math Stack)
+           🎯 KNOCKOUT BRACKET CSS (Google UI - Fully Responsive)
            ========================================================= */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 10px 0 15px;
@@ -156,12 +156,12 @@
         /* ขยายระยะห่างระหว่างรอบ (Gap) เป็น 50px สำหรับ PC เพื่อเส้นเชื่อมที่ดูสบายตา */
         .ko-tree { display: flex; gap: 50px; min-width: max-content; padding: 0 10px; position: relative;}
 
-        /* ขยายขนาดการ์ดหลักสำหรับ PC */
+        /* ขยายขนาดการ์ดหลักให้พื้นที่เหลือเฟือสำหรับ 100px height */
         .ko-round-col {
             width: 300px; flex-shrink: 0; display: flex; flex-direction: column; transition: width 0.3s ease; position: relative; z-index: 5;
         }
         
-        /* 🎯 สถานะพับการ์ดสำหรับ PC */
+        /* 🎯 สถานะพับการ์ด */
         .ko-round-col.is-collapsed { width: 140px; z-index: 1; }
         .ko-round-col.is-collapsed .ko-match-full { display: none; }
         .ko-round-col.is-collapsed .ko-match-collapsed { display: flex; }
@@ -180,17 +180,17 @@
         .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; transition: top 0.4s ease, height 0.4s ease; }
 
         .ko-match { 
-            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; cursor: pointer; overflow: hidden; position: relative; z-index: 2;
+            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; cursor: pointer; overflow: hidden; position: relative; z-index: 2; box-sizing: border-box;
         }
         .ko-match:hover { border-color: #f59e0b; box-shadow: 0 6px 15px rgba(245,158,11,0.2);}
         
-        /* โหมด 1: การ์ดขยายเต็มรูปแบบ (ปรับความสูงและความยืนหยุ่น) */
+        /* โหมด 1: การ์ดขยายเต็มรูปแบบ */
         .ko-match-full { display: flex; flex-direction: column; width: 100%; height: 100%; }
-        .ko-match-top { padding: 6px 10px; font-size: 0.7rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-shrink: 0;}
-        .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.6rem;}
+        .ko-match-top { padding: 6px 10px; font-size: 0.75rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-shrink: 0;}
+        .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.65rem;}
         .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
         
-        .ko-team { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; flex: 1; min-height: 34px;}
+        .ko-team { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; flex: 1;}
         .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.03); }
         
         .team-left { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0;}
@@ -209,7 +209,7 @@
         .col-flag-box img { width: 20px; height: 14px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); flex-shrink: 0;}
         .col-score-box { display: flex; align-items: center; justify-content: center; padding: 0 4px; white-space: nowrap; font-size: 0.85rem;}
         
-        /* เส้นเรขาคณิตเชื่อมสาย ปรับระยะเพิ่มให้รับกับการ์ดที่ใหญ่ขึ้น */
+        /* เส้นเรขาคณิตเชื่อมสาย */
         .ko-connector {
             position: absolute; right: -25px; width: 25px;
             border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none; transition: top 0.4s ease, height 0.4s ease;
@@ -222,8 +222,8 @@
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .admin-badge { display: none; } 
-            .ko-round-col { width: 270px; max-width: 85vw; } /* Responsive limit สำหรับมือถือ */
-            .ko-round-col.is-collapsed { width: 130px; } /* ขนาดตอนพับสำหรับมือถือ */
+            .ko-round-col { width: 280px; max-width: 82vw; } /* Responsive limit สำหรับมือถือ */
+            .ko-round-col.is-collapsed { width: 120px; } /* ขนาดตอนพับสำหรับมือถือ */
             .ko-tree { gap: 40px; }
             .ko-connector { right: -20px; width: 20px; }
             .ko-match-wrapper.has-parent::before { left: -20px; width: 20px; }
@@ -336,8 +336,9 @@
             }
         }
 
-        const KO_MATCH_HEIGHT = 96; // เพิ่มความสูงการ์ดให้มากขึ้นเป็น 96px รองรับมือถือ
-        const KO_GAP = 24;          // ระยะห่าง 24px
+        // เพิ่มความสูงให้ครอบคลุมการรองรับมือถือ (100px) และ Gap 24px
+        const KO_MATCH_HEIGHT = 100; 
+        const KO_GAP = 24;          
         const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
 
         const renderKoMatchAdmin = (m) => {
@@ -796,9 +797,9 @@
                 <div class="ko-canvas" id="koCanvas">
                     <div class="ko-tree">
                         <% 
-                            const targetRIdx = 0; // Default view is the first round
-                            const U = 120; // (expandedCardHeight + KO_GAP) = 96 + 24
-                            const expandedCardHeight = 96;
+                            const targetRIdx = 0; 
+                            const U = 124; // (100 + 24) ขยายความสูงการ์ดให้ใหญ่ขึ้น
+                            const expandedCardHeight = 100;
                             const collapsedCardHeight = 40;
                             const minYCenter = Math.pow(2, -targetRIdx - 1) * U;
                             let offsetY = 20 + (expandedCardHeight / 2) - minYCenter;
@@ -1055,9 +1056,9 @@
 
         // 🎯 ฟังก์ชัน Scroll และคำนวณระยะการยุบการ์ดแบบ Real-time (Google Style)
         function updateTreeLayout(targetRIdx) {
-            const U = 120; // ความสูงมาตรฐานต่อ 1 คู่ (96 + 24)
-            const expandedCardHeight = 96;
-            const collapsedCardHeight = 40;
+            const U = 124; // ปรับ U ตามความสูงที่แก้ไข 100 + 24
+            const expandedCardHeight = 100; // ความสูงต้อง 100 px ถึงจะครอบคลุม
+            const collapsedCardHeight = 36;
             
             // หาจุดต่ำสุดของแผนผังเพื่อดันมันลงมาไม่ให้ตกขอบ
             const minYCenter = Math.pow(2, 0 - targetRIdx - 1) * U;
