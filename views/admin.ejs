@@ -124,7 +124,7 @@
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
         /* =========================================================
-           🎯 KNOCKOUT BRACKET CSS (Google UI - Single Tree + Collapse)
+           🎯 KNOCKOUT BRACKET CSS (Google UI - Admin Edition)
            ========================================================= */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 5px 0 15px;
@@ -259,7 +259,7 @@
             return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]}`;
         };
 
-        // 🎯 LATEST ALGORITHM: 100% ROBUST IDENTIFICATION FOR ANY CSV FORMAT
+        // 🎯 LATEST ALGORITHM: FULL TREE WITH COLLAPSIBLE STATES FOR ADMIN
         const stageMapping = {
             '32': 0, 'round of 32': 0, 'round_of_32': 0,
             '16': 1, 'round of 16': 1, 'round_of_16': 1,
@@ -316,10 +316,9 @@
             }
         }
 
-        // 🎯 สัดส่วนความกะทัดรัด (Compact Google UI)
-        const KO_MATCH_HEIGHT = 64; // ความสูงกล่องเล็กลง
-        const KO_GAP = 16;          // ระยะห่างเล็กลง
-        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; // 80px
+        const KO_MATCH_HEIGHT = 64; 
+        const KO_GAP = 16;          
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
 
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
@@ -478,7 +477,7 @@
                                         <img src="<%= u.avatar %>">
                                         <span style="<%= u.is_hidden ? 'text-decoration: line-through; color: var(--pl-text-muted);' : '' %>">
                                             <%= u.username %>
-                                            <% if(u.is_hidden) { %span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
+                                            <% if(u.is_hidden) { %><span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
                                         </span>
                                     </div>
                                 </td>
@@ -706,7 +705,7 @@
         <!-- 🎯 TAB KNOCKOUT BRACKET (Single Tree Collapsible - ADMIN) -->
         <div id="tab-knockout" class="tab-content">
             <% if(!hasKnockout) { %>
-                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น หรือรหัสรอบ (Stage) ในตารางไม่ถูกต้อง</div>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น หรือรหัสรอบในฐานข้อมูลไม่ถูกต้อง</div>
             <% } else { %>
                 
                 <div class="ko-nav-bar">
@@ -969,7 +968,6 @@
                     }
                 }, 100);
             } else if (tabId === 'tab-knockout') {
-                // อัปเดต Scroll อัตโนมัติเมื่อกดเข้า Knockout
                 const activeBtn = document.querySelector('.ko-pill.active');
                 const targetIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
                 setTimeout(() => scrollToRound(targetIdx), 50); 
@@ -995,7 +993,7 @@
                     setTimeout(() => {
                         const canvas = document.getElementById('koCanvas');
                         if (canvas) canvas.scrollTo({ left: Math.max(0, col.offsetLeft - 20), behavior: 'smooth' });
-                    }, 300); // รอให้ Animation ยุบตัวเสร็จก่อนค่อยเลื่อนแกนกลาง
+                    }, 300); 
                 }
             });
         }
