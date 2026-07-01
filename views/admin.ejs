@@ -149,6 +149,7 @@
             display: flex; overflow-x: auto; overflow-y: visible;
             padding: 10px 0 40px; width: 100%;
         }
+        
         .ko-tree { display: flex; gap: 60px; min-width: max-content; padding: 0 10px; }
 
         .ko-round-col {
@@ -252,7 +253,6 @@
 
         const existingStages = koStagesAll.filter(stg => koMatches.some(m => m.stage.toString().trim().toLowerCase() === stg));
         
-        // กำหนด Index พื้นฐานให้แต่ละคู่ตามชื่อรอบ เพื่อป้องกันการข้ามสาย
         koMatches.forEach(m => {
             m.rIndex = existingStages.indexOf(m.stage.toString().trim().toLowerCase());
         });
@@ -264,7 +264,6 @@
         let maxRIndex = existingStages.length > 0 ? existingStages.length - 1 : 0;
         let currentSlot = 0;
         
-        // วางคู่นัดชิงก่อนเพื่อใช้เป็นรากของสายการแข่ง
         if (matchesByRound[maxRIndex]) {
             matchesByRound[maxRIndex].sort((a,b) => a.id - b.id);
             matchesByRound[maxRIndex].forEach(m => {
@@ -272,7 +271,6 @@
             });
         }
 
-        // ย้อนกลับลงไปคำนวณตำแหน่งให้รอบก่อนหน้าตาม Next_Match_Id
         for (let r = maxRIndex; r >= 1; r--) {
             if (!matchesByRound[r]) continue;
             matchesByRound[r].sort((a,b) => a.slot - b.slot);
@@ -288,7 +286,6 @@
             });
         }
 
-        // หากแอดมินลืมใส่ Next_Match_Id ก็จะถูกเรียงเก็บตกตามลำดับรอบให้เรียบร้อย
         let slotCounts = {};
         for(let i=0; i<10; i++) slotCounts[i] = 0;
         koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
@@ -323,7 +320,6 @@
             let safeTime = '';
             
             if (m.kickoff_time) {
-                // แปลงเวลาให้ปลอดภัย ไม่ว่าจะมาเป็น String หรือ Date Object
                 tDate = new Date(typeof m.kickoff_time === 'string' ? m.kickoff_time.replace(' ', 'T') : m.kickoff_time);
                 if (!isNaN(tDate.getTime())) {
                     const pad = n => n.toString().padStart(2, '0');
@@ -533,6 +529,7 @@
 
                     const groupedMatches = {};
                     sortedMatches.forEach(m => {
+                        if (!m.kickoff_time) return;
                         const info = getMatchDayInfo(m.kickoff_time);
                         if(!groupedMatches[info.sortKey]) groupedMatches[info.sortKey] = [];
                         groupedMatches[info.sortKey].push(m);
@@ -570,11 +567,11 @@
                                         <% 
                                             let currentActualDate = '';
                                             groupedMatches[date].sort((a, b) => {
-                                                const da = new Date(typeof a.kickoff_time === 'string' ? a.kickoff_time.replace(' ', 'T') : a.kickoff_time);
-                                                const db = new Date(typeof b.kickoff_time === 'string' ? b.kickoff_time.replace(' ', 'T') : b.kickoff_time);
+                                                const da = new Date((a.kickoff_time || '').replace(' ', 'T'));
+                                                const db = new Date((b.kickoff_time || '').replace(' ', 'T'));
                                                 return da - db;
                                             }).forEach(match => { 
-                                                const matchActualDate = formatShortDate(match.kickoff_time);
+                                                const matchActualDate = formatShortDateStr(new Date(match.kickoff_time ? match.kickoff_time.replace(' ', 'T') : 0));
                                                 if (matchActualDate !== currentActualDate) {
                                                     currentActualDate = matchActualDate;
                                         %>
@@ -582,7 +579,7 @@
                                         <% 
                                                 }
                                                 
-                                                const matchDateObj = new Date(typeof match.kickoff_time === 'string' ? match.kickoff_time.replace(' ', 'T') : match.kickoff_time);
+                                                const matchDateObj = new Date(match.kickoff_time ? match.kickoff_time.replace(' ', 'T') : 0);
                                                 const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
                                                 const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
                                                 const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
@@ -677,7 +674,7 @@
         </div>
 
         <!-- 🎯 TAB KNOCKOUT BRACKET (ADMIN: Multi-View System) -->
-        <div id="tab-knockout" class="tab-content" style="display:none;">
+        <div id="tab-knockout" class="tab-content">
             <% if(!hasKnockout) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น</div>
             <% } else { %>
