@@ -124,7 +124,7 @@
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
         /* =========================================================
-           🎯 KNOCKOUT BRACKET CSS (Google UI - Dynamic Multi-View)
+           🎯 KNOCKOUT BRACKET CSS (Google UI - Dynamic Math Stack)
            ========================================================= */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 5px 0 15px;
@@ -144,10 +144,6 @@
             box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2); transform: scale(1.05);
         }
 
-        /* ซ่อนวิวที่ไม่ได้ใช้งาน */
-        .ko-view { display: none; width: 100%; animation: fadeIn 0.3s ease; }
-        .ko-view.active { display: block; }
-
         .ko-canvas {
             display: flex; overflow-x: auto; overflow-y: hidden;
             padding: 10px 0 60px; width: 100%; scroll-behavior: smooth;
@@ -156,17 +152,17 @@
         .ko-tree { display: flex; gap: 40px; min-width: max-content; padding: 0 10px; position: relative;}
 
         .ko-round-col {
-            width: 250px; flex-shrink: 0; display: flex; flex-direction: column; transition: width 0.3s ease;
+            width: 250px; flex-shrink: 0; display: flex; flex-direction: column; transition: width 0.3s ease; position: relative; z-index: 5;
         }
         
-        /* 🎯 สถานะพับการ์ด (ยุบแล้วหดความสูง + สลับโหมด) */
-        .ko-round-col.is-collapsed { width: 180px; }
+        /* 🎯 สถานะพับการ์ด */
+        .ko-round-col.is-collapsed { width: 140px; z-index: 1; }
         .ko-round-col.is-collapsed .ko-match-full { display: none; }
         .ko-round-col.is-collapsed .ko-match-collapsed { display: flex; }
         .ko-round-col.is-collapsed .ko-match { 
-            border-radius: 20px; background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.05);
+            border-radius: 18px; background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
-        .ko-round-col.is-collapsed .ko-round-title { font-size: 0.7rem; color: #a1a1aa; }
+        .ko-round-col.is-collapsed .ko-round-title { opacity: 0; pointer-events: none; }
         
         .ko-round-title {
             font-size: 0.85rem; font-weight: 700; color: var(--pl-accent);
@@ -175,10 +171,10 @@
         }
         
         .ko-matches-stack { position: relative; width: 100%; transition: all 0.3s ease;}
-        .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; }
+        .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; transition: top 0.4s ease, height 0.4s ease; }
 
         .ko-match { 
-            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; overflow: hidden; position: relative; z-index: 2;
+            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; cursor: pointer; overflow: hidden; position: relative; z-index: 2;
         }
         .ko-match:hover { border-color: #f59e0b; box-shadow: 0 6px 15px rgba(245,158,11,0.2);}
         
@@ -198,19 +194,18 @@
         .team-right { display: flex; align-items: center; gap: 6px; }
         .ko-score { font-weight: 700; font-size: 1rem; }
         .ko-pen { color: #f59e0b; font-size: 0.7rem; font-weight: 700;}
-        .win-arrow { color: var(--pl-primary); font-size: 0.7rem; }
+        .win-arrow { color: var(--pl-primary); font-size: 0.8rem; font-weight: 900;}
 
-        /* โหมด 2: การ์ดยุบ (สไตล์ Google: Flag 1 FT 0 Flag) */
-        .ko-match-collapsed { display: none; align-items: center; justify-content: space-between; width: 100%; height: 100%; padding: 0 12px; box-sizing: border-box; }
-        .col-flag-box { display: flex; align-items: center; gap: 4px; }
+        /* โหมด 2: การ์ดยุบ (Google Style: ▶ Flag 1 FT 0 Flag ◀) */
+        .ko-match-collapsed { display: none; align-items: center; justify-content: space-between; width: 100%; height: 100%; padding: 0 8px; box-sizing: border-box; }
+        .col-flag-box { display: flex; align-items: center; gap: 6px; flex: 1; }
         .col-flag-box img { width: 20px; height: 14px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); flex-shrink: 0;}
-        .col-score-box { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700;}
-        .col-status { font-size: 0.65rem; color: #a1a1aa; font-weight: 600;}
-
+        .col-score-box { display: flex; align-items: center; justify-content: center; padding: 0 6px; white-space: nowrap;}
+        
         /* เส้นเรขาคณิตเชื่อมสาย */
         .ko-connector {
             position: absolute; right: -20px; width: 20px;
-            border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none;
+            border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none; transition: top 0.4s ease, height 0.4s ease;
         }
         .ko-match-wrapper.has-parent::before {
             content: ''; position: absolute; left: -20px; top: 50%; width: 20px; border-top: 2px solid rgba(255,255,255,0.2); z-index: 1; pointer-events: none;
@@ -220,6 +215,7 @@
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .admin-badge { display: none; } 
+            .ko-round-col { width: 220px; }
         }
     </style>
 </head>
@@ -373,18 +369,23 @@
             const hColor = m.status === 'FINISHED' ? (homeWin ? '#ffffff' : '#64748b') : '#ffffff';
             const aColor = m.status === 'FINISHED' ? (awayWin ? '#ffffff' : '#64748b') : '#ffffff';
             
-            const hArrow = homeWin ? `<span class="win-arrow">◀</span>` : '';
-            const aArrow = awayWin ? `<span class="win-arrow">◀</span>` : '';
+            // ลูกศรสำหรับโหมดกางเต็ม (Google Style ขี้ลูกศรเข้าหาฝั่งขวาของการ์ด)
+            const hArrowExp = homeWin ? `<span class="win-arrow" style="margin-left: 6px;">◀</span>` : '';
+            const aArrowExp = awayWin ? `<span class="win-arrow" style="margin-left: 6px;">◀</span>` : '';
 
-            // เตรียมโค้ดสำหรับตรงกลางของการ์ดยุบตัว (Google Style)
+            // ลูกศรสำหรับโหมดยุบการ์ด (ชี้เข้าหาธงเสมอ ซ้ายคือ ▶ , ขวาคือ ◀)
+            const hArrowCol = homeWin ? `<span class="win-arrow" style="margin-right: 4px;">▶</span>` : '';
+            const aArrowCol = awayWin ? `<span class="win-arrow" style="margin-left: 4px;">◀</span>` : '';
+
+            // ตรงกลางของการ์ดยุบตัว (โชว์แค่คะแนน)
             let collapsedMiddle = '';
             if (m.status === 'FINISHED') {
-                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}${homePenStr}</span><span class="col-status">FT</span><span style="color: ${aColor}">${awayScore}${awayPenStr}</span>`;
+                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}${homePenStr}</span><span style="color: #64748b; margin: 0 4px; font-size: 0.7rem; font-weight: normal;">FT</span><span style="color: ${aColor}">${awayScore}${awayPenStr}</span>`;
             } else if (isLive) {
-                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}</span><span class="col-status live">LIVE</span><span style="color: ${aColor}">${awayScore}</span>`;
+                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}</span><span style="color: #ef4444; margin: 0 4px; font-size: 0.6rem;">LIVE</span><span style="color: ${aColor}">${awayScore}</span>`;
             } else {
                 const shortDate = tDate ? formatShortDateStr(tDate) : 'TBD';
-                collapsedMiddle = `<span class="col-status">${shortDate}</span>`;
+                collapsedMiddle = `<span style="color: #a1a1aa; font-size: 0.65rem; font-weight: 500;">${shortDate}</span>`;
             }
             
             return `
@@ -400,7 +401,7 @@
                             </div>
                             <div class="team-right">
                                 <span class="ko-score" style="color: ${hColor}">${homeScore}${homePenStr}</span>
-                                ${hArrow}
+                                ${hArrowExp}
                             </div>
                         </div>
                         <div class="ko-team">
@@ -410,23 +411,23 @@
                             </div>
                             <div class="team-right">
                                 <span class="ko-score" style="color: ${aColor}">${awayScore}${awayPenStr}</span>
-                                ${aArrow}
+                                ${aArrowExp}
                             </div>
                         </div>
                     </div>
 
                     <!-- Collapsed Card (Flag - Score - Flag) -->
                     <div class="ko-match-collapsed">
-                        <div class="col-flag-box">
-                            ${homeWin ? '<span class="win-arrow" style="transform: scaleX(-1); display: inline-block;">▶</span>' : ''}
+                        <div class="col-flag-box" style="justify-content: flex-start;">
+                            ${hArrowCol}
                             ${getFlag(m.home_team)}
                         </div>
                         <div class="col-score-box">
                             ${collapsedMiddle}
                         </div>
-                        <div class="col-flag-box">
+                        <div class="col-flag-box" style="justify-content: flex-end;">
                             ${getFlag(m.away_team)}
-                            ${awayWin ? '<span class="win-arrow">◀</span>' : ''}
+                            ${aArrowCol}
                         </div>
                     </div>
 
@@ -743,67 +744,60 @@
             </div>
         </div>
 
-        <!-- 🎯 TAB KNOCKOUT BRACKET (Multi-View System with Dynamic Math) -->
+        <!-- 🎯 TAB KNOCKOUT BRACKET (Single Tree Google Style Layout) -->
         <div id="tab-knockout" class="tab-content">
             <% if(!hasKnockout) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น หรือรหัสรอบในฐานข้อมูลไม่ถูกต้อง</div>
             <% } else { %>
                 
                 <div class="ko-nav-bar">
-                    <% knockoutData.forEach((kd, baseIdx) => { %>
-                        <button type="button" class="ko-pill <%= baseIdx === 0 ? 'active' : '' %>" id="ko-btn-<%= baseIdx %>" onclick="switchKoView(<%= baseIdx %>)">
+                    <% knockoutData.forEach((kd) => { 
+                        if(kd.matches.length > 0) { 
+                    %>
+                        <button type="button" class="ko-pill <%= kd.rIndex === 0 ? 'active' : '' %>" data-ridx="<%= kd.rIndex %>" onclick="scrollToRound(<%= kd.rIndex %>)">
                             <%= kd.stageTitle %>
                         </button>
-                    <% }) %>
+                    <% }}) %>
                 </div>
 
-                <div id="knockout-views-container">
-                    <% knockoutData.forEach((baseStage, baseIdx) => { 
-                        // คำนวณความสูงให้ยืดหยุ่นตาม Base รอบ (Google Scaling)
-                        const MIN_LEAF_UNIT = 48; 
-                        const MIN_EXP_UNIT = 110; 
-                        const requiredExpUnit = MIN_LEAF_UNIT * Math.pow(2, baseIdx);
-                        const KO_UNIT = Math.max(MIN_EXP_UNIT, requiredExpUnit);
-                        const unitLeaf = KO_UNIT / Math.pow(2, baseIdx);
-                        
-                        let treeHeight = 400;
-                        if (knockoutData.length > 0 && knockoutData[0].matches.length > 0) {
-                            const maxSlot = Math.max(...knockoutData[0].matches.map(m=>m.slot));
-                            treeHeight = (maxSlot + 1) * unitLeaf;
-                        }
-                    %>
-                        <div class="ko-view <%= baseIdx === 0 ? 'active' : '' %>" id="ko-view-<%= baseIdx %>">
-                            <div class="ko-canvas" id="koCanvas-<%= baseIdx %>">
-                                <div class="ko-tree" style="height: <%= treeHeight + 60 %>px;">
-                                    <% 
-                                        for(let r = 0; r < knockoutData.length; r++) { 
-                                            const stageData = knockoutData[r];
-                                            const isCollapsed = r < baseIdx;
+                <div class="ko-canvas" id="koCanvas">
+                    <div class="ko-tree">
+                        <% 
+                            const targetRIdx = 0; // Default view is the first round
+                            const U = 96; 
+                            const expandedCardHeight = 84;
+                            const collapsedCardHeight = 36;
+                            const minYCenter = Math.pow(2, -targetRIdx - 1) * U;
+                            let offsetY = 20 + (expandedCardHeight / 2) - minYCenter;
+
+                            knockoutData.forEach((stageData) => { 
+                                const rIdx = stageData.rIndex;
+                                const isCollapsed = rIdx < targetRIdx;
+                                const cardHeight = isCollapsed ? collapsedCardHeight : expandedCardHeight;
+
+                                if(stageData.matches.length > 0) { 
+                        %>
+                            <div class="ko-round-col <%= isCollapsed ? 'is-collapsed' : '' %>" id="ko-col-<%= rIdx %>" data-ridx="<%= rIdx %>">
+                                <div class="ko-round-title"><%= stageData.stageTitle %></div>
+                                <div class="ko-matches-stack">
+                                    <% stageData.matches.forEach(match => { 
+                                        const delta = rIdx - targetRIdx;
+                                        const yCenter = (match.slot * Math.pow(2, delta) + Math.pow(2, delta - 1)) * U + offsetY;
+                                        const topPos = yCenter - (cardHeight / 2);
+                                        let connectorHeight = Math.pow(2, delta) * U;
                                     %>
-                                        <div class="ko-round-col <%= isCollapsed ? 'is-collapsed' : '' %>" id="ko-col-<%= baseIdx %>-<%= r %>">
-                                            <div class="ko-round-title"><%= stageData.stageTitle %></div>
-                                            <div class="ko-matches-stack" style="height: <%= treeHeight %>px;">
-                                                <% stageData.matches.forEach(match => { 
-                                                    const yCenter = (match.slot * Math.pow(2, r) + Math.pow(2, r - 1)) * unitLeaf;
-                                                    const cardHeight = isCollapsed ? 36 : 86;
-                                                    const topPos = yCenter - (cardHeight / 2);
-                                                    let connectorHeight = Math.pow(2, r) * unitLeaf;
-                                                %>
-                                                    <% if (match.slot % 2 === 0 && r < knockoutData.length - 1) { %>
-                                                        <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= connectorHeight %>px;"></div>
-                                                    <% } %>
-                                                    
-                                                    <div class="ko-match-wrapper" style="top: <%= topPos %>px; height: <%= cardHeight %>px;">
-                                                        <%- renderKoMatchAdmin(match) %>
-                                                    </div>
-                                                <% }) %>
-                                            </div>
+                                        <% if (match.slot % 2 === 0 && rIdx < 4) { %>
+                                            <div class="ko-connector" data-slot="<%= match.slot %>" style="top: <%= yCenter %>px; height: <%= connectorHeight %>px;"></div>
+                                        <% } %>
+                                        
+                                        <div class="ko-match-wrapper <%= rIdx > 0 ? 'has-parent' : '' %>" data-slot="<%= match.slot %>" style="top: <%= topPos %>px; height: <%= cardHeight %>px; z-index: <%= isCollapsed ? (100 - match.slot) : 10 %>;">
+                                            <%- renderKoMatchAdmin(match) %>
                                         </div>
-                                    <% } %>
+                                    <% }) %>
                                 </div>
                             </div>
-                        </div>
-                    <% }) %>
+                        <% }}) %>
+                    </div>
                 </div>
 
             <% } %>
@@ -1027,11 +1021,9 @@
             const expandedCardHeight = 84;
             const collapsedCardHeight = 36;
             
-            // ป้องกันไม่ให้การ์ดล้นขึ้นไปขอบจอบน
+            // หาจุดต่ำสุดของแผนผังเพื่อดันมันลงมาไม่ให้ตกขอบ
             const minYCenter = Math.pow(2, 0 - targetRIdx - 1) * U;
-            let offsetY = 10 + (expandedCardHeight / 2) - minYCenter;
-            if (offsetY < 20) offsetY = 20;
-            offsetY += 15; // Padding เผื่อไว้ด้านบน
+            let offsetY = 20 + (expandedCardHeight / 2) - minYCenter;
 
             document.querySelectorAll('.ko-round-col').forEach(col => {
                 const r = parseInt(col.dataset.ridx);
@@ -1043,16 +1035,21 @@
                 const cardHeight = isCollapsed ? collapsedCardHeight : expandedCardHeight;
                 let maxY = 0;
                 
-                // เลื่อนการ์ด
+                // เลื่อนและยืดหดการ์ดแต่ละใบ
                 const wrappers = col.querySelectorAll('.ko-match-wrapper');
                 wrappers.forEach(wrapper => {
                     const s = parseInt(wrapper.dataset.slot);
-                    // สูตรคณิตศาสตร์หาจุดกึ่งกลางสัมพัทธ์
-                    const yCenter = (s * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
+                    if (isNaN(s)) return;
+                    
+                    const delta = r - targetRIdx;
+                    const yCenter = (s * Math.pow(2, delta) + Math.pow(2, delta - 1)) * U + offsetY;
                     const topPos = yCenter - (cardHeight / 2);
                     
                     wrapper.style.top = topPos + 'px';
                     wrapper.style.height = cardHeight + 'px';
+                    // ให้กล่องบนๆ ซ้อนกล่องล่างได้สวยงามเมื่อโดนบีบอัด
+                    wrapper.style.zIndex = isCollapsed ? (100 - s) : 10;
+                    
                     if (topPos + cardHeight > maxY) maxY = topPos + cardHeight;
                 });
                 
@@ -1060,16 +1057,19 @@
                 const connectors = col.querySelectorAll('.ko-connector');
                 connectors.forEach(conn => {
                     const s = parseInt(conn.dataset.slot);
-                    const yTop = (s * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
-                    const yBottom = ((s + 1) * Math.pow(2, r - targetRIdx) + Math.pow(2, r - targetRIdx - 1)) * U + offsetY;
+                    if (isNaN(s)) return;
+                    
+                    const delta = r - targetRIdx;
+                    const yTop = (s * Math.pow(2, delta) + Math.pow(2, delta - 1)) * U + offsetY;
+                    const yBottom = ((s + 1) * Math.pow(2, delta) + Math.pow(2, delta - 1)) * U + offsetY;
                     
                     conn.style.top = yTop + 'px';
                     conn.style.height = (yBottom - yTop) + 'px';
                 });
                 
-                // ดันความสูงกล่องแม่
+                // ดันความสูงกล่องแม่ตามรอบที่ยาวที่สุด
                 const stack = col.querySelector('.ko-matches-stack');
-                if (stack) stack.style.height = (maxY + 40) + 'px';
+                if (stack && maxY > 0) stack.style.height = (maxY + 40) + 'px';
             });
         }
 
@@ -1086,13 +1086,19 @@
                 if (targetCol && canvas) {
                     canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 20), behavior: 'smooth' });
                 }
-            }, 300); // รอให้ Transition ทำงานเสร็จก่อนเลื่อน
+            }, 300); // รอให้ Transition ยุบการ์ดทำงานเสร็จก่อนเลื่อน Scroll
         }
         
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
             openTab(activeTab);
-            if (document.getElementById('koCanvas')) updateTreeLayout(0); // Setup default tree
+            
+            // วาดแผนผังในจังหวะแรกที่โหลดหน้าเว็บ
+            if (document.getElementById('koCanvas')) {
+                const activeBtn = document.querySelector('.ko-pill.active');
+                const targetIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
+                updateTreeLayout(targetIdx); 
+            }
         });
 
         function openEditMatchModal(id, home, away, time, next_match, is_next_home) {
