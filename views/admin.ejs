@@ -1105,7 +1105,14 @@
 
         function scrollToRound(targetRIdx) {
             document.querySelectorAll('.ko-pill').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.ridx) === targetRIdx);
+                const isActive = parseInt(btn.dataset.ridx) === targetRIdx;
+                btn.classList.toggle('active', isActive);
+                if (isActive) {
+                    // ดึงให้ Tab เมนูเลื่อนตามเมื่อมีการเลือก หรือ Swipe
+                    const navBar = document.querySelector('.ko-nav-bar');
+                    const scrollPos = btn.offsetLeft - (navBar.clientWidth / 2) + (btn.clientWidth / 2);
+                    navBar.scrollTo({ left: scrollPos, behavior: 'smooth' });
+                }
             });
 
             updateTreeLayout(targetRIdx);
@@ -1122,32 +1129,24 @@
 
         function handleSwipe() {
             const swipeDist = touchStartX - touchEndX;
-            const threshold = 50; // ต้องลากนิ้วอย่างน้อย 50px
+            const threshold = 40; // ลากนิ้วแค่ 40px เพื่อสั่งเปลี่ยนรอบ
             const activeBtn = document.querySelector('.ko-pill.active');
-            let currentIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
+            if(!activeBtn) return;
             
+            let currentIdx = parseInt(activeBtn.dataset.ridx);
             const pills = document.querySelectorAll('.ko-pill');
-            if(pills.length === 0) return;
-            
             let maxIdx = 0;
-            pills.forEach(p => {
-                const idx = parseInt(p.dataset.ridx);
-                if(idx > maxIdx) maxIdx = idx;
-            });
+            pills.forEach(p => maxIdx = Math.max(maxIdx, parseInt(p.dataset.ridx)));
 
             if (swipeDist > threshold && currentIdx < maxIdx) {
                 // ปัดซ้าย -> ไปรอบถัดไป
                 let nextIdx = currentIdx + 1;
-                while(nextIdx <= maxIdx && !document.querySelector(`.ko-pill[data-ridx="${nextIdx}"]`)) {
-                    nextIdx++;
-                }
+                while(nextIdx <= maxIdx && !document.querySelector(`.ko-pill[data-ridx="${nextIdx}"]`)) { nextIdx++; }
                 if (nextIdx <= maxIdx) scrollToRound(nextIdx);
             } else if (swipeDist < -threshold && currentIdx > 0) {
                 // ปัดขวา -> กลับไปรอบก่อนหน้า
                 let prevIdx = currentIdx - 1;
-                while(prevIdx >= 0 && !document.querySelector(`.ko-pill[data-ridx="${prevIdx}"]`)) {
-                    prevIdx--;
-                }
+                while(prevIdx >= 0 && !document.querySelector(`.ko-pill[data-ridx="${prevIdx}"]`)) { prevIdx--; }
                 if (prevIdx >= 0) scrollToRound(prevIdx);
             }
         }
@@ -1170,7 +1169,6 @@
                 }, {passive: true});
                 
                 canvas.addEventListener('touchmove', e => {
-                    // ถ้านิ้วขยับเกิน 15px ถือว่ากำลังปัดหน้าจอ (ไม่ใช่กดเพื่อ Edit)
                     if(Math.abs(e.changedTouches[0].screenX - touchStartX) > 15) {
                         window.isSwiping = true;
                     }
@@ -1178,9 +1176,7 @@
 
                 canvas.addEventListener('touchend', e => {
                     touchEndX = e.changedTouches[0].screenX;
-                    if(window.isSwiping) {
-                        handleSwipe();
-                    }
+                    if(window.isSwiping) handleSwipe();
                     setTimeout(() => { window.isSwiping = false; }, 50);
                 }, {passive: true});
             }
