@@ -605,7 +605,7 @@ try {
     await pool.query('ALTER TABLE matches ADD COLUMN is_loser_next_home INTEGER DEFAULT 1;'); 
 } catch (e) {
     // ปล่อยว่างไว้
-}}
+}
         }
         res.redirect('/admin');
     } catch (err) { 
