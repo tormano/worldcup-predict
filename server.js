@@ -554,6 +554,7 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
     try {
         const fileContent = req.file.buffer.toString('utf8');
         const lines = fileContent.split(/\r?\n/).filter(line => line.trim() !== '');
+        
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',');
             if (cols.length >= 4) {
@@ -566,46 +567,25 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                 const dateMatch = rawTime.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\s+(\d{1,2}:\d{2}(:\d{2})?)/);
                 
                 if (dateMatch) {
-                let day = dateMatch[1].padStart(2, '0');
-                let month = dateMatch[2].padStart(2, '0');
-                let year = dateMatch[3];
-                if (year.length === 2) year = '20' + year; 
-                let time = dateMatch[4];
-                if (time.length <= 5) time += ':00'; 
-                formattedTime = `${year}-${month}-${day} ${time}`;
-            }
-
-            let nextMatchId = cols.length > 4 && cols[4].trim() !== '' ? parseInt(cols[4].trim()) : null;
-            let isNextHome = cols.length > 5 && cols[5].trim() !== '' ? parseInt(cols[5].trim()) : 1;
-            let loserNextMatchId = cols.length > 6 && cols[6].trim() !== '' ? parseInt(cols[6].trim()) : null;
-            let isLoserNextHome = cols.length > 7 && cols[7].trim() !== '' ? parseInt(cols[7].trim()) : 1;
-
-            await pool.query(
-                'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home, loser_next_match_id, is_loser_next_home) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
-                [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome, isNaN(loserNextMatchId) ? null : loserNextMatchId, isNaN(isLoserNextHome) ? 1 : isLoserNextHome]
-            );
-        }
-    }
+                    let day = dateMatch[1].padStart(2, '0');
+                    let month = dateMatch[2].padStart(2, '0');
+                    let year = dateMatch[3];
+                    if (year.length === 2) year = '20' + year; 
+                    let time = dateMatch[4];
+                    if (time.length <= 5) time += ':00'; 
+                    formattedTime = `${year}-${month}-${day} ${time}`;
+                }
 
                 let nextMatchId = cols.length > 4 && cols[4].trim() !== '' ? parseInt(cols[4].trim()) : null;
                 let isNextHome = cols.length > 5 && cols[5].trim() !== '' ? parseInt(cols[5].trim()) : 1;
+                let loserNextMatchId = cols.length > 6 && cols[6].trim() !== '' ? parseInt(cols[6].trim()) : null;
+                let isLoserNextHome = cols.length > 7 && cols[7].trim() !== '' ? parseInt(cols[7].trim()) : 1;
 
                 await pool.query(
-                    'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home) VALUES ($1, $2, $3, $4, $5, $6)', 
-                    [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome]
+                    'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home, loser_next_match_id, is_loser_next_home) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
+                    [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome, isNaN(loserNextMatchId) ? null : loserNextMatchId, isNaN(isLoserNextHome) ? 1 : isLoserNextHome]
                 );
-            // ต้องมี catch (e) {} ต่อท้ายเสมอ
-try { 
-    await pool.query('ALTER TABLE matches ADD COLUMN loser_next_match_id INTEGER DEFAULT NULL;'); 
-} catch (e) {
-    // ปล่อยว่างไว้ได้เลยครับ ระบบจะข้ามไปถ้าคอลัมน์นี้ถูกสร้างไปแล้ว
-}
-
-try { 
-    await pool.query('ALTER TABLE matches ADD COLUMN is_loser_next_home INTEGER DEFAULT 1;'); 
-} catch (e) {
-    // ปล่อยว่างไว้
-}
+            }
         }
         res.redirect('/admin');
     } catch (err) { 
