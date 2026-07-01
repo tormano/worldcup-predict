@@ -146,7 +146,7 @@
 
         .ko-canvas {
             display: flex; overflow-x: auto; overflow-y: hidden;
-            padding: 10px 0 60px; width: 100%; scroll-behavior: smooth;
+            padding: 10px 0 60px; width: 100%; scroll-behavior: smooth; touch-action: pan-y pinch-zoom;
         }
         
         .ko-tree { display: flex; gap: 40px; min-width: max-content; padding: 0 10px; position: relative;}
@@ -156,7 +156,7 @@
         }
         
         /* 🎯 สถานะพับการ์ด */
-        .ko-round-col.is-collapsed { width: 140px; z-index: 1; }
+        .ko-round-col.is-collapsed { width: 125px; z-index: 1; }
         .ko-round-col.is-collapsed .ko-match-full { display: none; }
         .ko-round-col.is-collapsed .ko-match-collapsed { display: flex; }
         .ko-round-col.is-collapsed .ko-match { 
@@ -187,20 +187,21 @@
         .ko-team { padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; }
         .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.03); }
         
-        .team-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .team-left { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0;}
         .team-left img { width: 22px; height: 16px; border-radius: 2px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.5); flex-shrink: 0;}
-        .team-name-text { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .team-name-text { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;}
         
-        .team-right { display: flex; align-items: center; gap: 6px; }
-        .ko-score { font-weight: 700; font-size: 1rem; }
-        .ko-pen { color: #f59e0b; font-size: 0.7rem; font-weight: 700;}
-        .win-arrow { color: var(--pl-primary); font-size: 0.8rem; font-weight: 900;}
+        /* Grid สำหรับจัดสกอร์ให้ตรงกันเป๊ะ */
+        .team-right-grid { display: grid; grid-template-columns: 20px 28px 12px; align-items: center; gap: 2px; flex-shrink: 0;}
+        .ko-score-main { font-weight: 700; font-size: 1.05rem; text-align: right; }
+        .ko-score-pen { font-size: 0.7rem; font-weight: 700; text-align: left; padding-left: 2px;}
+        .ko-score-arrow { font-size: 0.75rem; font-weight: 900; color: var(--pl-primary); text-align: right; }
 
         /* โหมด 2: การ์ดยุบ (Google Style: ▶ Flag 1 FT 0 Flag ◀) */
         .ko-match-collapsed { display: none; align-items: center; justify-content: space-between; width: 100%; height: 100%; padding: 0 8px; box-sizing: border-box; }
-        .col-flag-box { display: flex; align-items: center; gap: 6px; flex: 1; }
+        .col-flag-box { display: flex; align-items: center; gap: 4px; flex: 1; }
         .col-flag-box img { width: 20px; height: 14px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); flex-shrink: 0;}
-        .col-score-box { display: flex; align-items: center; justify-content: center; padding: 0 6px; white-space: nowrap;}
+        .col-score-box { display: flex; align-items: center; justify-content: center; padding: 0 4px; white-space: nowrap;}
         
         /* เส้นเรขาคณิตเชื่อมสาย */
         .ko-connector {
@@ -215,7 +216,8 @@
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .admin-badge { display: none; } 
-            .ko-round-col { width: 220px; }
+            .ko-round-col { width: 250px; max-width: 82vw; } /* Responsive limit */
+            .ko-round-col.is-collapsed { width: 125px; } /* Same width for collapsed on mobile */
         }
     </style>
 </head>
@@ -325,6 +327,10 @@
             }
         }
 
+        const KO_MATCH_HEIGHT = 64; 
+        const KO_GAP = 16;          
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
+
         // ฟังก์ชันวาดแมตช์ (รวมทั้งแบบเต็มและการ์ดยุบ)
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
@@ -353,8 +359,8 @@
                 if(hFinal > aFinal) homeWin = true; else if(aFinal > hFinal) awayWin = true;
             }
 
-            let homePenStr = (m.home_penalty !== null && m.home_penalty !== undefined) ? `<span class="ko-pen">(${m.home_penalty})</span>` : '';
-            let awayPenStr = (m.away_penalty !== null && m.away_penalty !== undefined) ? `<span class="ko-pen">(${m.away_penalty})</span>` : '';
+            let homePenStr = (m.home_penalty !== null && m.home_penalty !== undefined) ? `(${m.home_penalty})` : '';
+            let awayPenStr = (m.away_penalty !== null && m.away_penalty !== undefined) ? `(${m.away_penalty})` : '';
             
             const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
             const isLive = tDate && tDate <= nowObj && m.status !== 'FINISHED';
@@ -369,20 +375,37 @@
             const hColor = m.status === 'FINISHED' ? (homeWin ? '#ffffff' : '#64748b') : '#ffffff';
             const aColor = m.status === 'FINISHED' ? (awayWin ? '#ffffff' : '#64748b') : '#ffffff';
             
-            // ลูกศรสำหรับโหมดกางเต็ม (Google Style ขี้ลูกศรเข้าหาฝั่งขวาของการ์ด)
-            const hArrowExp = homeWin ? `<span class="win-arrow" style="margin-left: 6px;">◀</span>` : '';
-            const aArrowExp = awayWin ? `<span class="win-arrow" style="margin-left: 6px;">◀</span>` : '';
+            const penColorH = m.status === 'FINISHED' ? (homeWin ? '#f59e0b' : '#64748b') : '#f59e0b';
+            const penColorA = m.status === 'FINISHED' ? (awayWin ? '#f59e0b' : '#64748b') : '#f59e0b';
+
+            // ลูกศรสำหรับโหมดกางเต็ม (ขี้ลูกศรเข้าหาฝั่งขวาของการ์ด)
+            const hArrowExp = homeWin ? `◀` : '';
+            const aArrowExp = awayWin ? `◀` : '';
 
             // ลูกศรสำหรับโหมดยุบการ์ด (ชี้เข้าหาธงเสมอ ซ้ายคือ ▶ , ขวาคือ ◀)
-            const hArrowCol = homeWin ? `<span class="win-arrow" style="margin-right: 4px;">▶</span>` : '';
-            const aArrowCol = awayWin ? `<span class="win-arrow" style="margin-left: 4px;">◀</span>` : '';
+            const hArrowCol = homeWin ? `<span class="win-arrow" style="margin-right: 2px;">▶</span>` : '';
+            const aArrowCol = awayWin ? `<span class="win-arrow" style="margin-left: 2px;">◀</span>` : '';
 
             // ตรงกลางของการ์ดยุบตัว (โชว์แค่คะแนน)
             let collapsedMiddle = '';
             if (m.status === 'FINISHED') {
-                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}${homePenStr}</span><span style="color: #64748b; margin: 0 4px; font-size: 0.7rem; font-weight: normal;">FT</span><span style="color: ${aColor}">${awayScore}${awayPenStr}</span>`;
+                collapsedMiddle = `
+                    <div style="display:flex; align-items:center; justify-content:center; width: 100%;">
+                        <span style="color: ${hColor}; font-weight:700;">${homeScore}</span>
+                        ${homePenStr ? `<span style="color: ${penColorH}; font-size: 0.6rem; margin-left:1px;">${homePenStr}</span>` : ''}
+                        <span style="color: #64748b; font-size: 0.65rem; margin: 0 4px;">FT</span>
+                        ${awayPenStr ? `<span style="color: ${penColorA}; font-size: 0.6rem; margin-right:1px;">${awayPenStr}</span>` : ''}
+                        <span style="color: ${aColor}; font-weight:700;">${awayScore}</span>
+                    </div>
+                `;
             } else if (isLive) {
-                collapsedMiddle = `<span style="color: ${hColor}">${homeScore}</span><span style="color: #ef4444; margin: 0 4px; font-size: 0.6rem;">LIVE</span><span style="color: ${aColor}">${awayScore}</span>`;
+                collapsedMiddle = `
+                    <div style="display:flex; align-items:center; justify-content:center; width: 100%;">
+                        <span style="color: ${hColor}; font-weight:700;">${homeScore}</span>
+                        <span style="color: #ef4444; font-size: 0.6rem; margin: 0 4px; font-weight:bold;">LIVE</span>
+                        <span style="color: ${aColor}; font-weight:700;">${awayScore}</span>
+                    </div>
+                `;
             } else {
                 const shortDate = tDate ? formatShortDateStr(tDate) : 'TBD';
                 collapsedMiddle = `<span style="color: #a1a1aa; font-size: 0.65rem; font-weight: 500;">${shortDate}</span>`;
@@ -399,9 +422,10 @@
                                 ${getFlag(m.home_team)}
                                 <span class="team-name-text" style="color: ${hColor}; font-weight: ${homeWin?'700':'500'}">${hName}</span>
                             </div>
-                            <div class="team-right">
-                                <span class="ko-score" style="color: ${hColor}">${homeScore}${homePenStr}</span>
-                                ${hArrowExp}
+                            <div class="team-right-grid">
+                                <span class="ko-score-main" style="color: ${hColor}">${homeScore}</span>
+                                <span class="ko-score-pen" style="color: ${penColorH}">${homePenStr}</span>
+                                <span class="ko-score-arrow">${hArrowExp}</span>
                             </div>
                         </div>
                         <div class="ko-team">
@@ -409,9 +433,10 @@
                                 ${getFlag(m.away_team)}
                                 <span class="team-name-text" style="color: ${aColor}; font-weight: ${awayWin?'700':'500'}">${aName}</span>
                             </div>
-                            <div class="team-right">
-                                <span class="ko-score" style="color: ${aColor}">${awayScore}${awayPenStr}</span>
-                                ${aArrowExp}
+                            <div class="team-right-grid">
+                                <span class="ko-score-main" style="color: ${aColor}">${awayScore}</span>
+                                <span class="ko-score-pen" style="color: ${penColorA}">${awayPenStr}</span>
+                                <span class="ko-score-arrow">${aArrowExp}</span>
                             </div>
                         </div>
                     </div>
@@ -946,6 +971,11 @@
     </div>
 
     <script>
+        // ตัวแปรสำหรับเช็คการปัดนิ้ว (Swipe)
+        let touchStartX = 0;
+        let touchEndX = 0;
+        window.isSwiping = false;
+
         window.addEventListener('scroll', () => {
             const header = document.getElementById('adminHeader');
             if (header) {
@@ -1084,9 +1114,42 @@
                 const targetCol = document.getElementById('ko-col-' + targetRIdx);
                 const canvas = document.getElementById('koCanvas');
                 if (targetCol && canvas) {
+                    // เลื่อนให้รอบที่เลือกมาอยู่ตรงกลางจอแบบเนียนๆ
                     canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 20), behavior: 'smooth' });
                 }
             }, 300); // รอให้ Transition ยุบการ์ดทำงานเสร็จก่อนเลื่อน Scroll
+        }
+
+        function handleSwipe() {
+            const swipeDist = touchStartX - touchEndX;
+            const threshold = 50; // ต้องลากนิ้วอย่างน้อย 50px
+            const activeBtn = document.querySelector('.ko-pill.active');
+            let currentIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
+            
+            const pills = document.querySelectorAll('.ko-pill');
+            if(pills.length === 0) return;
+            
+            let maxIdx = 0;
+            pills.forEach(p => {
+                const idx = parseInt(p.dataset.ridx);
+                if(idx > maxIdx) maxIdx = idx;
+            });
+
+            if (swipeDist > threshold && currentIdx < maxIdx) {
+                // ปัดซ้าย -> ไปรอบถัดไป
+                let nextIdx = currentIdx + 1;
+                while(nextIdx <= maxIdx && !document.querySelector(`.ko-pill[data-ridx="${nextIdx}"]`)) {
+                    nextIdx++;
+                }
+                if (nextIdx <= maxIdx) scrollToRound(nextIdx);
+            } else if (swipeDist < -threshold && currentIdx > 0) {
+                // ปัดขวา -> กลับไปรอบก่อนหน้า
+                let prevIdx = currentIdx - 1;
+                while(prevIdx >= 0 && !document.querySelector(`.ko-pill[data-ridx="${prevIdx}"]`)) {
+                    prevIdx--;
+                }
+                if (prevIdx >= 0) scrollToRound(prevIdx);
+            }
         }
         
         document.addEventListener('DOMContentLoaded', () => {
@@ -1094,14 +1157,37 @@
             openTab(activeTab);
             
             // วาดแผนผังในจังหวะแรกที่โหลดหน้าเว็บ
-            if (document.getElementById('koCanvas')) {
+            const canvas = document.getElementById('koCanvas');
+            if (canvas) {
                 const activeBtn = document.querySelector('.ko-pill.active');
                 const targetIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
                 updateTreeLayout(targetIdx); 
+                
+                // ตรวจจับการทัชปัดหน้าจอ (Mobile Swipe)
+                canvas.addEventListener('touchstart', e => {
+                    touchStartX = e.changedTouches[0].screenX;
+                    window.isSwiping = false;
+                }, {passive: true});
+                
+                canvas.addEventListener('touchmove', e => {
+                    // ถ้านิ้วขยับเกิน 15px ถือว่ากำลังปัดหน้าจอ (ไม่ใช่กดเพื่อ Edit)
+                    if(Math.abs(e.changedTouches[0].screenX - touchStartX) > 15) {
+                        window.isSwiping = true;
+                    }
+                }, {passive: true});
+
+                canvas.addEventListener('touchend', e => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    if(window.isSwiping) {
+                        handleSwipe();
+                    }
+                    setTimeout(() => { window.isSwiping = false; }, 50);
+                }, {passive: true});
             }
         });
 
         function openEditMatchModal(id, home, away, time, next_match, is_next_home) {
+            if(window.isSwiping) return; // ป้องกันการเผลอกด Edit ระหว่างปัดหน้าจอ
             document.getElementById('edit_match_id').value = id;
             document.getElementById('edit_home_team').value = home;
             document.getElementById('edit_away_team').value = away;
