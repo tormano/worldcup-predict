@@ -578,11 +578,11 @@
                                 <div class="ko-round-title"><%= stageData.stageTitle %></div>
                                 <div class="ko-matches-stack" style="height: <%= treeHeight %>px;">
                                     <% stageData.matches.forEach(match => { 
-                                        const yCenter = (match.slot * Math.pow(2, rIdx) + Math.pow(2, rIdx - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
+                                        const yCenter = (match.slot * Math.pow(2, rIdx) + Math.pow(2, rIdx - 1)) * KO_UNIT;
                                         const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
                                     %>
                                         <% if (match.slot % 2 === 0 && rIdx < knockoutData.length - 1) { %>
-                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, rIdx) * KO_UNIT %>px;"></div>
+                                            <div class="ko-connector" style="top: 50%; height: <%= Math.pow(2, rIdx) * KO_UNIT %>px;"></div>
                                         <% } %>
                                         
                                         <div class="ko-match-wrapper <%= rIdx > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
@@ -659,9 +659,10 @@
                 const targetCol = document.getElementById('ko-col-' + targetIdx);
                 const canvas = document.getElementById('koCanvas');
                 if (targetCol && canvas) {
-                    canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 20), behavior: 'smooth' });
+                    // คำนวณระยะขอบจอให้พอดีเป๊ะหลังจาก CSS Transition ดึงกล่องให้หดตัวแล้ว
+                    canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 15), behavior: 'smooth' });
                 }
-            }, 50);
+            }, 100);
         }
 
         const matchDaysData = <%- JSON.stringify(typeof matchDaysList !== 'undefined' ? matchDaysList : []) %>;
