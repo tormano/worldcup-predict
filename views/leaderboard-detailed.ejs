@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detailed Table - World Cup 2026</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 🎯 เปลี่ยนมาใช้ฟอนต์ Roboto (Eng/Num) + Noto Sans Thai (ไทย) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { 
             --pl-bg: #37003c;
@@ -16,7 +19,8 @@
             --pl-primary: #00ff85; 
             --pl-accent: #04f5ff;
         }
-        body { font-family: 'Prompt', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
+        /* 🎯 อัปเดต font-family */
+        body { font-family: 'Roboto', 'Noto Sans Thai', sans-serif; background-color: var(--pl-bg); color: var(--pl-text); margin: 0; padding: 0; font-size: 0.9rem; }
         
         .pl-header { background-color: var(--pl-nav); border-bottom: 1px solid var(--pl-border); position: sticky; top: 0; z-index: 100; transition: all 0.3s ease; overflow-anchor: none; }
         .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 60px; }
