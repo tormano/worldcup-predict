@@ -181,7 +181,7 @@
         .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.6rem;}
         .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
         
-        .ko-team { padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .ko-team { padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; flex: 1; } /* ให้ยืดหยุ่นเต็มพื้นที่ */
         .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.03); }
         
         .team-left { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0;}
@@ -267,7 +267,7 @@
             return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]}`;
         };
 
-        // 🎯 LATEST ALGORITHM: ROBUST IDENTIFICATION & TREE TRAVERSAL
+        // 🎯 LATEST ALGORITHM: FULL TREE WITH COLLAPSIBLE STATES FOR ADMIN
         const stageMapping = {
             '32': 0, 'round of 32': 0, 'round_of_32': 0,
             '16': 1, 'round of 16': 1, 'round_of_16': 1,
@@ -324,7 +324,10 @@
             }
         }
 
-        // ฟังก์ชันวาดแมตช์ (รวมทั้งแบบเต็มและการ์ดยุบ)
+        const KO_MATCH_HEIGHT = 76; // เพิ่มความสูงการ์ดให้มากขึ้น
+        const KO_GAP = 20;          // เพิ่มระยะห่างระหว่างการ์ด
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
+
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
             
@@ -1040,8 +1043,8 @@
 
         // 🎯 ฟังก์ชัน Scroll และคำนวณระยะการยุบการ์ดแบบ Real-time (Google Style)
         function updateTreeLayout(targetRIdx) {
-            const U = 96; // ความสูงมาตรฐานต่อ 1 คู่ (เมื่อกางเต็ม)
-            const expandedCardHeight = 84;
+            const U = 96; // ความสูงมาตรฐานต่อ 1 คู่ (เมื่อกางเต็ม) ปรับให้สอดคล้องกับ U ด้านบน
+            const expandedCardHeight = 76; // ปรับให้สอดคล้องกับ KO_MATCH_HEIGHT
             const collapsedCardHeight = 36;
             
             // หาจุดต่ำสุดของแผนผังเพื่อดันมันลงมาไม่ให้ตกขอบ
