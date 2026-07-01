@@ -304,7 +304,7 @@
             '16': 1, 'round of 16': 1, 'round_of_16': 1,
             '8': 2, 'quarter-finals': 2, 'quarter-final': 2, 'quarterfinals': 2, 'quarterfinal': 2, 'qf': 2,
             'semi': 3, 'semi-finals': 3, 'semi-final': 3, 'semifinals': 3, 'semifinal': 3, 'sf': 3,
-            'final': 4, 'finals': 4
+            'final': 4, 'finals': 4, '3rd': 4, 'third place': 4, 'third-place': 4, 'third': 4, '3rd place': 4
         };
 
         let koMatches = [];
@@ -322,7 +322,15 @@
         koMatches.forEach(m => matchById[m.id] = m);
 
         const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
-        roots.sort((a,b) => a.id - b.id);
+        roots.sort((a,b) => {
+            const stageA = (a.stage || '').toLowerCase();
+            const stageB = (b.stage || '').toLowerCase();
+            const isFinalA = stageA.includes('final') && !stageA.includes('semi') && !stageA.includes('quarter');
+            const isFinalB = stageB.includes('final') && !stageB.includes('semi') && !stageB.includes('quarter');
+            if (isFinalA && !isFinalB) return -1;
+            if (!isFinalA && isFinalB) return 1;
+            return a.id - b.id;
+        });
         
         let rootSlots = { 0:0, 1:0, 2:0, 3:0, 4:0 };
         roots.forEach(root => { root.slot = rootSlots[root.rIndex]++; });

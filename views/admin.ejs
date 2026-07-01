@@ -283,7 +283,7 @@
             '16': 1, 'round of 16': 1, 'round_of_16': 1,
             '8': 2, 'quarter-finals': 2, 'quarter-final': 2, 'quarterfinals': 2, 'quarterfinal': 2, 'qf': 2,
             'semi': 3, 'semi-finals': 3, 'semi-final': 3, 'semifinals': 3, 'semifinal': 3, 'sf': 3,
-            'final': 4, 'finals': 4
+            'final': 4, 'finals': 4, '3rd': 4, 'third place': 4, 'third-place': 4, 'third': 4, '3rd place': 4
         };
 
         let koMatches = [];
@@ -302,7 +302,15 @@
 
         // คำนวณ Slot ด้วย Tree Traversal
         const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
-        roots.sort((a,b) => a.id - b.id);
+        roots.sort((a,b) => {
+            const stageA = (a.stage || '').toLowerCase();
+            const stageB = (b.stage || '').toLowerCase();
+            const isFinalA = stageA.includes('final') && !stageA.includes('semi') && !stageA.includes('quarter');
+            const isFinalB = stageB.includes('final') && !stageB.includes('semi') && !stageB.includes('quarter');
+            if (isFinalA && !isFinalB) return -1;
+            if (!isFinalA && isFinalB) return 1;
+            return a.id - b.id;
+        });
         
         let rootSlots = { 0:0, 1:0, 2:0, 3:0, 4:0 };
         roots.forEach(root => { root.slot = rootSlots[root.rIndex]++; });
@@ -419,7 +427,7 @@
             }
             
             return `
-                <div class="ko-match" onclick="openEditMatchModal('${m.id}', '${m.home_team || ''}', '${m.away_team || ''}', '${safeTime}', '${m.next_match_id || ''}', '${m.is_next_home !== null ? m.is_next_home : 1}')" title="คลิกเพื่อแก้ไขข้อมูลแมตช์นี้">
+                <div class="ko-match" onclick="openEditMatchModal('${m.id}', '${m.home_team || ''}', '${m.away_team || ''}', '${safeTime}', '${m.next_match_id || ''}', '${m.is_next_home !== null ? m.is_next_home : 1}', '${m.loser_next_match_id || ''}', '${m.is_loser_next_home !== null ? m.is_loser_next_home : 1}')" title="คลิกเพื่อแก้ไขข้อมูลแมตช์นี้">
                     
                     <!-- Expanded Card -->
                     <div class="ko-match-full">
@@ -695,7 +703,7 @@
                                                 <td width="15%">
                                                     <div style="display: flex; align-items: center; gap: 6px;">
                                                         <strong style="color: var(--pl-primary);">Match <%= match.match_number %></strong>
-                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= koStrSafe %>', '<%= match.next_match_id || '' %>', '<%= match.is_next_home !== null ? match.is_next_home : 1 %>')">EDIT</span>
+                                                        <span style="font-size: 0.65rem; font-weight: bold; cursor: pointer; color: #f59e0b; text-decoration: underline;" onclick="openEditMatchModal('<%= match.id %>', '<%= match.home_team %>', '<%= match.away_team %>', '<%= koStrSafe %>', '<%= match.next_match_id || '' %>', '<%= match.is_next_home !== null ? match.is_next_home : 1 %>', '<%= match.loser_next_match_id || '' %>', '<%= match.is_loser_next_home !== null ? match.is_loser_next_home : 1 %>')">EDIT</span>
                                                     </div>
                                                     <span style="color: var(--pl-text-muted); font-size: 0.8rem;"><%= match.stage_name %></span>
                                                 </td>
@@ -942,6 +950,16 @@
                     </div>
                 </div>
 
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div class="form-group" style="flex: 1;"><label style="color:#fca5a5;">(ผู้แพ้) Next Match ID</label><input type="number" name="loser_next_match_id" placeholder="ไปชิงที่ 3 (ไม่บังคับ)"></div>
+                    <div class="form-group" style="flex: 1;"><label style="color:#fca5a5;">สถานะรอบถัดไป (ผู้แพ้)</label>
+                        <select name="is_loser_next_home">
+                            <option value="1">ไปเป็นทีมเหย้า</option>
+                            <option value="0">ไปเป็นทีมเยือน</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <button type="submit" class="btn" style="flex: 1;">เพิ่ม</button>
                     <button type="button" class="btn" style="flex: 1; background: rgba(255,255,255,0.1); color: var(--pl-text-muted);" onclick="document.getElementById('addMatchModal').classList.remove('active')">ยกเลิก</button>
@@ -963,6 +981,16 @@
                     <div class="form-group" style="flex: 1;"><label>Next Match ID</label><input type="number" name="next_match_id" id="edit_next_match_id" placeholder="รหัสแมตช์ถัดไป"></div>
                     <div class="form-group" style="flex: 1;"><label>สถานะรอบถัดไป</label>
                         <select name="is_next_home" id="edit_is_next_home">
+                            <option value="1">ไปเป็นทีมเหย้า</option>
+                            <option value="0">ไปเป็นทีมเยือน</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px;">
+                    <div class="form-group" style="flex: 1;"><label style="color:#fca5a5;">(ผู้แพ้) Next Match ID</label><input type="number" name="loser_next_match_id" id="edit_loser_next_match_id" placeholder="ไปชิงที่ 3 (ไม่บังคับ)"></div>
+                    <div class="form-group" style="flex: 1;"><label style="color:#fca5a5;">สถานะรอบถัดไป (ผู้แพ้)</label>
+                        <select name="is_loser_next_home" id="edit_is_loser_next_home">
                             <option value="1">ไปเป็นทีมเหย้า</option>
                             <option value="0">ไปเป็นทีมเยือน</option>
                         </select>
@@ -1189,7 +1217,7 @@
             }
         });
 
-        function openEditMatchModal(id, home, away, time, next_match, is_next_home) {
+        function openEditMatchModal(id, home, away, time, next_match, is_next_home, loser_next_match, is_loser_next_home) {
             if(window.isSwiping) return; // ป้องกันการเผลอกด Edit ระหว่างปัดหน้าจอ
             document.getElementById('edit_match_id').value = id;
             document.getElementById('edit_home_team').value = home;
@@ -1197,6 +1225,8 @@
             document.getElementById('edit_kickoff_time').value = time;
             document.getElementById('edit_next_match_id').value = next_match || '';
             document.getElementById('edit_is_next_home').value = is_next_home || '1';
+            document.getElementById('edit_loser_next_match_id').value = loser_next_match || '';
+            document.getElementById('edit_is_loser_next_home').value = is_loser_next_home || '1';
             document.getElementById('editMatchModal').classList.add('active');
         }
         function closeEditMatchModal() {
