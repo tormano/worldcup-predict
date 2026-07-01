@@ -969,7 +969,12 @@
 
     <div id="editMatchModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 style="margin-top: 0;">✏️ แก้ไขข้อมูลแมตช์</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <h3 style="margin-top: 0;">✏️ แก้ไขข้อมูลแมตช์</h3>
+                <div style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; color: var(--pl-text-muted); border: 1px solid rgba(255,255,255,0.2);">
+                    Match ID: <strong id="display_edit_match_id" style="color: var(--pl-accent);"></strong>
+                </div>
+            </div>
             <form action="/admin/edit-match-info" method="POST" onsubmit="saveAdminState()">
                 <input type="hidden" name="match_id" id="edit_match_id">
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" id="edit_home_team" list="team-list" required></div>
@@ -1243,13 +1248,27 @@
         function openEditMatchModal(id, home, away, time, next_match, is_next_home, loser_next_match, is_loser_next_home) {
             if(window.isSwiping) return; // ป้องกันการเผลอกด Edit ระหว่างปัดหน้าจอ
             document.getElementById('edit_match_id').value = id;
+            document.getElementById('display_edit_match_id').innerText = id;
             document.getElementById('edit_home_team').value = home;
             document.getElementById('edit_away_team').value = away;
             document.getElementById('edit_kickoff_time').value = time;
             document.getElementById('edit_next_match_id').value = next_match || '';
-            document.getElementById('edit_is_next_home').value = is_next_home || '1';
+            
+            // แปลงค่า true/false/1/0 ให้ตรงกับตัวเลือก 1/0
+            let isNextHomeVal = String(is_next_home);
+            if (isNextHomeVal === 'true' || isNextHomeVal === '1') isNextHomeVal = '1';
+            else if (isNextHomeVal === 'false' || isNextHomeVal === '0') isNextHomeVal = '0';
+            else isNextHomeVal = '1'; // Default
+            document.getElementById('edit_is_next_home').value = isNextHomeVal;
+            
             document.getElementById('edit_loser_next_match_id').value = loser_next_match || '';
-            document.getElementById('edit_is_loser_next_home').value = is_loser_next_home || '1';
+            
+            let isLoserNextHomeVal = String(is_loser_next_home);
+            if (isLoserNextHomeVal === 'true' || isLoserNextHomeVal === '1') isLoserNextHomeVal = '1';
+            else if (isLoserNextHomeVal === 'false' || isLoserNextHomeVal === '0') isLoserNextHomeVal = '0';
+            else isLoserNextHomeVal = '1'; // Default
+            document.getElementById('edit_is_loser_next_home').value = isLoserNextHomeVal;
+            
             document.getElementById('editMatchModal').classList.add('active');
         }
         function closeEditMatchModal() {
