@@ -123,9 +123,7 @@
         .btn-jump-today.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
-        /* =========================================================
-           🎯 Google World Cup Style Interactive Bracket CSS (ADMIN)
-           ========================================================= */
+        /* CSS สำหรับ Bracket ในหน้า Admin */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 5px 0 15px;
             border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; scrollbar-width: none; position: sticky; top: 60px; background: var(--pl-bg); z-index: 50;
@@ -144,45 +142,48 @@
             box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2); transform: scale(1.05);
         }
 
+        .ko-view { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+        .ko-view.active { display: block; }
+
         .ko-canvas {
-            display: flex; overflow: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-            padding: 10px 0 60px; width: 100%; max-height: 72vh;
+            display: flex; overflow-x: auto; overflow-y: visible;
+            padding: 10px 0 40px; width: 100%;
         }
-        .ko-tree { display: flex; gap: 40px; min-width: max-content; padding: 0 10px; }
+        .ko-tree { display: flex; gap: 60px; min-width: max-content; padding: 0 10px; }
 
         .ko-round-col {
-            width: 270px; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column;
+            width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
         }
         .ko-round-title {
-            font-size: 0.78rem; font-weight: 700; color: var(--pl-accent);
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; text-align: center;
+            font-size: 0.85rem; font-weight: 700; color: var(--pl-accent);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; text-align: center;
         }
         
         .ko-matches-stack { position: relative; width: 100%; }
         .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; }
 
         .ko-match { 
-            background: #26002b; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: 0.2s; cursor: pointer; box-sizing: border-box; justify-content: center;
+            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: 0.2s; cursor: pointer; box-sizing: border-box; justify-content: center;
         }
         .ko-match:hover { border-color: #f59e0b; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(245,158,11,0.2);}
         
-        .ko-match-top { padding: 4px 10px; font-size: 0.68rem; color: #a1a1aa; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); border-radius: 10px 10px 0 0;}
-        .ko-status { background: rgba(255,255,255,0.1); color: white; padding: 1px 5px; border-radius: 3px; font-weight: 700; font-size: 0.6rem;}
+        .ko-match-top { padding: 6px 12px; font-size: 0.75rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border-radius: 10px 10px 0 0;}
+        .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.65rem;}
         .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
         
-        .ko-team { padding: 6px 10px; display: flex; align-items: center; gap: 8px; }
-        .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .ko-team img { width: 20px; height: 14px; border-radius: 2px; object-fit: cover;}
-        .ko-team span.name { flex: 1; color: var(--pl-text); font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        .ko-score { color: white; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 4px;}
-        .ko-pen { color: #f59e0b; font-size: 0.7rem; font-weight: 700;}
+        .ko-team { padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+        .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .ko-team img { width: 24px; height: 16px; border-radius: 2px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.5);}
+        .ko-team span.name { flex: 1; color: var(--pl-text); font-size: 0.95rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .ko-score { color: white; font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 6px;}
+        .ko-pen { color: #f59e0b; font-size: 0.75rem; font-weight: 700;}
 
         .ko-connector {
-            position: absolute; right: -20px; width: 20px;
-            border-top: 2px solid rgba(255,255,255,0.15); border-bottom: 2px solid rgba(255,255,255,0.15); border-right: 2px solid rgba(255,255,255,0.15); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none;
+            position: absolute; right: -30px; width: 30px;
+            border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 6px 6px 0; z-index: 1; pointer-events: none;
         }
         .ko-match-wrapper.has-parent::before {
-            content: ''; position: absolute; left: -20px; top: 50%; width: 20px; border-top: 2px solid rgba(255,255,255,0.15); z-index: 1; pointer-events: none;
+            content: ''; position: absolute; left: -30px; top: 50%; width: 30px; border-top: 2px solid rgba(255,255,255,0.2); z-index: 1; pointer-events: none;
         }
 
         @media (max-width: 768px) {
@@ -243,60 +244,76 @@
         };
 
         // =========================================================================
-        // 🎯 LATEST ALGORITHM: Tree Traversal (ADMIN)
+        // 🎯 LATEST ALGORITHM: ROBUST TREE TRAVERSAL (ADMIN)
         // =========================================================================
-        const koStages = ['32', '16', '8', 'semi', 'final'];
-        let hasKnockout = false;
-        
-        let koMatches = sMatches.filter(m => m.stage && koStages.includes(m.stage.toString().trim().toLowerCase()));
-        if (koMatches.length > 0) hasKnockout = true;
+        const koStagesAll = ['32', '16', '8', 'semi', 'final'];
+        let koMatches = sMatches.filter(m => m.stage && koStagesAll.includes(m.stage.toString().trim().toLowerCase()));
+        let hasKnockout = koMatches.length > 0;
 
-        const matchById = {};
-        koMatches.forEach(m => matchById[m.id] = m);
+        const existingStages = koStagesAll.filter(stg => koMatches.some(m => m.stage.toString().trim().toLowerCase() === stg));
         
-        const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
+        // กำหนด Index พื้นฐานให้แต่ละคู่ตามชื่อรอบ เพื่อป้องกันการข้ามสาย
+        koMatches.forEach(m => {
+            m.rIndex = existingStages.indexOf(m.stage.toString().trim().toLowerCase());
+        });
+
+        const matchesByRound = {};
+        existingStages.forEach((_, i) => matchesByRound[i] = []);
+        koMatches.forEach(m => matchesByRound[m.rIndex].push(m));
+
+        let maxRIndex = existingStages.length > 0 ? existingStages.length - 1 : 0;
+        let currentSlot = 0;
         
-        roots.forEach((root, idx) => {
-            const traverse = (mId, yVal, depth) => {
-                const match = matchById[mId];
-                if (!match) return;
-                match.tree_order = yVal;
-                match.depth = depth;
-                
-                const children = koMatches.filter(c => c.next_match_id == mId);
+        // วางคู่นัดชิงก่อนเพื่อใช้เป็นรากของสายการแข่ง
+        if (matchesByRound[maxRIndex]) {
+            matchesByRound[maxRIndex].sort((a,b) => a.id - b.id);
+            matchesByRound[maxRIndex].forEach(m => {
+                if(m.slot === undefined) m.slot = currentSlot++;
+            });
+        }
+
+        // ย้อนกลับลงไปคำนวณตำแหน่งให้รอบก่อนหน้าตาม Next_Match_Id
+        for (let r = maxRIndex; r >= 1; r--) {
+            if (!matchesByRound[r]) continue;
+            matchesByRound[r].sort((a,b) => a.slot - b.slot);
+            
+            matchesByRound[r].forEach(parent => {
+                if (parent.slot === undefined) return;
+                const children = koMatches.filter(c => c.next_match_id == parent.id);
                 const homeChild = children.find(c => c.is_next_home == 1 || c.is_next_home === true);
                 const awayChild = children.find(c => c.is_next_home == 0 || c.is_next_home === false);
-                
-                const offset = 1 / Math.pow(2, depth + 1);
-                
-                if (homeChild) traverse(homeChild.id, yVal - offset, depth + 1);
-                if (awayChild) traverse(awayChild.id, yVal + offset, depth + 1);
-            };
-            traverse(root.id, idx + 0.5, 1);
-        });
 
-        let fallbackY = 1000;
+                if (homeChild) homeChild.slot = parent.slot * 2;
+                if (awayChild) awayChild.slot = parent.slot * 2 + 1;
+            });
+        }
+
+        // หากแอดมินลืมใส่ Next_Match_Id ก็จะถูกเรียงเก็บตกตามลำดับรอบให้เรียบร้อย
+        let slotCounts = {};
+        for(let i=0; i<10; i++) slotCounts[i] = 0;
+        koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
         koMatches.forEach(m => {
-            if (m.tree_order === undefined) m.tree_order = fallbackY++;
+            if (m.slot === undefined) {
+                m.slot = slotCounts[m.rIndex]++;
+            }
         });
 
-        const knockoutData = koStages.map(stage => {
+        const knockoutData = existingStages.map((stage, rIndex) => {
             let sTitle = stage;
             if(stage === '32') sTitle = 'Round of 32';
             else if(stage === '16') sTitle = 'Round of 16';
             else if(stage === '8') sTitle = 'Quarter-finals';
             else if(stage === 'semi') sTitle = 'Semi-finals';
             else if(stage === 'final') sTitle = 'Final';
-            
-            const mList = koMatches.filter(m => m.stage.toString().trim().toLowerCase() === stage);
-            mList.sort((a,b) => a.tree_order - b.tree_order);
+
+            const mList = matchesByRound[rIndex] || [];
+            mList.sort((a,b) => a.slot - b.slot);
             return { stage, stageTitle: sTitle, matches: mList };
         });
 
-        const KO_MATCH_HEIGHT = 84; 
-        const KO_GAP = 16; 
+        const KO_MATCH_HEIGHT = 90; 
+        const KO_GAP = 20; 
         const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
-        const KO_TOTAL_HEIGHT = 1600;
 
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
@@ -317,7 +334,7 @@
 
             const hName = m.home_team || 'TBD';
             const aName = m.away_team || 'TBD';
-            const safeTime = isNaN(tDate.getTime()) ? '' : m.kickoff_time.substring(0, 16).replace(' ', 'T');
+            const safeTime = m.kickoff_time ? m.kickoff_time.substring(0, 16).replace(' ', 'T') : '';
             
             return `
                 <div class="ko-match" onclick="openEditMatchModal('${m.id}', '${m.home_team || ''}', '${m.away_team || ''}', '${safeTime}', '${m.next_match_id || ''}', '${m.is_next_home !== null ? m.is_next_home : 1}')" title="คลิกเพื่อแก้ไขข้อมูลแมตช์นี้">
@@ -538,11 +555,11 @@
                                         <% 
                                             let currentActualDate = '';
                                             groupedMatches[date].sort((a, b) => {
-                                                const da = new Date((a.kickoff_time || '').replace(' ', 'T'));
-                                                const db = new Date((b.kickoff_time || '').replace(' ', 'T'));
+                                                const da = new Date(typeof a.kickoff_time === 'string' ? a.kickoff_time.replace(' ', 'T') : a.kickoff_time);
+                                                const db = new Date(typeof b.kickoff_time === 'string' ? b.kickoff_time.replace(' ', 'T') : b.kickoff_time);
                                                 return da - db;
                                             }).forEach(match => { 
-                                                const matchActualDate = formatShortDateStr(new Date(match.kickoff_time ? match.kickoff_time.replace(' ', 'T') : 0));
+                                                const matchActualDate = formatShortDate(match.kickoff_time);
                                                 if (matchActualDate !== currentActualDate) {
                                                     currentActualDate = matchActualDate;
                                         %>
@@ -550,7 +567,7 @@
                                         <% 
                                                 }
                                                 
-                                                const matchDateObj = new Date(match.kickoff_time ? match.kickoff_time.replace(' ', 'T') : 0);
+                                                const matchDateObj = new Date(typeof match.kickoff_time === 'string' ? match.kickoff_time.replace(' ', 'T') : match.kickoff_time);
                                                 const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
                                                 const threeHoursLater = new Date(matchDateObj.getTime() + (3 * 60 * 60 * 1000));
                                                 const isLive = matchDateObj <= nowObj && nowObj < threeHoursLater && match.status !== 'FINISHED';
@@ -644,50 +661,56 @@
             </div>
         </div>
 
-        <!-- 🎯 TAB KNOCKOUT BRACKET (ADMIN) -->
-        <div id="tab-knockout" class="tab-content">
+        <!-- 🎯 TAB KNOCKOUT BRACKET (ADMIN: Multi-View System) -->
+        <div id="tab-knockout" class="tab-content" style="display:none;">
             <% if(!hasKnockout) { %>
                 <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น</div>
             <% } else { %>
                 
                 <div class="ko-nav-bar">
-                    <% knockoutData.forEach((kd, rIdx) => { 
-                        if(kd.matches.length > 0) { 
-                    %>
-                        <button type="button" class="ko-pill <%= rIdx === 0 ? 'active' : '' %>" id="pill-<%= rIdx %>" onclick="scrollToRound(<%= rIdx %>)">
+                    <% knockoutData.forEach((kd, baseIdx) => { %>
+                        <button type="button" class="ko-pill <%= baseIdx === 0 ? 'active' : '' %>" id="ko-btn-<%= baseIdx %>" onclick="switchKoView(<%= baseIdx %>)">
                             <%= kd.stageTitle %>
                         </button>
-                    <% }}) %>
+                    <% }) %>
                 </div>
 
-                <div class="ko-canvas" id="koCanvas">
-                    <div class="ko-tree" id="koTree">
-                        <% knockoutData.forEach((kd, rIdx) => { 
-                            if(kd.matches.length > 0) { 
-                                let maxSlot = Math.max(...kd.matches.map(m => m.slot));
-                                let colHeight = (maxSlot + 1) * Math.pow(2, rIdx) * KO_UNIT;
-                        %>
-                            <div class="ko-round-col" id="ko-col-<%= rIdx %>">
-                                <div class="ko-round-title"><%= kd.stageTitle %></div>
-                                
-                                <div class="ko-matches-stack" style="height: <%= Math.max(colHeight, 400) %>px;">
-                                    <% kd.matches.forEach(match => { 
-                                        const yCenter = (match.slot * Math.pow(2, rIdx) + Math.pow(2, rIdx - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
-                                        const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
-                                        const isNotFinal = rIdx < knockoutData.length - 1;
+                <div id="knockout-views-container">
+                    <% knockoutData.forEach((baseStage, baseIdx) => { %>
+                        <div class="ko-view <%= baseIdx === 0 ? 'active' : '' %>" id="ko-view-<%= baseIdx %>">
+                            <div class="ko-canvas">
+                                <div class="ko-tree">
+                                    <% 
+                                        for(let r = baseIdx; r < knockoutData.length; r++) { 
+                                            const stageData = knockoutData[r];
+                                            let d = r - baseIdx; 
+                                            
+                                            const baseMatches = knockoutData[baseIdx].matches;
+                                            const maxBaseSlot = baseMatches.length > 0 ? Math.max(...baseMatches.map(m=>m.slot)) : 0;
+                                            const colHeight = (maxBaseSlot + 1) * KO_UNIT;
                                     %>
-                                        <% if (match.slot % 2 === 0 && isNotFinal) { %>
-                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, rIdx) * KO_UNIT %>px;"></div>
-                                        <% } %>
-                                        
-                                        <div class="ko-match-wrapper <%= rIdx > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
-                                            <%- renderKoMatchAdmin(match) %>
+                                        <div class="ko-round-col">
+                                            <div class="ko-round-title"><%= stageData.stageTitle %></div>
+                                            <div class="ko-matches-stack" style="height: <%= colHeight %>px;">
+                                                <% stageData.matches.forEach(match => { 
+                                                    const yCenter = (match.slot * Math.pow(2, d) + Math.pow(2, d - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
+                                                    const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
+                                                %>
+                                                    <% if (match.slot % 2 === 0 && r < knockoutData.length - 1) { %>
+                                                        <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, d) * KO_UNIT %>px;"></div>
+                                                    <% } %>
+                                                    
+                                                    <div class="ko-match-wrapper <%= d > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
+                                                        <%- renderKoMatchAdmin(match) %>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
                                         </div>
-                                    <% }) %>
+                                    <% } %>
                                 </div>
                             </div>
-                        <% }}) %>
-                    </div>
+                        </div>
+                    <% }) %>
                 </div>
 
             <% } %>
@@ -906,44 +929,19 @@
             }
         }
 
-        function scrollToRound(roundIndex) {
-            const targetCol = document.getElementById('ko-col-' + roundIndex);
-            const canvas = document.getElementById('koCanvas');
-            if (targetCol && canvas) {
-                const firstMatch = targetCol.querySelector('.ko-match-wrapper');
-                const targetY = firstMatch ? firstMatch.offsetTop - 10 : 0;
-
-                canvas.scrollTo({ 
-                    left: targetCol.offsetLeft - 10, 
-                    top: targetY, 
-                    behavior: 'smooth' 
-                });
-            }
-            document.querySelectorAll('.ko-pill').forEach((btn) => {
-                btn.classList.toggle('active', btn.id === 'pill-' + roundIndex);
-            });
-        }
-
-        function setupCanvasListener() {
-            const canvas = document.getElementById('koCanvas');
-            if(!canvas) return;
-            canvas.addEventListener('scroll', () => {
-                const cols = document.querySelectorAll('.ko-round-col');
-                const canvasLeft = canvas.getBoundingClientRect().left + 40;
-                
-                let minDist = Infinity; let activeIdx = 0;
-                cols.forEach((col) => {
-                    const dist = Math.abs(col.getBoundingClientRect().left - canvasLeft);
-                    if(dist < minDist) { minDist = dist; activeIdx = col.id.replace('ko-col-', ''); }
-                });
-                document.querySelectorAll('.ko-pill').forEach((btn) => btn.classList.toggle('active', btn.id === 'pill-' + activeIdx));
+        // 🎯 สลับการวาด Tree สำหรับหน้า Admin
+        function switchKoView(baseIdx) {
+            document.querySelectorAll('.ko-view').forEach(el => el.classList.remove('active'));
+            document.getElementById('ko-view-' + baseIdx).classList.add('active');
+            
+            document.querySelectorAll('.ko-pill').forEach(btn => {
+                btn.classList.toggle('active', btn.id === 'ko-btn-' + baseIdx);
             });
         }
         
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
             openTab(activeTab);
-            setupCanvasListener();
         });
 
         function openEditMatchModal(id, home, away, time, next_match, is_next_home) {
