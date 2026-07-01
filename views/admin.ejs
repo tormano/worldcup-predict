@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบหลังบ้าน Admin</title>
+    <title>Administrator</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -479,8 +479,8 @@
     <header class="pl-header" id="adminHeader">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="https://upload.wikimedia.org/wikipedia/en/2/29/2026_FIFA_World_Cup_emblem.svg" alt="Logo" class="brand-logo">
-                <span class="admin-badge">ADMIN PANEL</span>
+                <img src="https://digitalhub.fifa.com/transform/157d23bf-7e13-4d7b-949e-5d27d340987e/WC26_Logo?&io=transform:fill&quality=75" alt="Logo" class="brand-logo">
+                <span class="admin-badge">FIFA World Cup 2026™</span>
             </div>
             
             <div class="nav-menu">
@@ -501,7 +501,6 @@
 
         <div class="admin-banner" id="adminBanner">
             <h1>Administrator</h1>
-            <p>ระบบจัดการหลังบ้าน ทายผล World Cup 2026</p>
         </div>
 
         <div class="page-submenu">
@@ -971,7 +970,7 @@
     <div id="editMatchModal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="margin-top: 0;">✏️ แก้ไขข้อมูลแมตช์</h3>
-            <form action="/admin/edit-match-info" method="POST">
+            <form action="/admin/edit-match-info" method="POST" onsubmit="saveAdminState()">
                 <input type="hidden" name="match_id" id="edit_match_id">
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเหย้า</label><input type="text" name="home_team" id="edit_home_team" list="team-list" required></div>
                 <div class="form-group" style="margin-bottom: 12px;"><label>ทีมเยือน</label><input type="text" name="away_team" id="edit_away_team" list="team-list" required></div>
@@ -1186,9 +1185,33 @@
             }
         }
         
+        // 🎯 ฟังก์ชันบันทึกตำแหน่งหน้าจอก่อนกดเซฟ
+        function saveAdminState() {
+            localStorage.setItem('adminScrollPos', window.scrollY);
+            const openDetails = Array.from(document.querySelectorAll('.date-group[open]')).map(d => d.querySelector('.date-header').innerText.trim());
+            localStorage.setItem('adminOpenDetails', JSON.stringify(openDetails));
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const activeTab = localStorage.getItem('adminActiveTab') || 'tab-users';
             openTab(activeTab);
+            
+            // 🎯 คืนค่าตำแหน่ง Scroll และเปิดแท็บวันที่ค้างไว้หลังจากกดบันทึก Edit
+            const savedScrollPos = localStorage.getItem('adminScrollPos');
+            if (savedScrollPos) {
+                const openDetails = JSON.parse(localStorage.getItem('adminOpenDetails') || '[]');
+                document.querySelectorAll('.date-group').forEach(d => {
+                    const header = d.querySelector('.date-header').innerText.trim();
+                    if (openDetails.includes(header)) {
+                        d.setAttribute('open', 'true');
+                    }
+                });
+                setTimeout(() => {
+                    window.scrollTo(0, parseInt(savedScrollPos));
+                    localStorage.removeItem('adminScrollPos');
+                    localStorage.removeItem('adminOpenDetails');
+                }, 100);
+            }
             
             // วาดแผนผังในจังหวะแรกที่โหลดหน้าเว็บ
             const canvas = document.getElementById('koCanvas');
