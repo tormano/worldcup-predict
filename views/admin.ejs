@@ -7,9 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --pl-bg: #37003c;
+            --pl-bg: #1a001c;
             --pl-nav: #240028;
-            --pl-surface: rgba(255, 255, 255, 0.03);
+            --pl-surface: rgba(255, 255, 255, 0.05);
             --pl-text: #ffffff; 
             --pl-text-muted: #cbd5e1; 
             --pl-border: rgba(255, 255, 255, 0.15); 
@@ -46,7 +46,7 @@
         .pl-header.scrolled .admin-banner h1 { font-size: 1.25rem; }
         .pl-header.scrolled .admin-banner p { display: none; }
 
-        .page-submenu { background-color: #2e0033; }
+        .page-submenu { background-color: #2e0033; border-bottom: 1px solid var(--pl-border); }
         .submenu-content { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; padding: 0 15px; overflow-x: auto; white-space: nowrap; }
         .submenu-item { color: var(--pl-text-muted); text-decoration: none; padding: 12px 0; font-size: 0.95rem; font-weight: 500; border-bottom: 3px solid transparent; transition: 0.2s; cursor: pointer; }
         .submenu-item:hover { color: var(--pl-text); }
@@ -124,7 +124,7 @@
         .btn-jump-today:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 8px 20px rgba(0, 255, 133, 0.6); }
 
         /* =========================================================
-           🎯 KNOCKOUT BRACKET (ADMIN)
+           🎯 KNOCKOUT BRACKET CSS (Google UI - Single Tree + Collapse)
            ========================================================= */
         .ko-nav-bar {
             display: flex; gap: 10px; overflow-x: auto; padding: 5px 0 15px;
@@ -146,67 +146,67 @@
 
         .ko-canvas {
             display: flex; overflow-x: auto; overflow-y: visible;
-            padding: 10px 0 40px; width: 100%; scroll-behavior: smooth;
+            padding: 10px 0 60px; width: 100%; scroll-behavior: smooth;
         }
         
-        .ko-tree { display: flex; gap: 60px; min-width: max-content; padding: 0 10px; position: relative;}
+        .ko-tree { display: flex; gap: 40px; min-width: max-content; padding: 0 10px; position: relative;}
 
         .ko-round-col {
-            width: 280px; flex-shrink: 0; display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 240px; flex-shrink: 0; display: flex; flex-direction: column; transition: width 0.3s ease;
         }
         
-        .ko-round-col.is-collapsed { width: 50px; }
-        .ko-round-col.is-collapsed .ko-round-title { opacity: 0; pointer-events: none; }
-        .ko-round-col.is-collapsed .ko-match-full { display: none; }
-        .ko-round-col.is-collapsed .ko-match-collapsed { display: flex; }
-        .ko-round-col.is-collapsed .ko-match { background: transparent; border: 1px solid transparent; box-shadow: none; padding: 0; cursor: pointer;}
-        .ko-round-col.is-collapsed .ko-match:hover { transform: none; }
-
+        /* สถานะพับการ์ด */
+        .ko-round-col.is-collapsed { width: 76px; }
+        .ko-round-col.is-collapsed .ko-match-top { display: none; }
+        .ko-round-col.is-collapsed .team-name-text { display: none; }
+        .ko-round-col.is-collapsed .ko-team { padding: 8px 10px; justify-content: space-between;}
+        .ko-round-col.is-collapsed .team-left { gap: 0; }
+        .ko-round-col.is-collapsed .win-arrow { display: none; }
+        .ko-round-col.is-collapsed .ko-pen { display: none; }
+        
         .ko-round-title {
-            font-size: 0.85rem; font-weight: 700; color: var(--pl-text-muted);
+            font-size: 0.85rem; font-weight: 700; color: var(--pl-accent);
             text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; text-align: center; transition: opacity 0.2s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        .ko-round-col.is-collapsed .ko-round-title { opacity: 0; pointer-events: none; }
         
         .ko-matches-stack { position: relative; width: 100%; transition: all 0.3s ease;}
         .ko-match-wrapper { position: absolute; width: 100%; box-sizing: border-box; }
 
         .ko-match { 
-            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; width: 100%; height: 100%; position: relative; z-index: 2; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: 0.2s; cursor: pointer; box-sizing: border-box; justify-content: center; overflow: hidden;
+            background: #2b0033; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; overflow: hidden; position: relative; z-index: 2;
         }
         .ko-match:hover { border-color: #f59e0b; box-shadow: 0 6px 15px rgba(245,158,11,0.2);}
         
-        .ko-match-full { display: flex; flex-direction: column; width: 100%; height: 100%; }
-        .ko-match-collapsed { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; width: 100%;}
-        
-        .ko-col-flag { position: relative; display: flex; align-items: center; justify-content: center; }
-        .ko-col-flag img { width: 24px; height: 16px; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.6); object-fit: cover;}
-        .ko-dot { position: absolute; right: -12px; width: 5px; height: 5px; background: var(--pl-primary); border-radius: 50%; }
-
-        .ko-match-top { padding: 5px 12px; font-size: 0.72rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); }
-        .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.65rem;}
+        .ko-match-top { padding: 4px 10px; font-size: 0.7rem; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); transition: opacity 0.2s; }
+        .ko-status { background: rgba(255,255,255,0.15); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 0.6rem;}
         .ko-status.live { background: #ef4444; animation: pulse-live 1.5s infinite;}
         
-        .ko-ko-team { position: relative; padding: 7px 12px; display: flex; align-items: center; gap: 10px; }
-        .ko-ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .ko-ko-team img { width: 22px; height: 15px; border-radius: 2px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.5);}
-        .ko-ko-team span.name { flex: 1; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s;}
-        .ko-ko-team .ko-score { font-size: 1rem; display: flex; align-items: center; gap: 6px;}
-        .ko-pen { color: #f59e0b; font-size: 0.75rem; font-weight: 700;}
-        .win-arrow { position: absolute; right: 8px; color: var(--pl-primary); font-size: 0.8rem; }
+        .ko-team { padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;}
+        .ko-team:first-of-type { border-bottom: 1px solid rgba(255,255,255,0.03); }
+        
+        .team-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .team-left img { width: 22px; height: 16px; border-radius: 2px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,0.5); flex-shrink: 0;}
+        .team-name-text { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s;}
+        
+        .team-right { display: flex; align-items: center; gap: 6px; }
+        .ko-score { font-weight: 700; font-size: 1rem; }
+        .ko-pen { color: #f59e0b; font-size: 0.7rem; font-weight: 700;}
+        .win-arrow { color: var(--pl-primary); font-size: 0.7rem; }
 
         .ko-connector {
-            position: absolute; right: -30px; width: 30px;
-            border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 6px 6px 0; z-index: 1; pointer-events: none;
+            position: absolute; right: -20px; width: 20px;
+            border-top: 2px solid rgba(255,255,255,0.2); border-bottom: 2px solid rgba(255,255,255,0.2); border-right: 2px solid rgba(255,255,255,0.2); border-radius: 0 4px 4px 0; z-index: 1; pointer-events: none;
         }
         .ko-match-wrapper.has-parent::before {
-            content: ''; position: absolute; left: -30px; top: 50%; width: 30px; border-top: 2px solid rgba(255,255,255,0.2); z-index: 1; pointer-events: none;
+            content: ''; position: absolute; left: -20px; top: 50%; width: 20px; border-top: 2px solid rgba(255,255,255,0.2); z-index: 1; pointer-events: none;
         }
 
         @media (max-width: 768px) {
             .nav-menu { gap: 10px; }
             .nav-item { font-size: 0.85rem; }
             .admin-badge { display: none; } 
-            .ko-round-col { width: 260px; }
         }
     </style>
 </head>
@@ -237,7 +237,7 @@
             'Jamaica': 'jm', 'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir',
             'Ukraine': 'ua', 'Greece': 'gr', 'Algeria': 'dz', 'Honduras': 'hn', 'Iceland': 'is',
             'Uzbekistan': 'uz', 'DR Congo': 'cd', 'Congo DR': 'cd', 'Iraq': 'iq', 
-            'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo'
+            'Norway': 'no', 'Cape Verde': 'cv', 'Curacao': 'cw', 'Jordan': 'jo', 'Czechia': 'cz'
         };
         const getFlag = (teamName) => {
             if(!teamName) return '';
@@ -259,71 +259,67 @@
             return `${days[dObj.getDay()]} ${dObj.getDate()} ${months[dObj.getMonth()]}`;
         };
 
-        // 🎯 LATEST ALGORITHM: FULL TREE WITH COLLAPSIBLE STATES FOR ADMIN
-        const koStagesAll = ['32', '16', '8', 'semi', 'final'];
-        let koMatches = sMatches.filter(m => m.stage && koStagesAll.includes(m.stage.toString().trim().toLowerCase()));
-        let hasKnockout = koMatches.length > 0;
+        // 🎯 LATEST ALGORITHM: 100% ROBUST IDENTIFICATION FOR ANY CSV FORMAT
+        const stageMapping = {
+            '32': 0, 'round of 32': 0, 'round_of_32': 0,
+            '16': 1, 'round of 16': 1, 'round_of_16': 1,
+            '8': 2, 'quarter-finals': 2, 'quarter-final': 2, 'quarterfinals': 2, 'quarterfinal': 2, 'qf': 2,
+            'semi': 3, 'semi-finals': 3, 'semi-final': 3, 'semifinals': 3, 'semifinal': 3, 'sf': 3,
+            'final': 4, 'finals': 4
+        };
 
-        const existingStages = koStagesAll.filter(stg => koMatches.some(m => m.stage.toString().trim().toLowerCase() === stg));
-        
-        koMatches.forEach(m => {
-            m.rIndex = existingStages.indexOf(m.stage.toString().trim().toLowerCase());
-        });
-
-        const matchesByRound = {};
-        existingStages.forEach((_, i) => matchesByRound[i] = []);
-        koMatches.forEach(m => matchesByRound[m.rIndex].push(m));
-
-        let maxRIndex = existingStages.length > 0 ? existingStages.length - 1 : 0;
-        let currentSlot = 0;
-        
-        if (matchesByRound[maxRIndex]) {
-            matchesByRound[maxRIndex].sort((a,b) => a.id - b.id);
-            matchesByRound[maxRIndex].forEach(m => {
-                if(m.slot === undefined) m.slot = currentSlot++;
-            });
-        }
-
-        for (let r = maxRIndex; r >= 1; r--) {
-            if (!matchesByRound[r]) continue;
-            matchesByRound[r].sort((a,b) => a.slot - b.slot);
-            
-            matchesByRound[r].forEach(parent => {
-                if (parent.slot === undefined) return;
-                const children = koMatches.filter(c => c.next_match_id == parent.id);
-                const homeChild = children.find(c => c.is_next_home == 1 || c.is_next_home === true);
-                const awayChild = children.find(c => c.is_next_home == 0 || c.is_next_home === false);
-
-                if (homeChild) homeChild.slot = parent.slot * 2;
-                if (awayChild) awayChild.slot = parent.slot * 2 + 1;
-            });
-        }
-
-        let slotCounts = {};
-        for(let i=0; i<10; i++) slotCounts[i] = 0;
-        koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
-        koMatches.forEach(m => {
-            if (m.slot === undefined) {
-                m.slot = slotCounts[m.rIndex]++;
+        let koMatches = [];
+        sMatches.forEach(m => {
+            if (!m.stage) return;
+            const s = m.stage.toString().trim().toLowerCase();
+            if (stageMapping[s] !== undefined) {
+                m.rIndex = stageMapping[s];
+                koMatches.push(m);
             }
         });
+        let hasKnockout = koMatches.length > 0;
 
-        const knockoutData = existingStages.map((stage, rIndex) => {
-            let sTitle = stage;
-            if(stage === '32') sTitle = 'Round of 32';
-            else if(stage === '16') sTitle = 'Round of 16';
-            else if(stage === '8') sTitle = 'Quarter-finals';
-            else if(stage === 'semi') sTitle = 'Semi-finals';
-            else if(stage === 'final') sTitle = 'Final';
+        const matchById = {};
+        koMatches.forEach(m => matchById[m.id] = m);
 
-            const mList = matchesByRound[rIndex] || [];
-            mList.sort((a,b) => a.slot - b.slot);
-            return { stage, stageTitle: sTitle, matches: mList };
+        // คำนวณ Slot ด้วย Tree Traversal
+        const roots = koMatches.filter(m => !m.next_match_id || !matchById[m.next_match_id]);
+        roots.sort((a,b) => a.id - b.id);
+        
+        let rootSlots = { 0:0, 1:0, 2:0, 3:0, 4:0 };
+        roots.forEach(root => { root.slot = rootSlots[root.rIndex]++; });
+
+        const queue = [...roots];
+        while(queue.length > 0) {
+            const parent = queue.shift();
+            const children = koMatches.filter(c => c.next_match_id == parent.id);
+            const homeChild = children.find(c => c.is_next_home == 1 || c.is_next_home === true);
+            const awayChild = children.find(c => c.is_next_home == 0 || c.is_next_home === false);
+
+            if (homeChild) { homeChild.slot = parent.slot * 2; queue.push(homeChild); }
+            if (awayChild) { awayChild.slot = parent.slot * 2 + 1; queue.push(awayChild); }
+        }
+
+        let slotCounts = { 0:0, 1:0, 2:0, 3:0, 4:0 };
+        koMatches.forEach(m => { if(m.slot !== undefined) slotCounts[m.rIndex] = Math.max(slotCounts[m.rIndex], m.slot + 1); });
+        koMatches.forEach(m => {
+            if (m.slot === undefined) { m.slot = slotCounts[m.rIndex]++; }
         });
 
-        const KO_MATCH_HEIGHT = 86; 
-        const KO_GAP = 24; 
-        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; 
+        const stageNames = { 0: 'Round of 32', 1: 'Round of 16', 2: 'Quarter-finals', 3: 'Semi-finals', 4: 'Final' };
+        const knockoutData = [];
+        for(let i=0; i<5; i++) {
+            const mList = koMatches.filter(m => m.rIndex === i);
+            if (mList.length > 0) {
+                mList.sort((a,b) => a.slot - b.slot);
+                knockoutData.push({ rIndex: i, stageTitle: stageNames[i], matches: mList });
+            }
+        }
+
+        // 🎯 สัดส่วนความกะทัดรัด (Compact Google UI)
+        const KO_MATCH_HEIGHT = 64; // ความสูงกล่องเล็กลง
+        const KO_GAP = 16;          // ระยะห่างเล็กลง
+        const KO_UNIT = KO_MATCH_HEIGHT + KO_GAP; // 80px
 
         const renderKoMatchAdmin = (m) => {
             if(!m) return '';
@@ -352,8 +348,8 @@
                 if(hFinal > aFinal) homeWin = true; else if(aFinal > hFinal) awayWin = true;
             }
 
-            if(m.home_penalty !== null && m.home_penalty !== undefined) homeScore += `<span class="ko-pen">(${m.home_penalty})</span>`;
-            if(m.away_penalty !== null && m.away_penalty !== undefined) awayScore += `<span class="ko-pen">(${m.away_penalty})</span>`;
+            let homePenStr = (m.home_penalty !== null && m.home_penalty !== undefined) ? `<span class="ko-pen">(${m.home_penalty})</span>` : '';
+            let awayPenStr = (m.away_penalty !== null && m.away_penalty !== undefined) ? `<span class="ko-pen">(${m.away_penalty})</span>` : '';
             
             const nowObj = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
             const isLive = tDate && tDate <= nowObj && m.status !== 'FINISHED';
@@ -373,24 +369,26 @@
             
             return `
                 <div class="ko-match" onclick="openEditMatchModal('${m.id}', '${m.home_team || ''}', '${m.away_team || ''}', '${safeTime}', '${m.next_match_id || ''}', '${m.is_next_home !== null ? m.is_next_home : 1}')" title="คลิกเพื่อแก้ไขข้อมูลแมตช์นี้">
-                    <div class="ko-match-full">
-                        <div class="ko-match-top"><span>${dateStr}</span>${statusBadge}</div>
-                        <div class="ko-ko-team">
+                    <div class="ko-match-top"><span>${dateStr}</span>${statusBadge}</div>
+                    <div class="ko-team">
+                        <div class="team-left">
                             ${getFlag(m.home_team)}
-                            <span class="name" style="color: ${hColor}; font-weight: ${homeWin?'700':'500'}">${hName}</span>
-                            <span class="ko-score" style="color: ${hColor}">${homeScore}</span>
+                            <span class="team-name-text" style="color: ${hColor}; font-weight: ${homeWin?'700':'500'}">${hName}</span>
+                        </div>
+                        <div class="team-right">
+                            <span class="ko-score" style="color: ${hColor}">${homeScore}${homePenStr}</span>
                             ${hArrow}
                         </div>
-                        <div class="ko-ko-team">
+                    </div>
+                    <div class="ko-team">
+                        <div class="team-left">
                             ${getFlag(m.away_team)}
-                            <span class="name" style="color: ${aColor}; font-weight: ${awayWin?'700':'500'}">${aName}</span>
-                            <span class="ko-score" style="color: ${aColor}">${awayScore}</span>
+                            <span class="team-name-text" style="color: ${aColor}; font-weight: ${awayWin?'700':'500'}">${aName}</span>
+                        </div>
+                        <div class="team-right">
+                            <span class="ko-score" style="color: ${aColor}">${awayScore}${awayPenStr}</span>
                             ${aArrow}
                         </div>
-                    </div>
-                    <div class="ko-match-collapsed">
-                        <div class="ko-col-flag" title="${hName}">${getFlag(m.home_team)} ${homeWin ? '<div class="ko-dot"></div>' : ''}</div>
-                        <div class="ko-col-flag" title="${aName}">${getFlag(m.away_team)} ${awayWin ? '<div class="ko-dot"></div>' : ''}</div>
                     </div>
                 </div>
             `;
@@ -480,7 +478,7 @@
                                         <img src="<%= u.avatar %>">
                                         <span style="<%= u.is_hidden ? 'text-decoration: line-through; color: var(--pl-text-muted);' : '' %>">
                                             <%= u.username %>
-                                            <% if(u.is_hidden) { %><span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
+                                            <% if(u.is_hidden) { %span class="badge badge-warning" style="margin-left: 5px; font-size: 0.65rem;">ซ่อนจากบอร์ด</span><% } %>
                                         </span>
                                     </div>
                                 </td>
@@ -542,14 +540,14 @@
                 
                 <% 
                     const sortedMatches = [...sMatches].sort((a,b) => {
-                        const da = new Date(a.kickoff_time ? a.kickoff_time.toString().replace(' ', 'T') : 0);
-                        const db = new Date(b.kickoff_time ? b.kickoff_time.toString().replace(' ', 'T') : 0);
+                        const da = new Date(typeof a.kickoff_time === 'string' ? a.kickoff_time.replace(' ', 'T') : a.kickoff_time);
+                        const db = new Date(typeof b.kickoff_time === 'string' ? b.kickoff_time.replace(' ', 'T') : b.kickoff_time);
                         return da - db;
                     });
                     sortedMatches.forEach((m, idx) => m.match_number = idx + 1);
 
                     const getMatchDayInfo = (kickoffTime) => {
-                        let dObj = new Date(kickoffTime ? kickoffTime.toString().replace(' ', 'T') : 0);
+                        let dObj = new Date(typeof kickoffTime === 'string' ? kickoffTime.replace(' ', 'T') : kickoffTime);
                         if (isNaN(dObj.getTime())) dObj = new Date();
                         
                         let startDay = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate(), 12, 0, 0);
@@ -706,16 +704,16 @@
         </div>
 
         <!-- 🎯 TAB KNOCKOUT BRACKET (Single Tree Collapsible - ADMIN) -->
-        <div id="tab-knockout" class="tab-content" style="display:none;">
+        <div id="tab-knockout" class="tab-content">
             <% if(!hasKnockout) { %>
-                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น</div>
+                <div style="text-align: center; padding: 40px; color: var(--pl-text-muted);">การแข่งขันรอบ Knockout ยังไม่เริ่มต้น หรือรหัสรอบ (Stage) ในตารางไม่ถูกต้อง</div>
             <% } else { %>
                 
                 <div class="ko-nav-bar">
-                    <% knockoutData.forEach((kd, rIdx) => { 
+                    <% knockoutData.forEach((kd) => { 
                         if(kd.matches.length > 0) { 
                     %>
-                        <button type="button" class="ko-pill <%= rIdx === 0 ? 'active' : '' %>" id="ko-btn-<%= rIdx %>" onclick="scrollToRound(<%= rIdx %>)">
+                        <button type="button" class="ko-pill <%= kd.rIndex === 0 ? 'active' : '' %>" data-ridx="<%= kd.rIndex %>" onclick="scrollToRound(<%= kd.rIndex %>)">
                             <%= kd.stageTitle %>
                         </button>
                     <% }}) %>
@@ -730,18 +728,21 @@
                                 treeHeight = (maxSlot + 1) * KO_UNIT;
                             }
 
-                            knockoutData.forEach((stageData, rIdx) => { 
+                            knockoutData.forEach((stageData) => { 
+                                const rIdx = stageData.rIndex;
                                 if(stageData.matches.length > 0) { 
                         %>
-                            <div class="ko-round-col" id="ko-col-<%= rIdx %>">
+                            <div class="ko-round-col" id="ko-col-<%= rIdx %>" data-ridx="<%= rIdx %>">
                                 <div class="ko-round-title"><%= stageData.stageTitle %></div>
                                 <div class="ko-matches-stack" style="height: <%= treeHeight %>px;">
                                     <% stageData.matches.forEach(match => { 
                                         const yCenter = (match.slot * Math.pow(2, rIdx) + Math.pow(2, rIdx - 1) - 0.5) * KO_UNIT + (KO_UNIT / 2);
                                         const topPos = yCenter - (KO_MATCH_HEIGHT / 2);
+                                        
+                                        let connectorHeight = Math.pow(2, rIdx) * KO_UNIT;
                                     %>
-                                        <% if (match.slot % 2 === 0 && rIdx < knockoutData.length - 1) { %>
-                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= Math.pow(2, rIdx) * KO_UNIT %>px;"></div>
+                                        <% if (match.slot % 2 === 0 && rIdx < 4) { %>
+                                            <div class="ko-connector" style="top: <%= yCenter %>px; height: <%= connectorHeight %>px;"></div>
                                         <% } %>
                                         
                                         <div class="ko-match-wrapper <%= rIdx > 0 ? 'has-parent' : '' %>" style="top: <%= topPos %>px; height: <%= KO_MATCH_HEIGHT %>px;">
@@ -957,38 +958,46 @@
                     const todayGroup = document.querySelector('.today-group');
                     if (todayGroup) {
                         todayGroup.setAttribute('open', 'true');
+                        
                         const headerOffset = 229; 
                         const elementPosition = todayGroup.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
+                        
+                        window.scrollTo({
+                            top: elementPosition - headerOffset,
+                            behavior: 'smooth'
+                        });
                     }
                 }, 100);
             } else if (tabId === 'tab-knockout') {
-                setTimeout(() => scrollToRound(0), 50); // วางตำแหน่งอัตโนมัติเมื่อกดเข้าแท็บ
+                // อัปเดต Scroll อัตโนมัติเมื่อกดเข้า Knockout
+                const activeBtn = document.querySelector('.ko-pill.active');
+                const targetIdx = activeBtn ? parseInt(activeBtn.dataset.ridx) : 0;
+                setTimeout(() => scrollToRound(targetIdx), 50); 
             }
         }
 
-        // 🎯 ฟังก์ชัน Scroll และยุบการ์ดสำหรับหน้า Admin
-        function scrollToRound(targetIdx) {
-            document.querySelectorAll('.ko-pill').forEach((btn, idx) => {
-                btn.classList.toggle('active', btn.id === 'ko-btn-' + targetIdx);
+        // 🎯 ฟังก์ชัน Scroll และยุบการ์ดสำหรับหน้า Admin (Google Style)
+        function scrollToRound(targetRIdx) {
+            document.querySelectorAll('.ko-pill').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.ridx) === targetRIdx);
             });
 
             const cols = document.querySelectorAll('.ko-round-col');
-            cols.forEach((col, idx) => {
-                if (idx < targetIdx) {
+            cols.forEach((col) => {
+                const colRIdx = parseInt(col.dataset.ridx);
+                if (colRIdx < targetRIdx) {
                     col.classList.add('is-collapsed');
                 } else {
                     col.classList.remove('is-collapsed');
                 }
-            });
-
-            setTimeout(() => {
-                const targetCol = document.getElementById('ko-col-' + targetIdx);
-                const canvas = document.getElementById('koCanvas');
-                if (targetCol && canvas) {
-                    canvas.scrollTo({ left: Math.max(0, targetCol.offsetLeft - 20), behavior: 'smooth' });
+                
+                if (colRIdx === targetRIdx) {
+                    setTimeout(() => {
+                        const canvas = document.getElementById('koCanvas');
+                        if (canvas) canvas.scrollTo({ left: Math.max(0, col.offsetLeft - 20), behavior: 'smooth' });
+                    }, 300); // รอให้ Animation ยุบตัวเสร็จก่อนค่อยเลื่อนแกนกลาง
                 }
-            }, 100);
+            });
         }
         
         document.addEventListener('DOMContentLoaded', () => {
