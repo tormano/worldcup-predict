@@ -38,6 +38,8 @@ const initDB = async () => {
         try { await pool.query('ALTER TABLE rewards ADD COLUMN color VARCHAR(20) DEFAULT \'#ffffff\';'); } catch (e) {}
         try { await pool.query('ALTER TABLE matches ADD COLUMN next_match_id INTEGER DEFAULT NULL;'); } catch (e) {}
         try { await pool.query('ALTER TABLE matches ADD COLUMN is_next_home INTEGER DEFAULT 1;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN loser_next_match_id INTEGER DEFAULT NULL;'); } catch (e) {}
+        try { await pool.query('ALTER TABLE matches ADD COLUMN is_loser_next_home INTEGER DEFAULT 1;'); } catch (e) {}
         try { await pool.query('ALTER TABLE matches ADD COLUMN home_penalty INTEGER DEFAULT NULL;'); } catch (e) {}
         try { await pool.query('ALTER TABLE matches ADD COLUMN away_penalty INTEGER DEFAULT NULL;'); } catch (e) {}
 
@@ -392,9 +394,11 @@ app.post('/admin/add-match', checkAuth, async (req, res) => {
     if (!req.session.user.is_admin) return res.status(403).send('Unauthorized');
     let nextMatchId = req.body.next_match_id ? parseInt(req.body.next_match_id) : null;
     let isNextHome = req.body.is_next_home !== undefined ? parseInt(req.body.is_next_home) : 1;
+    let loserNextMatchId = req.body.loser_next_match_id ? parseInt(req.body.loser_next_match_id) : null;
+    let isLoserNextHome = req.body.is_loser_next_home !== undefined ? parseInt(req.body.is_loser_next_home) : 1;
     await pool.query(
-        'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home) VALUES ($1, $2, $3, $4, $5, $6)', 
-        [req.body.stage, req.body.home_team, req.body.away_team, req.body.kickoff_time ? req.body.kickoff_time.replace('T', ' ') : null, nextMatchId, isNextHome]
+        'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home, loser_next_match_id, is_loser_next_home) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
+        [req.body.stage, req.body.home_team, req.body.away_team, req.body.kickoff_time ? req.body.kickoff_time.replace('T', ' ') : null, nextMatchId, isNextHome, loserNextMatchId, isLoserNextHome]
     );
     res.redirect('/admin');
 });
@@ -411,9 +415,11 @@ app.post('/admin/edit-match-info', checkAuth, async (req, res) => {
     if (req.body.next_match_id !== undefined) {
         const nextMatchId = req.body.next_match_id ? parseInt(req.body.next_match_id) : null;
         const isNextHome = req.body.is_next_home !== undefined ? parseInt(req.body.is_next_home) : 1;
+        const loserNextMatchId = req.body.loser_next_match_id ? parseInt(req.body.loser_next_match_id) : null;
+        const isLoserNextHome = req.body.is_loser_next_home !== undefined ? parseInt(req.body.is_loser_next_home) : 1;
         await pool.query(
-            'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3, next_match_id = $4, is_next_home = $5 WHERE id = $6',
-            [req.body.home_team, req.body.away_team, req.body.kickoff_time ? req.body.kickoff_time.replace('T', ' ') : null, nextMatchId, isNextHome, req.body.match_id]
+            'UPDATE matches SET home_team = $1, away_team = $2, kickoff_time = $3, next_match_id = $4, is_next_home = $5, loser_next_match_id = $6, is_loser_next_home = $7 WHERE id = $8',
+            [req.body.home_team, req.body.away_team, req.body.kickoff_time ? req.body.kickoff_time.replace('T', ' ') : null, nextMatchId, isNextHome, loserNextMatchId, isLoserNextHome, req.body.match_id]
         );
     } else {
         await pool.query(
@@ -439,21 +445,28 @@ app.post('/admin/settle', checkAuth, async (req, res) => {
     const { rows: matchRows } = await pool.query('SELECT * FROM matches WHERE id = $1', [matchId]);
     const match = matchRows[0];
     
-    if (match.next_match_id) {
-        let winnerTeam = null;
-        if (actualHome > actualAway) { winnerTeam = match.home_team; } 
-        else if (actualHome < actualAway) { winnerTeam = match.away_team; } 
-        else if (actualHome === actualAway && homePenalty !== null && awayPenalty !== null) {
-            if (homePenalty > awayPenalty) winnerTeam = match.home_team;
-            else if (homePenalty < awayPenalty) winnerTeam = match.away_team;
-        }
+    let winnerTeam = null;
+    let loserTeam = null;
+    if (actualHome > actualAway) { winnerTeam = match.home_team; loserTeam = match.away_team; } 
+    else if (actualHome < actualAway) { winnerTeam = match.away_team; loserTeam = match.home_team; } 
+    else if (actualHome === actualAway && homePenalty !== null && awayPenalty !== null) {
+        if (homePenalty > awayPenalty) { winnerTeam = match.home_team; loserTeam = match.away_team; }
+        else if (homePenalty < awayPenalty) { winnerTeam = match.away_team; loserTeam = match.home_team; }
+    }
 
-        if (winnerTeam) {
-            if (match.is_next_home === 1 || match.is_next_home === true) {
-                await pool.query('UPDATE matches SET home_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
-            } else {
-                await pool.query('UPDATE matches SET away_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
-            }
+    if (winnerTeam && match.next_match_id) {
+        if (match.is_next_home === 1 || match.is_next_home === true) {
+            await pool.query('UPDATE matches SET home_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
+        } else {
+            await pool.query('UPDATE matches SET away_team = $1 WHERE id = $2', [winnerTeam, match.next_match_id]);
+        }
+    }
+    
+    if (loserTeam && match.loser_next_match_id) {
+        if (match.is_loser_next_home === 1 || match.is_loser_next_home === true) {
+            await pool.query('UPDATE matches SET home_team = $1 WHERE id = $2', [loserTeam, match.loser_next_match_id]);
+        } else {
+            await pool.query('UPDATE matches SET away_team = $1 WHERE id = $2', [loserTeam, match.loser_next_match_id]);
         }
     }
 
@@ -553,14 +566,26 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                 const dateMatch = rawTime.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})\s+(\d{1,2}:\d{2}(:\d{2})?)/);
                 
                 if (dateMatch) {
-                    let day = dateMatch[1].padStart(2, '0');
-                    let month = dateMatch[2].padStart(2, '0');
-                    let year = dateMatch[3];
-                    if (year.length === 2) year = '20' + year; 
-                    let time = dateMatch[4];
-                    if (time.length <= 5) time += ':00'; 
-                    formattedTime = `${year}-${month}-${day} ${time}`;
-                }
+                let day = dateMatch[1].padStart(2, '0');
+                let month = dateMatch[2].padStart(2, '0');
+                let year = dateMatch[3];
+                if (year.length === 2) year = '20' + year; 
+                let time = dateMatch[4];
+                if (time.length <= 5) time += ':00'; 
+                formattedTime = `${year}-${month}-${day} ${time}`;
+            }
+
+            let nextMatchId = cols.length > 4 && cols[4].trim() !== '' ? parseInt(cols[4].trim()) : null;
+            let isNextHome = cols.length > 5 && cols[5].trim() !== '' ? parseInt(cols[5].trim()) : 1;
+            let loserNextMatchId = cols.length > 6 && cols[6].trim() !== '' ? parseInt(cols[6].trim()) : null;
+            let isLoserNextHome = cols.length > 7 && cols[7].trim() !== '' ? parseInt(cols[7].trim()) : 1;
+
+            await pool.query(
+                'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home, loser_next_match_id, is_loser_next_home) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
+                [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome, isNaN(loserNextMatchId) ? null : loserNextMatchId, isNaN(isLoserNextHome) ? 1 : isLoserNextHome]
+            );
+        }
+    }
 
                 let nextMatchId = cols.length > 4 && cols[4].trim() !== '' ? parseInt(cols[4].trim()) : null;
                 let isNextHome = cols.length > 5 && cols[5].trim() !== '' ? parseInt(cols[5].trim()) : 1;
