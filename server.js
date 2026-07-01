@@ -594,7 +594,18 @@ app.post('/admin/import-matches', checkAuth, upload.single('csv_file'), async (r
                     'INSERT INTO matches (stage, home_team, away_team, kickoff_time, next_match_id, is_next_home) VALUES ($1, $2, $3, $4, $5, $6)', 
                     [stage, home, away, formattedTime, isNaN(nextMatchId) ? null : nextMatchId, isNaN(isNextHome) ? 1 : isNextHome]
                 );
-            }
+            // ต้องมี catch (e) {} ต่อท้ายเสมอ
+try { 
+    await pool.query('ALTER TABLE matches ADD COLUMN loser_next_match_id INTEGER DEFAULT NULL;'); 
+} catch (e) {
+    // ปล่อยว่างไว้ได้เลยครับ ระบบจะข้ามไปถ้าคอลัมน์นี้ถูกสร้างไปแล้ว
+}
+
+try { 
+    await pool.query('ALTER TABLE matches ADD COLUMN is_loser_next_home INTEGER DEFAULT 1;'); 
+} catch (e) {
+    // ปล่อยว่างไว้
+}}
         }
         res.redirect('/admin');
     } catch (err) { 
